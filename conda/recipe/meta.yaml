@@ -1,0 +1,71 @@
+{% set name = "gmlst" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  # sha256 will be filled after first PyPI upload
+  # sha256: 
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - gmlst = gmlst.cli:main
+
+requirements:
+  host:
+    - python >=3.12,<3.13
+    - pip
+    - hatchling
+  run:
+    - python >=3.12,<3.13
+    - click >=8.1
+    - requests >=2.31
+    - rich >=13.0
+    # Optional external dependencies (not strictly required but recommended)
+    # These can be installed via conda-forge or bioconda:
+    # - blast
+    # - minimap2
+    # - mummer4
+
+test:
+  imports:
+    - gmlst
+  commands:
+    - gmlst --version
+    - gmlst --help
+
+about:
+  home: https://github.com/indexofire/gmlst
+  summary: 'Fast MLST typing via multiple alignment backends'
+  description: |
+    gmlst is a fast and flexible Multi-Locus Sequence Typing (MLST) tool
+    that supports multiple alignment backends including BLASTN, KMA,
+    minimap2, and nucmer.
+    
+    Features:
+    - Multiple alignment backends (blastn, kma, minimap2, nucmer)
+    - Support for FASTA (assembled genomes) and FASTQ (raw reads)
+    - Multiple database providers (PubMLST, Pasteur, Enterobase)
+    - Batch processing capability
+    - Compatible with tseemann/mlst output format
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://github.com/indexofire/gmlst#readme
+  dev_url: https://github.com/indexofire/gmlst
+
+extra:
+  recipe-maintainers:
+    - indexofire
+  notes: |
+    This package requires external alignment tools for full functionality:
+    - blast (blastn, makeblastdb) - from bioconda
+    - minimap2 - from bioconda
+    - mummer4 (nucmer, show-coords) - from bioconda
+    
+    Install with: conda install -c bioconda blast minimap2 mummer4

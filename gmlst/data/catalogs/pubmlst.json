@@ -1,0 +1,2792 @@
+{
+  "provider": "pubmlst",
+  "scheme_type": "mlst",
+  "updated_at": "2026-03-13T13:33:19Z",
+  "count": 232,
+  "schemes": [
+    {
+      "scheme_name": "achromobacter_1",
+      "display_name": "Achromobacter spp. MLST",
+      "organism": "Achromobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_achromobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_achromobacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "abaumannii_1",
+      "display_name": "Acinetobacter baumannii MLST (Oxford) (mlst)",
+      "organism": "Acinetobacter baumannii",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "abaumannii_2",
+      "display_name": "Acinetobacter baumannii MLST (Pasteur) (mlst)",
+      "organism": "Acinetobacter baumannii",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "abaumannii_3",
+      "display_name": "Acinetobacter baumannii cgMLST v1 (cgmlst)",
+      "organism": "Acinetobacter baumannii",
+      "scheme_type": "cgmlst",
+      "n_loci": 2133,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "actinobacillus_1",
+      "display_name": "Actinobacillus spp. MLST",
+      "organism": "Actinobacillus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_actinobacillus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_actinobacillus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "aeromonas_1",
+      "display_name": "Aeromonas spp. MLST",
+      "organism": "Aeromonas spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aeromonas_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aeromonas_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "aactinomycetemcomitans_1",
+      "display_name": "Aggregatibacter actinomycetemcomitans MLST",
+      "organism": "Aggregatibacter actinomycetemcomitans",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aactinomycetemcomitans_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aactinomycetemcomitans_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "aphagocytophilum_1",
+      "display_name": "Anaplasma phagocytophilum MLST",
+      "organism": "Anaplasma phagocytophilum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aphagocytophilum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aphagocytophilum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "arcobacter_1",
+      "display_name": "Arcobacter spp. MLST",
+      "organism": "Arcobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_arcobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_arcobacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "afumigatus_1",
+      "display_name": "Aspergillus fumigatus MLST",
+      "organism": "Aspergillus fumigatus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_afumigatus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_afumigatus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "aparagallinarum_1",
+      "display_name": "Avibacterium paragallinarum MLST (Ghanem AP) (mlst)",
+      "organism": "Avibacterium paragallinarum",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "aparagallinarum_2",
+      "display_name": "Avibacterium paragallinarum MLST (Guo) (mlst)",
+      "organism": "Avibacterium paragallinarum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bcereus_1",
+      "display_name": "Bacillus cereus MLST (mlst)",
+      "organism": "Bacillus cereus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bcereus_2",
+      "display_name": "Bacillus cereus B. anthracis cgMLST (cgmlst)",
+      "organism": "Bacillus cereus",
+      "scheme_type": "cgmlst",
+      "n_loci": 3803,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "bcereus_3",
+      "display_name": "Bacillus cereus B. cereus cgMLST (cgmlst)",
+      "organism": "Bacillus cereus",
+      "scheme_type": "cgmlst",
+      "n_loci": 1568,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "blicheniformis_1",
+      "display_name": "Bacillus licheniformis MLST",
+      "organism": "Bacillus licheniformis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blicheniformis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blicheniformis_seqdef/schemes/14"
+      }
+    },
+    {
+      "scheme_name": "bsubtilis_1",
+      "display_name": "Bacillus subtilis MLST",
+      "organism": "Bacillus subtilis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bsubtilis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bsubtilis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "llactis_1",
+      "display_name": "Lactococcus lactis 936-like bacteriophage MLST",
+      "organism": "Lactococcus lactis 936-like bacteriophage",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_llactis_phage_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_llactis_phage_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bfragilis_1",
+      "display_name": "Bacteroides fragilis MLST",
+      "organism": "Bacteroides fragilis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bfragilis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bfragilis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bbacilliformis_1",
+      "display_name": "Bartonella bacilliformis MLST",
+      "organism": "Bartonella bacilliformis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bbacilliformis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bbacilliformis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bhenselae_1",
+      "display_name": "Bartonella henselae MLST",
+      "organism": "Bartonella henselae",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bhenselae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bhenselae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bwashoensis_1",
+      "display_name": "Bartonella washoensis MLST",
+      "organism": "Bartonella washoensis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bwashoensis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bwashoensis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "blastocystis_1",
+      "display_name": "Blastocystis spp. ST3 MLST (mlst)",
+      "organism": "Blastocystis spp.",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "blastocystis_2",
+      "display_name": "Blastocystis spp. ST4 MLST (mlst)",
+      "organism": "Blastocystis spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "borrelia_1",
+      "display_name": "Borrelia spp. MLST (mlst)",
+      "organism": "Borrelia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "borrelia_2",
+      "display_name": "Borrelia spp. cgMLST (cgmlst)",
+      "organism": "Borrelia spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 639,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "brachyspira_1",
+      "display_name": "Brachyspira spp. B. hampsonii MLST (mlst)",
+      "organism": "Brachyspira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "brachyspira_2",
+      "display_name": "Brachyspira spp. B. hyodysenteriae MLST (mlst)",
+      "organism": "Brachyspira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "brachyspira_3",
+      "display_name": "Brachyspira spp. B. intermedia MLST (mlst)",
+      "organism": "Brachyspira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "brachyspira_4",
+      "display_name": "Brachyspira spp. B. pilosicoli MLST (mlst)",
+      "organism": "Brachyspira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "brachyspira_5",
+      "display_name": "Brachyspira spp. Brachyspira MLST (mlst)",
+      "organism": "Brachyspira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "brucella_1",
+      "display_name": "Brucella spp. MLST (9 locus) (mlst)",
+      "organism": "Brucella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 9,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "brucella_2",
+      "display_name": "Brucella spp. MLST (21 locus) (mlst)",
+      "organism": "Brucella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 21,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "brucella_3",
+      "display_name": "Brucella spp. cgMLST (cgmlst)",
+      "organism": "Brucella spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1764,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "bcepacia_1",
+      "display_name": "Burkholderia cepacia complex MLST (mlst)",
+      "organism": "Burkholderia cepacia complex",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bcepacia_2",
+      "display_name": "Burkholderia cepacia complex cgMLST (cgmlst)",
+      "organism": "Burkholderia cepacia complex",
+      "scheme_type": "cgmlst",
+      "n_loci": 1925,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "bmallei_1",
+      "display_name": "Burkholderia mallei cgMLST",
+      "organism": "Burkholderia mallei",
+      "scheme_type": "cgmlst",
+      "n_loci": 3311,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bpseudomallei_1",
+      "display_name": "Burkholderia pseudomallei MLST (mlst)",
+      "organism": "Burkholderia pseudomallei",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bpseudomallei_2",
+      "display_name": "Burkholderia pseudomallei cgMLST (cgmlst)",
+      "organism": "Burkholderia pseudomallei",
+      "scheme_type": "cgmlst",
+      "n_loci": 4090,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_1",
+      "display_name": "Campylobacter non-jejuni/coli C. concisus/curvus MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_2",
+      "display_name": "Campylobacter non-jejuni/coli C. fetus MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/9"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_3",
+      "display_name": "Campylobacter non-jejuni/coli C. helveticus MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_4",
+      "display_name": "Campylobacter non-jejuni/coli C. hyointestinalis MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_5",
+      "display_name": "Campylobacter non-jejuni/coli C. insulaenigrae MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_6",
+      "display_name": "Campylobacter non-jejuni/coli C. lanienae MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_7",
+      "display_name": "Campylobacter non-jejuni/coli C. lari MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_8",
+      "display_name": "Campylobacter non-jejuni/coli C. sputorum MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_9",
+      "display_name": "Campylobacter non-jejuni/coli C. upsaliensis MLST (mlst)",
+      "organism": "Campylobacter non-jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_10",
+      "display_name": "Campylobacter jejuni/coli MLST (mlst)",
+      "organism": "Campylobacter jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_11",
+      "display_name": "Campylobacter jejuni/coli C. jejuni / C. coli cgMLST v1 (cgmlst)",
+      "organism": "Campylobacter jejuni/coli",
+      "scheme_type": "cgmlst",
+      "n_loci": 1343,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_12",
+      "display_name": "Campylobacter jejuni/coli C. jejuni / C. coli cgMLST v2 (cgmlst)",
+      "organism": "Campylobacter jejuni/coli",
+      "scheme_type": "cgmlst",
+      "n_loci": 1142,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "campylobacter_13",
+      "display_name": "Campylobacter jejuni/coli eMLST (21 partial genes) (mlst)",
+      "organism": "Campylobacter jejuni/coli",
+      "scheme_type": "mlst",
+      "n_loci": 21,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "calbicans_1",
+      "display_name": "Candida albicans MLST",
+      "organism": "Candida albicans",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_calbicans_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_calbicans_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cglabrata_1",
+      "display_name": "Candida glabrata MLST",
+      "organism": "Candida glabrata",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cglabrata_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cglabrata_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ckrusei_1",
+      "display_name": "Candida krusei MLST",
+      "organism": "Candida krusei",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ckrusei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ckrusei_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ctropicalis_1",
+      "display_name": "Candida tropicalis MLST",
+      "organism": "Candida tropicalis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ctropicalis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ctropicalis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cmaltaromaticum_1",
+      "display_name": "Carnobacterium maltaromaticum MLST",
+      "organism": "Carnobacterium maltaromaticum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cmaltaromaticum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cmaltaromaticum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_1",
+      "display_name": "Chlamydiales spp. C. abortus cgMLST v1.0 (cgmlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 959,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/44"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_2",
+      "display_name": "Chlamydiales spp. C. trachomatis cgMLST v1.0 (cgmlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 817,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/42"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_3",
+      "display_name": "Chlamydiales spp. MLST (Chlamydiales) (mlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_4",
+      "display_name": "Chlamydiales spp. MLST (C. trachomatis) (mlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/38"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_5",
+      "display_name": "Chlamydiales spp. MLST (C. trachomatis Uppsala) (mlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/41"
+      }
+    },
+    {
+      "scheme_name": "chlamydiales_6",
+      "display_name": "Chlamydiales spp. Plasmid MLST (mlst)",
+      "organism": "Chlamydiales spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/40"
+      }
+    },
+    {
+      "scheme_name": "citrobacter_1",
+      "display_name": "Citrobacter spp. MLST",
+      "organism": "Citrobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cfreundii_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cfreundii_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "csinensis_1",
+      "display_name": "Clonorchis sinensis MLST",
+      "organism": "Clonorchis sinensis",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_csinensis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_csinensis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cdifficile_1",
+      "display_name": "Clostridioides difficile MLST",
+      "organism": "Clostridioides difficile",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cdifficile_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cdifficile_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cbotulinum_1",
+      "display_name": "Clostridium botulinum MLST (mlst)",
+      "organism": "Clostridium botulinum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cbotulinum_2",
+      "display_name": "Clostridium botulinum Extended MLST (mlst)",
+      "organism": "Clostridium botulinum",
+      "scheme_type": "mlst",
+      "n_loci": 14,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "cchauvoei_1",
+      "display_name": "Clostridium chauvoei agMLST (mlst)",
+      "organism": "Clostridium chauvoei",
+      "scheme_type": "mlst",
+      "n_loci": 234,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "cchauvoei_2",
+      "display_name": "Clostridium chauvoei cgMLST (cgmlst)",
+      "organism": "Clostridium chauvoei",
+      "scheme_type": "cgmlst",
+      "n_loci": 2223,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cperfringens_1",
+      "display_name": "Clostridium perfringens MLST (mlst)",
+      "organism": "Clostridium perfringens",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cperfringens_2",
+      "display_name": "Clostridium perfringens cgMLST (cgmlst)",
+      "organism": "Clostridium perfringens",
+      "scheme_type": "cgmlst",
+      "n_loci": 1431,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "csepticum_1",
+      "display_name": "Clostridium septicum MLST",
+      "organism": "Clostridium septicum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_csepticum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_csepticum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cronobacter_1",
+      "display_name": "Cronobacter spp. MLST (mlst)",
+      "organism": "Cronobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cronobacter_2",
+      "display_name": "Cronobacter spp. cogMLST (mlst)",
+      "organism": "Cronobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 1865,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "cronobacter_3",
+      "display_name": "Cronobacter spp. Ext-MLST (mlst)",
+      "organism": "Cronobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "cronobacter_4",
+      "display_name": "Cronobacter spp. Tax-MLST (mlst)",
+      "organism": "Cronobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 2,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "cacnes_1",
+      "display_name": "Cutibacterium acnes MLST",
+      "organism": "Cutibacterium acnes",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pacnes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pacnes_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "dnodosus_1",
+      "display_name": "Dichelobacter nodosus cgMLST (cgmlst)",
+      "organism": "Dichelobacter nodosus",
+      "scheme_type": "cgmlst",
+      "n_loci": 714,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "dnodosus_2",
+      "display_name": "Dichelobacter nodosus MLST (mlst)",
+      "organism": "Dichelobacter nodosus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "edwardsiella_1",
+      "display_name": "Edwardsiella spp. MLST",
+      "organism": "Edwardsiella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_edwardsiella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_edwardsiella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "enterobacter_1",
+      "display_name": "Enterobacter spp. MLST",
+      "organism": "Enterobacter spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ecloacae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ecloacae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "efaecalis_1",
+      "display_name": "Enterococcus faecalis MLST",
+      "organism": "Enterococcus faecalis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecalis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecalis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "efaecium_1",
+      "display_name": "Enterococcus faecium MLST (mlst)",
+      "organism": "Enterococcus faecium",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "efaecium_2",
+      "display_name": "Enterococcus faecium MLST (Bezd\u00ed\u010dek et al.) (mlst)",
+      "organism": "Enterococcus faecium",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "escherichia_1",
+      "display_name": "Escherichia spp. MLST (Achtman) (mlst)",
+      "organism": "Escherichia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "escherichia_2",
+      "display_name": "Escherichia spp. MLST (Pasteur) (mlst)",
+      "organism": "Escherichia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "escherichia_3",
+      "display_name": "Escherichia spp. cgMLST (cgmlst)",
+      "organism": "Escherichia spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 2513,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "fpsychrophilum_1",
+      "display_name": "Flavobacterium psychrophilum MLST",
+      "organism": "Flavobacterium psychrophilum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_fpsychrophilum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_fpsychrophilum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ganatis_1",
+      "display_name": "Gallibacterium anatis MLST",
+      "organism": "Gallibacterium anatis",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_gallibacterium_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_gallibacterium_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "geotrichum_1",
+      "display_name": "Geotrichum spp. MLST",
+      "organism": "Geotrichum spp.",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_geotrichum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_geotrichum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "gparasuis_1",
+      "display_name": "Glaesserella parasuis MLST",
+      "organism": "Glaesserella parasuis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hparasuis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hparasuis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "hinfluenzae_1",
+      "display_name": "Haemophilus influenzae MLST (mlst)",
+      "organism": "Haemophilus influenzae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "hinfluenzae_2",
+      "display_name": "Haemophilus influenzae cgMLST v1 (cgmlst)",
+      "organism": "Haemophilus influenzae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1037,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/56"
+      }
+    },
+    {
+      "scheme_name": "hinfluenzae_3",
+      "display_name": "Haemophilus influenzae H. parainfluenzae cgMLST v1 (cgmlst)",
+      "organism": "Haemophilus influenzae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1062,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/59"
+      }
+    },
+    {
+      "scheme_name": "hcinaedi_1",
+      "display_name": "Helicobacter cinaedi MLST",
+      "organism": "Helicobacter cinaedi",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hcinaedi_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hcinaedi_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "hpylori_1",
+      "display_name": "Helicobacter pylori MLST",
+      "organism": "Helicobacter pylori",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_helicobacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_helicobacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "hsuis_1",
+      "display_name": "Helicobacter suis MLST",
+      "organism": "Helicobacter suis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hsuis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hsuis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "kaerogenes_1",
+      "display_name": "Klebsiella aerogenes MLST",
+      "organism": "Klebsiella aerogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_kaerogenes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_kaerogenes_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "koxytoca_1",
+      "display_name": "Klebsiella oxytoca MLST",
+      "organism": "Klebsiella oxytoca",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_koxytoca_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_koxytoca_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "kseptempunctata_1",
+      "display_name": "Kudoa septempunctata MLST",
+      "organism": "Kudoa septempunctata",
+      "scheme_type": "mlst",
+      "n_loci": 2,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_kseptempunctata_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_kseptempunctata_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "lsalivarius_1",
+      "display_name": "Lactobacillus salivarius MLST",
+      "organism": "Lactobacillus salivarius",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_lsalivarius_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_lsalivarius_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "lgarvieae_1",
+      "display_name": "Lactococcus garvieae MLST",
+      "organism": "Lactococcus garvieae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_lgarvieae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_lgarvieae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "leptospira_1",
+      "display_name": "Leptospira spp. MLST (scheme 1) (mlst)",
+      "organism": "Leptospira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "leptospira_2",
+      "display_name": "Leptospira spp. MLST (scheme 2) (mlst)",
+      "organism": "Leptospira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "leptospira_3",
+      "display_name": "Leptospira spp. MLST (scheme 3) (mlst)",
+      "organism": "Leptospira spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "leptospira_4",
+      "display_name": "Leptospira spp. cgMLST (cgmlst)",
+      "organism": "Leptospira spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1565,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "cliberibacter_1",
+      "display_name": "Candidatus Liberibacter solanacearum MLST",
+      "organism": "Candidatus Liberibacter solanacearum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_liberibacter_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_liberibacter_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mcanis_1",
+      "display_name": "Macrococcus canis MLST",
+      "organism": "Macrococcus canis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mcanis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mcanis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mcaseolyticus_1",
+      "display_name": "Macrococcus caseolyticus MLST",
+      "organism": "Macrococcus caseolyticus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mcaseolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mcaseolyticus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "msciuri_1",
+      "display_name": "Mammaliicoccus sciuri MLST",
+      "organism": "Mammaliicoccus sciuri",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_msciuri_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_msciuri_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mhaemolytica_1",
+      "display_name": "Mannheimia haemolytica MLST",
+      "organism": "Mannheimia haemolytica",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhaemolytica_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhaemolytica_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mplutonius_1",
+      "display_name": "Melissococcus plutonius MLST",
+      "organism": "Melissococcus plutonius",
+      "scheme_type": "mlst",
+      "n_loci": 4,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mplutonius_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mplutonius_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mycobacteria_1",
+      "display_name": "Mycobacteria spp. Core genome (H37Rv ref vs 19 finished species) (cgmlst)",
+      "organism": "Mycobacteria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 744,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mycobacteria_2",
+      "display_name": "Mycobacteria spp. MLST (mlst)",
+      "organism": "Mycobacteria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "mycobacteria_3",
+      "display_name": "Mycobacteria spp. MTBC cgMLST (cgmlst)",
+      "organism": "Mycobacteria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1561,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "mabscessus_1",
+      "display_name": "Mycobacteroides abscessus complex MLST (mlst)",
+      "organism": "Mycobacteroides abscessus complex",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mabscessus_2",
+      "display_name": "Mycobacteroides abscessus complex cgMLST (cgmlst)",
+      "organism": "Mycobacteroides abscessus complex",
+      "scheme_type": "cgmlst",
+      "n_loci": 2904,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "manserisalpingitidis_1",
+      "display_name": "Mycoplasma anserisalpingitidis MLST",
+      "organism": "Mycoplasma anserisalpingitidis",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_manserisalpingitidis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_manserisalpingitidis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mbovis_1",
+      "display_name": "Mycoplasma bovis MLST (mlst)",
+      "organism": "Mycoplasma bovis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "mbovis_2",
+      "display_name": "Mycoplasma bovis MLST (legacy) (mlst)",
+      "organism": "Mycoplasma bovis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mflocculare_1",
+      "display_name": "Mycoplasma flocculare MLST",
+      "organism": "Mycoplasma flocculare",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mflocculare_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mflocculare_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mgallisepticum_1",
+      "display_name": "Mycoplasma gallisepticum MLST#1 (Ghanem) (mlst)",
+      "organism": "Mycoplasma gallisepticum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mgallisepticum_2",
+      "display_name": "Mycoplasma gallisepticum MLST#2 (Bek\u0151) (mlst)",
+      "organism": "Mycoplasma gallisepticum",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "mgenitalium_1",
+      "display_name": "Mycoplasma genitalium MLST",
+      "organism": "Mycoplasma genitalium",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgenitalium_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgenitalium_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "mhominis_1",
+      "display_name": "Mycoplasma hominis MLST (mlst)",
+      "organism": "Mycoplasma hominis",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mhominis_2",
+      "display_name": "Mycoplasma hominis eMLST (mlst)",
+      "organism": "Mycoplasma hominis",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "mhyopneumoniae_1",
+      "display_name": "Mycoplasma hyopneumoniae MLST",
+      "organism": "Mycoplasma hyopneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyopneumoniae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyopneumoniae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mhyorhinis_1",
+      "display_name": "Mycoplasma hyorhinis MLST",
+      "organism": "Mycoplasma hyorhinis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyorhinis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyorhinis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mhyosynoviae_1",
+      "display_name": "Mycoplasma hyosynoviae MLST",
+      "organism": "Mycoplasma hyosynoviae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyosynoviae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyosynoviae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "miowae_1",
+      "display_name": "Mycoplasma iowae MLST",
+      "organism": "Mycoplasma iowae",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_miowae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_miowae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "mpneumoniae_1",
+      "display_name": "Mycoplasma pneumoniae MLST",
+      "organism": "Mycoplasma pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mpneumoniae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mpneumoniae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "msynoviae_1",
+      "display_name": "Mycoplasma synoviae MLST",
+      "organism": "Mycoplasma synoviae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_msynoviae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_msynoviae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "neisseria_1",
+      "display_name": "Neisseria spp. MLST (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "neisseria_2",
+      "display_name": "Neisseria spp. eMLST (20 locus partial genes) (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 20,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "neisseria_3",
+      "display_name": "Neisseria spp. eMLST (20 locus whole genes) (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 20,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/12"
+      }
+    },
+    {
+      "scheme_name": "neisseria_4",
+      "display_name": "Neisseria spp. Human-restricted Neisseria cgMLST v1.0 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1441,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/72"
+      }
+    },
+    {
+      "scheme_name": "neisseria_5",
+      "display_name": "Neisseria spp. L3 cgMLST (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1742,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/45"
+      }
+    },
+    {
+      "scheme_name": "neisseria_6",
+      "display_name": "Neisseria spp. L44 cgMLST (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1699,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/68"
+      }
+    },
+    {
+      "scheme_name": "neisseria_7",
+      "display_name": "Neisseria spp. L44 pgMLST (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 1786,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/69"
+      }
+    },
+    {
+      "scheme_name": "neisseria_8",
+      "display_name": "Neisseria spp. N. gonorrhoeae agMLST v1.0 (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 251,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/80"
+      }
+    },
+    {
+      "scheme_name": "neisseria_9",
+      "display_name": "Neisseria spp. N. gonorrhoeae cgMLST v1.0 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1649,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/62"
+      }
+    },
+    {
+      "scheme_name": "neisseria_10",
+      "display_name": "Neisseria spp. N. gonorrhoeae cgMLST v2 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1430,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/89"
+      }
+    },
+    {
+      "scheme_name": "neisseria_11",
+      "display_name": "Neisseria spp. N. gonorrhoeae pgMLST v1.0 (mlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "mlst",
+      "n_loci": 1907,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/81"
+      }
+    },
+    {
+      "scheme_name": "neisseria_12",
+      "display_name": "Neisseria spp. N. lactamica cgMLST v1 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1141,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/90"
+      }
+    },
+    {
+      "scheme_name": "neisseria_13",
+      "display_name": "Neisseria spp. N. meningitidis cgMLST v1 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1605,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/47"
+      }
+    },
+    {
+      "scheme_name": "neisseria_14",
+      "display_name": "Neisseria spp. N. meningitidis cgMLST v2 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1422,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/85"
+      }
+    },
+    {
+      "scheme_name": "neisseria_15",
+      "display_name": "Neisseria spp. N. meningitidis cgMLST v3 (cgmlst)",
+      "organism": "Neisseria spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1329,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/88"
+      }
+    },
+    {
+      "scheme_name": "otsutsugamushi_1",
+      "display_name": "Orientia tsutsugamushi MLST",
+      "organism": "Orientia tsutsugamushi",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_otsutsugamushi_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_otsutsugamushi_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "orhinotracheale_1",
+      "display_name": "Ornithobacterium rhinotracheale MLST",
+      "organism": "Ornithobacterium rhinotracheale",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_orhinotracheale_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_orhinotracheale_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "plarvae_1",
+      "display_name": "Paenibacillus larvae MLST",
+      "organism": "Paenibacillus larvae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plarvae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plarvae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pmultocida_1",
+      "display_name": "Pasteurella multocida Multiple host MLST (mlst)",
+      "organism": "Pasteurella multocida",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pmultocida_2",
+      "display_name": "Pasteurella multocida RIRDC MLST (mlst)",
+      "organism": "Pasteurella multocida",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "pmultocida_3",
+      "display_name": "Pasteurella multocida cgMLST (draft) (cgmlst)",
+      "organism": "Pasteurella multocida",
+      "scheme_type": "cgmlst",
+      "n_loci": 1233,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "ppentosaceus_1",
+      "display_name": "Pediococcus pentosaceus MLST",
+      "organism": "Pediococcus pentosaceus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ppentosaceus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ppentosaceus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pdamselae_1",
+      "display_name": "Photobacterium damselae MLST",
+      "organism": "Photobacterium damselae",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pdamselae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pdamselae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "psalmonis_1",
+      "display_name": "Piscirickettsia salmonis MLST",
+      "organism": "Piscirickettsia salmonis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_psalmonis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_psalmonis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pmlst_1",
+      "display_name": "Plasmid MLST IncA/C cgPMLST (mlst)",
+      "organism": "Plasmid MLST",
+      "scheme_type": "mlst",
+      "n_loci": 28,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "pmlst_2",
+      "display_name": "Plasmid MLST IncA/C PMLST (mlst)",
+      "organism": "Plasmid MLST",
+      "scheme_type": "mlst",
+      "n_loci": 4,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "pmlst_3",
+      "display_name": "Plasmid MLST IncHI1 MLST (mlst)",
+      "organism": "Plasmid MLST",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "pmlst_4",
+      "display_name": "Plasmid MLST IncI1 MLST (mlst)",
+      "organism": "Plasmid MLST",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pmlst_5",
+      "display_name": "Plasmid MLST IncN MLST (mlst)",
+      "organism": "Plasmid MLST",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "pgingivalis_1",
+      "display_name": "Porphyromonas gingivalis MLST",
+      "organism": "Porphyromonas gingivalis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pgingivalis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pgingivalis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "proteus_1",
+      "display_name": "Proteus spp. MLST",
+      "organism": "Proteus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_proteus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_proteus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "providencia_1",
+      "display_name": "Providencia spp. MLST (mlst)",
+      "organism": "Providencia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "providencia_2",
+      "display_name": "Providencia spp. P. stuartii MLST (mlst)",
+      "organism": "Providencia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "paeruginosa_1",
+      "display_name": "Pseudomonas aeruginosa MLST",
+      "organism": "Pseudomonas aeruginosa",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_paeruginosa_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_paeruginosa_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pfluorescens_1",
+      "display_name": "Pseudomonas fluorescens MLST",
+      "organism": "Pseudomonas fluorescens",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pfluorescens_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pfluorescens_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "pputida_1",
+      "display_name": "Pseudomonas putida MLST",
+      "organism": "Pseudomonas putida",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pputida_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pputida_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ranatipestifer_1",
+      "display_name": "Riemerella anatipestifer MLST",
+      "organism": "Riemerella anatipestifer",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ranatipestifer_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ranatipestifer_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "rhodococcus_1",
+      "display_name": "Rhodococcus spp. MLST",
+      "organism": "Rhodococcus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_rhodococcus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_rhodococcus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "salmonella_1",
+      "display_name": "Salmonella spp. cgMLST v2 (Enterobase) (cgmlst)",
+      "organism": "Salmonella spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 3002,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "salmonella_2",
+      "display_name": "Salmonella spp. MLST (mlst)",
+      "organism": "Salmonella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "salmonella_3",
+      "display_name": "Salmonella spp. SalmcgMLST v1.0 (cgmlst)",
+      "organism": "Salmonella spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 2750,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "sparasitica_1",
+      "display_name": "Saprolegnia parasitica MLST",
+      "organism": "Saprolegnia parasitica",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sparasitica_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sparasitica_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "serratia_1",
+      "display_name": "Serratia spp. MLST (mlst)",
+      "organism": "Serratia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "serratia_2",
+      "display_name": "Serratia spp. cgMLST (cgmlst)",
+      "organism": "Serratia spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 2692,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "shewanella_1",
+      "display_name": "Shewanella spp. MLST",
+      "organism": "Shewanella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shewanella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shewanella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sinorhizobium_1",
+      "display_name": "Sinorhizobium spp. MLST",
+      "organism": "Sinorhizobium spp.",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sinorhizobium_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sinorhizobium_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "smaltophilia_1",
+      "display_name": "Stenotrophomonas maltophilia MLST",
+      "organism": "Stenotrophomonas maltophilia",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_smaltophilia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_smaltophilia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "saureus_1",
+      "display_name": "Staphylococcus aureus MLST (mlst)",
+      "organism": "Staphylococcus aureus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "saureus_2",
+      "display_name": "Staphylococcus aureus cgMLST (cgmlst)",
+      "organism": "Staphylococcus aureus",
+      "scheme_type": "cgmlst",
+      "n_loci": 1716,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef/schemes/20"
+      }
+    },
+    {
+      "scheme_name": "scapitis_1",
+      "display_name": "Staphylococcus capitis MLST",
+      "organism": "Staphylococcus capitis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_scapitis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_scapitis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "schromogenes_1",
+      "display_name": "Staphylococcus chromogenes MLST",
+      "organism": "Staphylococcus chromogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_schromogenes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_schromogenes_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sepidermidis_1",
+      "display_name": "Staphylococcus epidermidis MLST",
+      "organism": "Staphylococcus epidermidis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sepidermidis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sepidermidis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "shaemolyticus_1",
+      "display_name": "Staphylococcus haemolyticus MLST",
+      "organism": "Staphylococcus haemolyticus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shaemolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shaemolyticus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "shominis_1",
+      "display_name": "Staphylococcus hominis MLST",
+      "organism": "Staphylococcus hominis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shominis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shominis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "spseudintermedius_1",
+      "display_name": "Staphylococcus pseudintermedius MLST",
+      "organism": "Staphylococcus pseudintermedius",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spseudintermedius_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spseudintermedius_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "oral_1",
+      "display_name": "Oral Streptococcus spp. S. mutans MLST (Do) (mlst)",
+      "organism": "Oral Streptococcus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "oral_2",
+      "display_name": "Oral Streptococcus spp. S. mutans MLST (Nakano) (mlst)",
+      "organism": "Oral Streptococcus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "oral_3",
+      "display_name": "Oral Streptococcus spp. S. oralis MLST (mlst)",
+      "organism": "Oral Streptococcus spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sagalactiae_1",
+      "display_name": "Streptococcus agalactiae MLST (mlst)",
+      "organism": "Streptococcus agalactiae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sagalactiae_2",
+      "display_name": "Streptococcus agalactiae h_S.agalactiae cgMLST v1.0 (cgmlst)",
+      "organism": "Streptococcus agalactiae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1405,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef/schemes/38"
+      }
+    },
+    {
+      "scheme_name": "streptococcus_1",
+      "display_name": "Streptococcus bovis/equinus complex (SBSEC) MLST",
+      "organism": "Streptococcus bovis/equinus complex (SBSEC)",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sbsec_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sbsec_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "scanis_1",
+      "display_name": "Streptococcus canis MLST",
+      "organism": "Streptococcus canis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_scanis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_scanis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sdysgalactiae_1",
+      "display_name": "Streptococcus dysgalactiae MLST",
+      "organism": "Streptococcus dysgalactiae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sdysgalactiae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sdysgalactiae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sgallolyticus_1",
+      "display_name": "Streptococcus gallolyticus MLST",
+      "organism": "Streptococcus gallolyticus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sgallolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sgallolyticus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "siniae_1",
+      "display_name": "Streptococcus iniae MLST",
+      "organism": "Streptococcus iniae",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_siniae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_siniae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "smitis_1",
+      "display_name": "Streptococcus mitis MLST",
+      "organism": "Streptococcus mitis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_smitis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_smitis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "spneumoniae_1",
+      "display_name": "Streptococcus pneumoniae MLST (mlst)",
+      "organism": "Streptococcus pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "spneumoniae_2",
+      "display_name": "Streptococcus pneumoniae cgMLST (cgmlst)",
+      "organism": "Streptococcus pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1222,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "spyogenes_1",
+      "display_name": "Streptococcus pyogenes MLST (mlst)",
+      "organism": "Streptococcus pyogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "spyogenes_2",
+      "display_name": "Streptococcus pyogenes cgMLST (cgmlst)",
+      "organism": "Streptococcus pyogenes",
+      "scheme_type": "cgmlst",
+      "n_loci": 1198,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef/schemes/11"
+      }
+    },
+    {
+      "scheme_name": "ssuis_1",
+      "display_name": "Streptococcus suis MLST",
+      "organism": "Streptococcus suis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ssuis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ssuis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "sthermophilus_1",
+      "display_name": "Streptococcus thermophilus MLST",
+      "organism": "Streptococcus thermophilus",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sthermophilus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sthermophilus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "suberis_1",
+      "display_name": "Streptococcus uberis MLST (mlst)",
+      "organism": "Streptococcus uberis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "suberis_2",
+      "display_name": "Streptococcus uberis cgMLST (cgmlst)",
+      "organism": "Streptococcus uberis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1447,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "suberis_3",
+      "display_name": "Streptococcus uberis vMLST (mlst)",
+      "organism": "Streptococcus uberis",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "szooepidemicus_1",
+      "display_name": "Streptococcus zooepidemicus MLST",
+      "organism": "Streptococcus zooepidemicus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_szooepidemicus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_szooepidemicus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "streptomyces_1",
+      "display_name": "Streptomyces spp MLST",
+      "organism": "Streptomyces spp",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_streptomyces_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_streptomyces_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "taylorella_1",
+      "display_name": "Taylorella spp. MLST",
+      "organism": "Taylorella spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_taylorella_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_taylorella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "tenacibaculum_1",
+      "display_name": "Tenacibaculum spp. MLST",
+      "organism": "Tenacibaculum spp.",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tenacibaculum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tenacibaculum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "tpallidum_1",
+      "display_name": "Treponema pallidum MLST (Grillov\u00e1) (mlst)",
+      "organism": "Treponema pallidum",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "tpallidum_2",
+      "display_name": "Treponema pallidum MLST (Pla-D\u00edaz) (mlst)",
+      "organism": "Treponema pallidum",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef/schemes/181"
+      }
+    },
+    {
+      "scheme_name": "tvaginalis_1",
+      "display_name": "Tricohomas vaginalis MLST",
+      "organism": "Tricohomas vaginalis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tvaginalis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tvaginalis_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "tpyogenes_1",
+      "display_name": "Trueperella pyogenes MLST",
+      "organism": "Trueperella pyogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpyogenes_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpyogenes_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ureaplasma_1",
+      "display_name": "Ureaplasma spp. MLST (mlst)",
+      "organism": "Ureaplasma spp.",
+      "scheme_type": "mlst",
+      "n_loci": 4,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ureaplasma_2",
+      "display_name": "Ureaplasma spp. eMLST (mlst)",
+      "organism": "Ureaplasma spp.",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "vcholerae_1",
+      "display_name": "Vibrio cholerae MLST (mlst)",
+      "organism": "Vibrio cholerae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "vcholerae_2",
+      "display_name": "Vibrio cholerae MLST (O1 and O139) (mlst)",
+      "organism": "Vibrio cholerae",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "vcholerae_3",
+      "display_name": "Vibrio cholerae cgMLST (cgmlst)",
+      "organism": "Vibrio cholerae",
+      "scheme_type": "cgmlst",
+      "n_loci": 2443,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "vibrio_1",
+      "display_name": "Vibrio spp. MLST",
+      "organism": "Vibrio spp.",
+      "scheme_type": "mlst",
+      "n_loci": 4,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vibrio_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vibrio_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "vparahaemolyticus_1",
+      "display_name": "Vibrio parahaemolyticus MLST (mlst)",
+      "organism": "Vibrio parahaemolyticus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "vparahaemolyticus_2",
+      "display_name": "Vibrio parahaemolyticus AA-MLST (mlst)",
+      "organism": "Vibrio parahaemolyticus",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "vparahaemolyticus_3",
+      "display_name": "Vibrio parahaemolyticus cgMLST (cgmlst)",
+      "organism": "Vibrio parahaemolyticus",
+      "scheme_type": "cgmlst",
+      "n_loci": 2254,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "vvulnificus_1",
+      "display_name": "Vibrio vulnificus MLST",
+      "organism": "Vibrio vulnificus",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vvulnificus_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vvulnificus_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "wolbachia_1",
+      "display_name": "Wolbachia spp. MLST",
+      "organism": "Wolbachia spp.",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_wolbachia_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_wolbachia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "xcitri_1",
+      "display_name": "Xanthomonas citri cgMLST",
+      "organism": "Xanthomonas citri",
+      "scheme_type": "cgmlst",
+      "n_loci": 1618,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_xcitri_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_xcitri_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "xfastidiosa_1",
+      "display_name": "Xylella fastidiosa MLST",
+      "organism": "Xylella fastidiosa",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_xfastidiosa_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_xfastidiosa_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "ypseudotuberculosis_1",
+      "display_name": "Yersinia pseudotuberculosis MLST",
+      "organism": "Yersinia pseudotuberculosis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ypseudotuberculosis_achtman_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ypseudotuberculosis_achtman_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "yruckeri_1",
+      "display_name": "Yersinia ruckeri MLST",
+      "organism": "Yersinia ruckeri",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_yruckeri_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_yruckeri_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "vtapetis_1",
+      "display_name": "Vibrio tapetis MLST",
+      "organism": "Vibrio tapetis",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pubmlst",
+      "extra": {
+        "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vtapetis_seqdef",
+        "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vtapetis_seqdef/schemes/1"
+      }
+    }
+  ]
+}

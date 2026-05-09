@@ -1,0 +1,10 @@
+{
+  "_comment": "List of schemes that should be blocked/hidden from the user",
+  "pubmlst": [
+    "salmonella_1",
+    "senterica_5"
+  ],
+  "pasteur": [],
+  "enterobase": [],
+  "cgmlst": []
+}

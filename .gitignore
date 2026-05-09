@@ -1,0 +1,55 @@
+# pixi environments
+.pixi/
+*.egg-info/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.opencode/
+.sisyphus/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.ci-venv/
+.coverage
+htmlcov/
+.tox/
+tracecov/
+
+# Build artifacts
+/dist/
+build/
+*.whl
+*.tar.gz
+gmlst/web/frontend/node_modules/
+gmlst/web/frontend/.vite/
+
+# Logs
+*.log
+
+# Benchmark and temp files
+benchmark_results/
+
+# Ruff cache
+.ruff_cache/
+
+# Documentation build
+docs/_build/
+
+# Dev
+dev/
+tests/

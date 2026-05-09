@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gmlst"
+version = "0.1.0"
+description = "Fast MLST typing via multiple alignment backends (blastn, minimap2, nucmer, kmer-hash)"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12,<3.13"
+authors = [
+    {name = "gmlst contributors"},
+]
+keywords = [
+    "mlst",
+    "cgmlst",
+    "typing",
+    "bacteria",
+    "genomics",
+    "bioinformatics",
+    "blast",
+    "minimap2",
+    "mummer",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click>=8.1",
+    "flask>=3.0",
+    "pyrodigal>=3.4",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+    "rich>=13.0",
+    "xxhash>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+gmlst = "gmlst.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/indexofire/gmlst"
+Documentation = "https://github.com/indexofire/gmlst#readme"
+Repository = "https://github.com/indexofire/gmlst"
+Issues = "https://github.com/indexofire/gmlst/issues"
+Changelog = "https://github.com/indexofire/gmlst/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gmlst"]
+package-data = { "gmlst" = ["data/catalogs/*.json", "web/templates/**/*.html", "web/static/**/*"] }
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/gmlst",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+]
+packages = ["gmlst"]
+
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "-v"

@@ -1,0 +1,46 @@
+[workspace]
+name = "gmlst"
+version = "0.1.0"
+description = "Fast MLST typing via multiple alignment backends"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+
+[tasks]
+start = "python -m gmlst"
+lint = "ruff check ."
+lint-fix = "ruff check --fix ."
+format = "ruff format ."
+format-check = "ruff format --check ."
+check = "ruff check . && ruff format --check ."
+fix = "ruff check --fix . && ruff format ."
+test = "pytest"
+test-v = "pytest -v"
+install-dev = "pip install -e ."
+visual-ui-build = "npm --prefix gmlst/web/frontend run build"
+internal-docs-check = "python scripts/validation/validate_internal_docs.py"
+typecheck = "pyright gmlst/ test/ || true"
+
+[dependencies]
+python = "3.12.*"
+blast = ">=2.14"
+minimap2 = ">=2.26"
+mummer4 = ">=4.0"
+mmseqs2 = ">=15"
+prodigal = ">=2.6"
+# Python tooling
+ruff = ">=0.4"
+pytest = ">=8.0"
+pyright = ">=1.1"
+kma = ">=1.6.8,<2"
+kmc = ">=3.2.4,<4"
+samtools = ">=1.23.1,<2"
+
+[pypi-dependencies]
+click = ">=8.1"
+flask = ">=3.0"
+requests = ">=2.31"
+rich = ">=13.0"
+xxhash = ">=3.0"
+pyyaml = ">=6.0"
+pyrodigal = ">=3.4"
+gmlst = { path = ".", editable = true }

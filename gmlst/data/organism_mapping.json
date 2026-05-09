@@ -1,0 +1,18 @@
+{
+  "_comment": "Organism name mappings for all database providers.",
+  "_format": "provider -> organism_key -> full_species_name",
+  
+  "pubmlst": {},
+  
+  "pasteur": {
+    "bordetella": "Bordetella pertussis",
+    "corynebacterium": "Corynebacterium diphtheriae",
+    "diphtheria": "Corynebacterium diphtheriae",
+    "klebsiella": "Klebsiella pneumoniae",
+    "leptospira": "Leptospira interrogans",
+    "listeria": "Listeria monocytogenes",
+    "yersinia": "Yersinia enterocolitica"
+  },
+  
+  "enterobase": {}
+}

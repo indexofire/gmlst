@@ -1,0 +1,776 @@
+{
+  "provider": "pasteur",
+  "scheme_type": "mlst",
+  "updated_at": "2026-03-16T03:40:40Z",
+  "count": 64,
+  "schemes": [
+    {
+      "scheme_name": "bpertussis_1",
+      "display_name": "Bordetella pertussis MLST",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_2",
+      "display_name": "Bordetella pertussis Autotransporters",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/11"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_3",
+      "display_name": "Bordetella pertussis Bp_vaccine antigens",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 9,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_4",
+      "display_name": "Bordetella pertussis cgMLST_genus",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1415,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_5",
+      "display_name": "Bordetella pertussis cgMLST_pertussis",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "cgmlst",
+      "n_loci": 2038,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_6",
+      "display_name": "Bordetella pertussis macrolide resistance",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_7",
+      "display_name": "Bordetella pertussis Other toxins",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 2,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/9"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_8",
+      "display_name": "Bordetella pertussis Phase",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_9",
+      "display_name": "Bordetella pertussis PRN-test-Bp",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "bpertussis_10",
+      "display_name": "Bordetella pertussis T3SS",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_bordetella_seqdef/schemes/10"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_1",
+      "display_name": "Corynebacterium diphtheriae MLST",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_2",
+      "display_name": "Corynebacterium diphtheriae cgMLST",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1305,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_3",
+      "display_name": "Corynebacterium diphtheriae cgMLST_ulcerans",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1628,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_4",
+      "display_name": "Corynebacterium diphtheriae PBP",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "mlst",
+      "n_loci": 9,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_5",
+      "display_name": "Corynebacterium diphtheriae spuA_island",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "mlst",
+      "n_loci": 2,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "cdiphtheriae_6",
+      "display_name": "Corynebacterium diphtheriae tox",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "mlst",
+      "n_loci": 1,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_diphtheria_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_1",
+      "display_name": "Klebsiella pneumoniae AbST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/20"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_2",
+      "display_name": "Klebsiella pneumoniae MLST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_3",
+      "display_name": "Klebsiella pneumoniae CbST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 15,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/17"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_4",
+      "display_name": "Klebsiella pneumoniae Efflux systems and regulators",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 17,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_5",
+      "display_name": "Klebsiella pneumoniae Heavy metal resistance genes",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 40,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_6",
+      "display_name": "Klebsiella pneumoniae hvK2 multiplex PCR",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_7",
+      "display_name": "Klebsiella pneumoniae Kpn_cgMLST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 2752,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/19"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_8",
+      "display_name": "Klebsiella pneumoniae mrk",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/29"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_9",
+      "display_name": "Klebsiella pneumoniae NativeBetaLactamases",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_10",
+      "display_name": "Klebsiella pneumoniae OtherCapsularClusterGenes",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 1,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/13"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_11",
+      "display_name": "Klebsiella pneumoniae OtherNativeResistanceGenes",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 2,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/22"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_12",
+      "display_name": "Klebsiella pneumoniae Quinolone resistance genes",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 10,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/12"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_13",
+      "display_name": "Klebsiella pneumoniae RmST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 3,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/23"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_14",
+      "display_name": "Klebsiella pneumoniae scgMLST629_S",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 629,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/18"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_15",
+      "display_name": "Klebsiella pneumoniae SL147_cgMLST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 852,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/26"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_16",
+      "display_name": "Klebsiella pneumoniae SL307_cgMLST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 947,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/27"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_17",
+      "display_name": "Klebsiella pneumoniae SmST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 4,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/21"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_18",
+      "display_name": "Klebsiella pneumoniae Species-specific markers",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/9"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_19",
+      "display_name": "Klebsiella pneumoniae Urease-Nickel cluster",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/14"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_20",
+      "display_name": "Klebsiella pneumoniae Virulence genes",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 80,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_21",
+      "display_name": "Klebsiella pneumoniae wzi",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 1,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "kpneumoniae_22",
+      "display_name": "Klebsiella pneumoniae YbST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "mlst",
+      "n_loci": 11,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_klebsiella_seqdef/schemes/16"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_1",
+      "display_name": "Leptospira interrogans 16S_typing",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 68,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_2",
+      "display_name": "Leptospira interrogans capture_cgMLST",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "cgmlst",
+      "n_loci": 545,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_3",
+      "display_name": "Leptospira interrogans cgMLST",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "cgmlst",
+      "n_loci": 545,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_4",
+      "display_name": "Leptospira interrogans Ictero",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 1,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_5",
+      "display_name": "Leptospira interrogans lfb1",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 1,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_6",
+      "display_name": "Leptospira interrogans MLST_1",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_7",
+      "display_name": "Leptospira interrogans MLST_2",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "linterrogans_8",
+      "display_name": "Leptospira interrogans MLST_3",
+      "organism": "Leptospira interrogans",
+      "scheme_type": "mlst",
+      "n_loci": 6,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_leptospira_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_1",
+      "display_name": "Listeria monocytogenes MLST",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_2",
+      "display_name": "Listeria monocytogenes cgMLST1748",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "cgmlst",
+      "n_loci": 1748,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/3"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_3",
+      "display_name": "Listeria monocytogenes PCR-serogroup",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 5,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_4",
+      "display_name": "Listeria monocytogenes Virulence",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 92,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/5"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_5",
+      "display_name": "Listeria monocytogenes Antibiotic Resistance",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 26,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/6"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_6",
+      "display_name": "Listeria monocytogenes Metal  & Disinfectants Resistance",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/7"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_7",
+      "display_name": "Listeria monocytogenes Stress Islands",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 7,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/8"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_8",
+      "display_name": "Listeria monocytogenes Listeria Genomic Islands",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 117,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/10"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_9",
+      "display_name": "Listeria monocytogenes sigB operon",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/11"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_10",
+      "display_name": "Listeria monocytogenes Rhamnose operon",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 8,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/12"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_11",
+      "display_name": "Listeria monocytogenes Clonogrouping",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 0,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/13"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_12",
+      "display_name": "Listeria monocytogenes PBPs",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 44,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/14"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_13",
+      "display_name": "Listeria monocytogenes cgMLST1748_v2",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "cgmlst",
+      "n_loci": 1748,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/15"
+      }
+    },
+    {
+      "scheme_name": "lmonocytogenes_14",
+      "display_name": "Listeria monocytogenes Motility",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "mlst",
+      "n_loci": 31,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_listeria_seqdef/schemes/9"
+      }
+    },
+    {
+      "scheme_name": "yenterocolitica_1",
+      "display_name": "Yersinia enterocolitica Virulence factors",
+      "organism": "Yersinia enterocolitica",
+      "scheme_type": "mlst",
+      "n_loci": 206,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef/schemes/4"
+      }
+    },
+    {
+      "scheme_name": "yenterocolitica_2",
+      "display_name": "Yersinia enterocolitica Y.enterocolitica cgMLST",
+      "organism": "Yersinia enterocolitica",
+      "scheme_type": "cgmlst",
+      "n_loci": 1727,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef/schemes/2"
+      }
+    },
+    {
+      "scheme_name": "yenterocolitica_3",
+      "display_name": "Yersinia enterocolitica Yersinia cgMLST",
+      "organism": "Yersinia enterocolitica",
+      "scheme_type": "cgmlst",
+      "n_loci": 500,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef/schemes/1"
+      }
+    },
+    {
+      "scheme_name": "yenterocolitica_4",
+      "display_name": "Yersinia enterocolitica Y.pseudotuberculosis cgMLST",
+      "organism": "Yersinia enterocolitica",
+      "scheme_type": "cgmlst",
+      "n_loci": 1921,
+      "provider": "pasteur",
+      "extra": {
+        "seqdef_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef",
+        "scheme_url": "https://bigsdb.pasteur.fr/api/db/pubmlst_yersinia_seqdef/schemes/3"
+      }
+    }
+  ]
+}

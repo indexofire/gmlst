@@ -1,0 +1,368 @@
+{
+  "provider": "cgmlst",
+  "scheme_type": "cgmlst",
+  "updated_at": "2026-03-17T02:53:53Z",
+  "count": 40,
+  "schemes": [
+    {
+      "scheme_name": "abaumannii_1",
+      "display_name": "Acinetobacter baumannii cgMLST",
+      "organism": "Acinetobacter baumannii",
+      "scheme_type": "cgmlst",
+      "n_loci": 2390,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "banthracis_1",
+      "display_name": "Bacillus anthracis cgMLST",
+      "organism": "Bacillus anthracis",
+      "scheme_type": "cgmlst",
+      "n_loci": 3803,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "bpertussis_1",
+      "display_name": "Bordetella pertussis cgMLST",
+      "organism": "Bordetella pertussis",
+      "scheme_type": "cgmlst",
+      "n_loci": 2983,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "bmelitensis_1",
+      "display_name": "Brucella melitensis cgMLST",
+      "organism": "Brucella melitensis",
+      "scheme_type": "cgmlst",
+      "n_loci": 2704,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "brucella_1",
+      "display_name": "Brucella spp. cgMLST",
+      "organism": "Brucella spp.",
+      "scheme_type": "cgmlst",
+      "n_loci": 1764,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "bmallei_1",
+      "display_name": "Burkholderia mallei (FLI) cgMLST",
+      "organism": "Burkholderia mallei",
+      "scheme_type": "cgmlst",
+      "n_loci": 2838,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "bmallei_2",
+      "display_name": "Burkholderia mallei (RKI) cgMLST",
+      "organism": "Burkholderia mallei",
+      "scheme_type": "cgmlst",
+      "n_loci": 3328,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "bpseudomallei_1",
+      "display_name": "Burkholderia pseudomallei cgMLST",
+      "organism": "Burkholderia pseudomallei",
+      "scheme_type": "cgmlst",
+      "n_loci": 4221,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "campylobacter_1",
+      "display_name": "Campylobacter jejuni/coli cgMLST",
+      "organism": "Campylobacter jejuni/coli",
+      "scheme_type": "cgmlst",
+      "n_loci": 637,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cfreundii_1",
+      "display_name": "Citrobacter freundii cgMLST",
+      "organism": "Citrobacter freundii",
+      "scheme_type": "cgmlst",
+      "n_loci": 3250,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "citrobacter_1",
+      "display_name": "Citrobacter freundii/portucalensis/braakii/europaeus cgMLST",
+      "organism": "Citrobacter freundii/portucalensis/braakii/europaeus",
+      "scheme_type": "cgmlst",
+      "n_loci": 2307,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cdifficile_1",
+      "display_name": "Clostridioides difficile cgMLST",
+      "organism": "Clostridioides difficile",
+      "scheme_type": "cgmlst",
+      "n_loci": 2147,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cperfringens_1",
+      "display_name": "Clostridium perfringens cgMLST",
+      "organism": "Clostridium perfringens",
+      "scheme_type": "cgmlst",
+      "n_loci": 1431,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cdiphtheriae_1",
+      "display_name": "Corynebacterium diphtheriae cgMLST",
+      "organism": "Corynebacterium diphtheriae",
+      "scheme_type": "cgmlst",
+      "n_loci": 1553,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cpseudotuberculosis_1",
+      "display_name": "Corynebacterium pseudotuberculosis cgMLST",
+      "organism": "Corynebacterium pseudotuberculosis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1577,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "cronobacter_1",
+      "display_name": "Cronobacter sakazakii/malonaticus cgMLST",
+      "organism": "Cronobacter sakazakii/malonaticus",
+      "scheme_type": "cgmlst",
+      "n_loci": 2831,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "ehormaechei_1",
+      "display_name": "Enterobacter hormaechei cgMLST",
+      "organism": "Enterobacter hormaechei",
+      "scheme_type": "cgmlst",
+      "n_loci": 2178,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "efaecalis_1",
+      "display_name": "Enterococcus faecalis cgMLST",
+      "organism": "Enterococcus faecalis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1972,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "efaecium_1",
+      "display_name": "Enterococcus faecium cgMLST",
+      "organism": "Enterococcus faecium",
+      "scheme_type": "cgmlst",
+      "n_loci": 1423,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "ecoli_1",
+      "display_name": "Escherichia coli cgMLST",
+      "organism": "Escherichia coli",
+      "scheme_type": "cgmlst",
+      "n_loci": 2513,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "ftularensis_1",
+      "display_name": "Francisella tularensis cgMLST",
+      "organism": "Francisella tularensis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1147,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "klebsiella_1",
+      "display_name": "Klebsiella oxytoca/grimontii/michiganensis/pasteurii cgMLST",
+      "organism": "Klebsiella oxytoca/grimontii/michiganensis/pasteurii",
+      "scheme_type": "cgmlst",
+      "n_loci": 2536,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "kpneumoniae_1",
+      "display_name": "Klebsiella pneumoniae cgMLST",
+      "organism": "Klebsiella pneumoniae",
+      "scheme_type": "cgmlst",
+      "n_loci": 2358,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "lpneumophila_1",
+      "display_name": "Legionella pneumophila cgMLST",
+      "organism": "Legionella pneumophila",
+      "scheme_type": "cgmlst",
+      "n_loci": 1521,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "lmonocytogenes_1",
+      "display_name": "Listeria monocytogenes cgMLST",
+      "organism": "Listeria monocytogenes",
+      "scheme_type": "cgmlst",
+      "n_loci": 1701,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "mmorganii_1",
+      "display_name": "Morganella morganii cgMLST",
+      "organism": "Morganella morganii",
+      "scheme_type": "cgmlst",
+      "n_loci": 2462,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "mtuberculosis_1",
+      "display_name": "Mycobacterium tuberculosis cgMLST",
+      "organism": "Mycobacterium tuberculosis",
+      "scheme_type": "cgmlst",
+      "n_loci": 2891,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "mabscessus_1",
+      "display_name": "Mycobacteroides abscessus cgMLST",
+      "organism": "Mycobacteroides abscessus",
+      "scheme_type": "cgmlst",
+      "n_loci": 2904,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "mgallisepticum_1",
+      "display_name": "Mycoplasma gallisepticum cgMLST",
+      "organism": "Mycoplasma gallisepticum",
+      "scheme_type": "cgmlst",
+      "n_loci": 425,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "plarvae_1",
+      "display_name": "Paenibacillus larvae cgMLST",
+      "organism": "Paenibacillus larvae",
+      "scheme_type": "cgmlst",
+      "n_loci": 2419,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "pmirabilis_1",
+      "display_name": "Proteus mirabilis cgMLST",
+      "organism": "Proteus mirabilis",
+      "scheme_type": "cgmlst",
+      "n_loci": 2574,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "pstuartii_1",
+      "display_name": "Providencia stuartii cgMLST",
+      "organism": "Providencia stuartii",
+      "scheme_type": "cgmlst",
+      "n_loci": 3079,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "paeruginosa_1",
+      "display_name": "Pseudomonas aeruginosa cgMLST",
+      "organism": "Pseudomonas aeruginosa",
+      "scheme_type": "cgmlst",
+      "n_loci": 3867,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "senterica_1",
+      "display_name": "Salmonella enterica cgMLST",
+      "organism": "Salmonella enterica",
+      "scheme_type": "cgmlst",
+      "n_loci": 3002,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "smarcescens_1",
+      "display_name": "Serratia marcescens cgMLST",
+      "organism": "Serratia marcescens",
+      "scheme_type": "cgmlst",
+      "n_loci": 2692,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "sargenteus_1",
+      "display_name": "Staphylococcus argenteus cgMLST",
+      "organism": "Staphylococcus argenteus",
+      "scheme_type": "cgmlst",
+      "n_loci": 2168,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "saureus_1",
+      "display_name": "Staphylococcus aureus cgMLST",
+      "organism": "Staphylococcus aureus",
+      "scheme_type": "cgmlst",
+      "n_loci": 1861,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "scapitis_1",
+      "display_name": "Staphylococcus capitis cgMLST",
+      "organism": "Staphylococcus capitis",
+      "scheme_type": "cgmlst",
+      "n_loci": 1492,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "spyogenes_1",
+      "display_name": "Streptococcus pyogenes cgMLST",
+      "organism": "Streptococcus pyogenes",
+      "scheme_type": "cgmlst",
+      "n_loci": 1095,
+      "provider": "cgmlst",
+      "extra": {}
+    },
+    {
+      "scheme_name": "yenterocolitica_1",
+      "display_name": "Yersinia enterocolitica cgMLST",
+      "organism": "Yersinia enterocolitica",
+      "scheme_type": "cgmlst",
+      "n_loci": 2582,
+      "provider": "cgmlst",
+      "extra": {}
+    }
+  ]
+}
