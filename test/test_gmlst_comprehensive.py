@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
+import sys
 
 
 def run_command(cmd, timeout=30):
@@ -8,15 +9,19 @@ def run_command(cmd, timeout=30):
     return result
 
 
+def gmlst_cmd(*args: str) -> list[str]:
+    return [sys.executable, "-m", "gmlst", *args]
+
+
 def test_basic_commands():
-    result = run_command(["pixi", "run", "gmlst", "--help"])
+    result = run_command(gmlst_cmd("--help"))
     assert result.returncode == 0, f"Help failed: {result.stderr}"
     assert "gmlst" in result.stdout, "Help output should mention gmlst"
 
-    result = run_command(["pixi", "run", "gmlst", "--version"])
+    result = run_command(gmlst_cmd("--version"))
     assert result.returncode == 0, f"Version failed: {result.stderr}"
 
-    result = run_command(["pixi", "run", "gmlst", "invalidcmd"])
+    result = run_command(gmlst_cmd("invalidcmd"))
     assert result.returncode != 0, "Invalid command should fail"
     assert (
         "Error" in result.stderr
@@ -30,7 +35,7 @@ def test_scheme_listing():
 
     for provider in providers:
         result = run_command(
-            ["pixi", "run", "gmlst", "scheme", "list", "-p", provider],
+            gmlst_cmd("scheme", "list", "-p", provider),
             timeout=60,
         )
         assert result.returncode == 0, (
@@ -42,17 +47,14 @@ def test_scheme_listing():
 
         if provider in ["enterobase", "cgmlst"]:
             result = run_command(
-                [
-                    "pixi",
-                    "run",
-                    "gmlst",
+                gmlst_cmd(
                     "scheme",
                     "list",
                     "-p",
                     provider,
                     "--type",
                     "cgmlst",
-                ],
+                ),
                 timeout=60,
             )
             assert result.returncode == 0, (
@@ -60,7 +62,7 @@ def test_scheme_listing():
             )
 
     result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "--provider", "all"],
+        gmlst_cmd("scheme", "list", "--provider", "all"),
         timeout=120,
     )
     assert result.returncode == 0, f"List all providers failed: {result.stderr}"
@@ -69,7 +71,7 @@ def test_scheme_listing():
 
 def test_scheme_uniqueness():
     result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "--provider", "all"],
+        gmlst_cmd("scheme", "list", "--provider", "all"),
         timeout=120,
     )
     assert result.returncode == 0, f"Scheme uniqueness check failed: {result.stderr}"
@@ -97,7 +99,7 @@ def test_scheme_uniqueness():
 
 def test_cgmlst_schemes():
     result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "-p", "cgmlst", "--type", "cgmlst"],
+        gmlst_cmd("scheme", "list", "-p", "cgmlst", "--type", "cgmlst"),
         timeout=60,
     )
     assert result.returncode == 0, f"cgmlst scheme listing failed: {result.stderr}"
@@ -112,7 +114,7 @@ def test_cgmlst_schemes():
 
 def test_naming_conventions():
     result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "--provider", "all"],
+        gmlst_cmd("scheme", "list", "--provider", "all"),
         timeout=120,
     )
     assert result.returncode == 0, f"Naming convention check failed: {result.stderr}"
@@ -130,16 +132,12 @@ def test_naming_conventions():
 
 
 def test_error_handling():
-    result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "-p", "cgmlst", "--type", "mlst"]
-    )
+    result = run_command(gmlst_cmd("scheme", "list", "-p", "cgmlst", "--type", "mlst"))
     assert "No schemes found" in result.stdout or "No local catalog" in result.stdout, (
-        "Invalid type filter should show a no-schemes message"
+        "Invalid type filter should show a no-schemes-message"
     )
 
-    result = run_command(
-        ["pixi", "run", "gmlst", "scheme", "list", "-p", "invalid_provider"]
-    )
+    result = run_command(gmlst_cmd("scheme", "list", "-p", "invalid_provider"))
     assert (
         result.returncode != 0
         or "Error" in result.stderr
