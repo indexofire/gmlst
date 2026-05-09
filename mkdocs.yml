@@ -44,6 +44,10 @@ nav:
     - Configuration: configuration.md
   - User Guide:
     - Command Reference: commands.md
+    - Typing: commands/typing.md
+    - Scheme: commands/scheme.md
+    - Utils: commands/utils.md
+    - Visual: commands/visual.md
     - Alignment Backends: backends.md
     - Data Providers: providers.md
     - cgMLST Guide: cgmlst_guide.md
@@ -56,6 +60,10 @@ nav:
   - 中文文档:
     - 安装: zh/installation.md
     - 快速入门: zh/quickstart.md
+    - Typing 命令: zh/commands/typing.md
+    - Scheme 命令: zh/commands/scheme.md
+    - Utils 命令: zh/commands/utils.md
+    - Visual 命令: zh/commands/visual.md
     - 后端: zh/backends.md
     - 配置: zh/configuration.md
     - 数据源: zh/providers.md
