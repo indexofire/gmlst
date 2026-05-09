@@ -405,4 +405,4 @@ export HTTP_PROXY=http://proxy.example.org:8080
 
 - 阅读[快速开始](quickstart.md)，完成第一次 MLST 分型
 - 查看完整的[命令参考](../commands.md)
-- 了解项目概览，请见 [../../README.md](../../README.md)
+- 了解项目概览，请见[仓库首页](https://github.com/indexofire/gmlst#readme)

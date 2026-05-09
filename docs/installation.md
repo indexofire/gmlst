@@ -405,4 +405,4 @@ If a provider requires authentication for a specific dataset, use the documented
 
 - Follow the [Quick Start](quickstart.md) guide to run your first MLST call
 - Browse the full [Command Reference](commands.md)
-- See the repository overview in [../README.md](../README.md)
+- See the [repository overview](https://github.com/indexofire/gmlst#readme)

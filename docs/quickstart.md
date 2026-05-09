@@ -306,4 +306,4 @@ This keeps the routine batch fast while still letting you inspect ambiguous loci
 
 - Read the full [Command Reference](commands.md)
 - Review [Installation](installation.md) if you need backend setup help
-- Explore the repository overview in [../README.md](../README.md)
+- Explore the [repository overview](https://github.com/indexofire/gmlst#readme)

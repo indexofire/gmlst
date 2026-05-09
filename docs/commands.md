@@ -482,4 +482,4 @@ Behavior:
 - Accepts both gmlst TSV and GrapeTree-style profiles (`#Strain` first column).
 
 For deeper discrepancy-analysis and experimental helper scripts, see internal
-docs under [`docs/internal/`](internal/README.md).
+docs under [`docs/internal/`](https://github.com/indexofire/gmlst/tree/main/docs/internal).
