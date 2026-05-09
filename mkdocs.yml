@@ -1,0 +1,83 @@
+site_name: gmlst
+site_description: Fast bacterial genome typing with MLST, cgMLST, and scheme-free discovery
+site_url: https://indexofire.github.io/gmlst/
+repo_name: indexofire/gmlst
+repo_url: https://github.com/indexofire/gmlst
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+extra:
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: quickstart.md
+    - Configuration: configuration.md
+  - User Guide:
+    - Command Reference: commands.md
+    - Alignment Backends: backends.md
+    - Data Providers: providers.md
+    - cgMLST Guide: cgmlst_guide.md
+    - Novel Workflow: novel_workflow.md
+    - Visualization: visual_guide.md
+  - FAQ: faq.md
+  - Development:
+    - Architecture: architecture.md
+    - Contributing: contributing.md
+  - 中文文档:
+    - 安装: zh/installation.md
+    - 快速入门: zh/quickstart.md
+    - 后端: zh/backends.md
+    - 配置: zh/configuration.md
+    - 数据源: zh/providers.md
+    - cgMLST 指南: zh/cgmlst_guide.md
+    - Novel 工作流: zh/novel_workflow.md
+    - 可视化: zh/visual_guide.md
+    - 架构: zh/architecture.md
+    - 贡献: zh/contributing.md
+    - FAQ: zh/faq.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - exclude:
+      glob:
+        - internal/**

@@ -49,6 +49,7 @@ benchmark_results/
 
 # Documentation build
 docs/_build/
+site/
 
 # Dev
 dev/

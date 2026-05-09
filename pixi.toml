@@ -19,6 +19,8 @@ install-dev = "pip install -e ."
 visual-ui-build = "npm --prefix gmlst/web/frontend run build"
 internal-docs-check = "python scripts/validation/validate_internal_docs.py"
 typecheck = "pyright gmlst/ test/ || true"
+docs-build = "mkdocs build"
+docs-serve = "mkdocs serve"
 
 [dependencies]
 python = "3.12.*"
@@ -44,3 +46,7 @@ xxhash = ">=3.0"
 pyyaml = ">=6.0"
 pyrodigal = ">=3.4"
 gmlst = { path = ".", editable = true }
+mkdocs = ">=1.6"
+mkdocs-material = ">=9.5"
+mkdocs-exclude = ">=1.0"
+mkdocs-redirects = ">=1.2"
