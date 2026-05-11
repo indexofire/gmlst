@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "gmlst"
 version = "0.1.0"
-description = "Fast MLST typing via multiple alignment backends (blastn, minimap2, nucmer, kmer-hash)"
+description = "Fast bacterial genome typing with MLST, cgMLST, and scheme-free discovery"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12,<3.13"
@@ -53,7 +53,7 @@ gmlst = "gmlst.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/indexofire/gmlst"
-Documentation = "https://github.com/indexofire/gmlst#readme"
+Documentation = "https://indexofire.github.io/gmlst/"
 Repository = "https://github.com/indexofire/gmlst"
 Issues = "https://github.com/indexofire/gmlst/issues"
 Changelog = "https://github.com/indexofire/gmlst/blob/main/CHANGELOG.md"

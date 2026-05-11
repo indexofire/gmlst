@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial release of gmlst
-- Multiple alignment backends: BLASTN, minimap2, nucmer, kmerhash
+- Multiple alignment backends: BLASTN, minimap2, nucmer
 - Support for FASTA (assembled genomes) and FASTQ (raw reads) inputs
 - Multiple database providers: PubMLST, Pasteur, Enterobase
 - Batch processing capability
@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **blastn**: NCBI BLASTN backend for assembled genomes
 - **minimap2**: Fast aligner supporting both FASTA and FASTQ
 - **nucmer**: MUMmer4 backend for sensitive distant matches
-- **kmerhash**: Pure Python backend with no external dependencies
+- **kmerhash**: Pure Python backend with no external dependencies (removed in later release)
 
 [0.1.0]: https://github.com/yourusername/gmlst/releases/tag/v0.1.0
 

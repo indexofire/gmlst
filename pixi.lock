@@ -952,7 +952,7 @@ packages:
 - pypi: ./
   name: gmlst
   version: 0.1.0
-  sha256: 1448b4cec91380c6908ffb7e3eec35f6aa6a4575e96c95edf65fca2344859d1f
+  sha256: 10b10065461c85464bb47ca53b6d788fff21b7bfcce43fa0c9b33f04c9d3fe3e
   requires_dist:
   - click>=8.1
   - flask>=3.0

@@ -11,7 +11,7 @@ English | [简体中文](README_ZH.md)
 ## Features
 
 - 🧬 **Broad typing support**: run `gmlst typing mlst`, `gmlst typing cgmlst`, and `gmlst typing tgmlst` from the same CLI.
-- ⚡ **Multiple backends**: use BLAST+, KMA, minimap2, MUMmer4, plus a pure-Python `kmerhash` engine for exact-hash style pre-resolution.
+- ⚡ **Multiple backends**: use BLAST+, KMA, minimap2, MUMmer4, with built-in exact-hash pre-resolution for cgMLST workflows.
 - 🧫 **FASTA and FASTQ input**: type assembled genomes and paired-end raw reads with backend-aware handling.
 - 🗂️ **Multiple providers**: work with PubMLST, Pasteur BIGSdb, Enterobase, cgmlst.org, and local custom schemes.
 - 🧠 **Smart cgMLST modes**: choose `standard`, `chew-fast`, `chew-ultrafast`, `chew-bsr`, or `chew-balanced` depending on speed and evidence needs.
@@ -145,7 +145,6 @@ Use `--format pretty` for human-readable terminal output and `--format json` for
 | `kma` | Yes | Yes | Yes | FASTQ typing and cgMLST FASTQ routes | Good fit for mapping-based allele calling on reads |
 | `minimap2` | Yes | Yes | Yes | Fast assembly typing and flexible read workflows | Used heavily in cgMLST optimization paths |
 | `nucmer` | Yes | Yes | No | Sensitive assembly comparison | Useful for distant matches and alternate evidence |
-| `kmerhash` | No, internal engine | Yes | Limited internal use | Exact-hash pre-resolution | Pure Python helper used in prefilter and hash-first matching, not a primary `-b` backend |
 
 ### Backend notes
 

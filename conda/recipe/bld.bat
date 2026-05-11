@@ -1,6 +1,5 @@
 @echo off
-:: Build script for conda package on Windows
-:: This script is called by conda-build
+setlocal enabledelayedexpansion
 
-%PYTHON% -m pip install . -vv
+%PYTHON% -m pip install . -vv --no-deps --no-build-isolation
 if errorlevel 1 exit 1

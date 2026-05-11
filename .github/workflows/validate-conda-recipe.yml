@@ -1,0 +1,58 @@
+name: Validate conda recipe
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "recipes/**"
+      - "conda/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "recipes/**"
+      - "conda/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: "3.12"
+          miniforge-variant: Miniforge3
+
+      - name: Install bioconda-utils
+        run: |
+          conda install -c conda-forge bioconda-utils -y
+
+      - name: Lint bioconda recipe
+        run: |
+          bioconda-utils lint recipes/ --recipes gmlst
+
+      - name: Lint local conda recipe
+        run: |
+          bioconda-utils lint conda/ --recipes recipe
+
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: "3.12"
+          miniforge-variant: Miniforge3
+
+      - name: Install conda-build
+        run: |
+          conda install -c conda-forge conda-build -y
+
+      - name: Build conda package (local recipe)
+        run: |
+          conda build conda/recipe/ --no-anaconda-upload

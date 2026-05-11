@@ -11,7 +11,7 @@
 ## 功能概览
 
 - 🧬 **统一分型入口**：通过同一套 CLI 运行 `gmlst typing mlst`、`gmlst typing cgmlst` 和 `gmlst typing tgmlst`。
-- ⚡ **多后端支持**：支持 BLAST+、KMA、minimap2、MUMmer4，以及用于精确哈希预解析的纯 Python `kmerhash` 引擎。
+- ⚡ **多后端支持**：支持 BLAST+、KMA、minimap2、MUMmer4，内置 exact-hash 预解析用于 cgMLST 工作流。
 - 🧫 **支持 FASTA 与 FASTQ**：既能处理组装完成的基因组，也能处理双端原始 reads。
 - 🗂️ **多数据提供方**：支持 PubMLST、Pasteur BIGSdb、Enterobase、cgmlst.org 和本地自定义方案。
 - 🧠 **灵活的 cgMLST 模式**：可选 `standard`、`chew-fast`、`chew-ultrafast`、`chew-bsr`、`chew-balanced`，适配不同速度与证据需求。
@@ -145,7 +145,6 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 | `kma` | 是 | 是 | 是 | FASTQ 分型和 cgMLST FASTQ 路径 | 对 reads 映射型等位基因调用很实用 |
 | `minimap2` | 是 | 是 | 是 | 快速组装分型和灵活的 reads 工作流 | cgMLST 优化路径中使用很多 |
 | `nucmer` | 是 | 是 | 否 | 组装级敏感比对 | 适合较远距离匹配和补充证据 |
-| `kmerhash` | 否，内部引擎 | 是 | 主要用于内部流程 | 精确哈希预解析 | 纯 Python 实现，主要用于预过滤和 hash-first 匹配，不作为主要 `-b` 后端 |
 
 ### 后端说明
 
