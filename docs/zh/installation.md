@@ -141,6 +141,59 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
+### 方式 4：使用 Docker 安装
+
+如果你想要一个开箱即用的完整环境（无需配置 Python 或 conda），推荐使用 Docker。
+
+#### 拉取镜像
+
+```bash
+docker pull ghcr.io/indexofire/gmlst:latest
+```
+
+#### 运行分型
+
+```bash
+# 下载方案
+docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  scheme download -s saureus_1
+
+# 对样本进行分型
+docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  typing mlst -s saureus_1 sample.fasta -o results.tsv
+```
+
+#### 运行 Web 可视化
+
+```bash
+docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  visual web --host 0.0.0.0 --port 8787
+```
+
+然后在浏览器中打开 http://localhost:8787。
+
+#### 使用 docker compose
+
+使用 `docker compose` 可以方便地管理容器和持久化缓存：
+
+```bash
+# 启动 Web 可视化服务
+docker compose up web
+
+# 运行分型命令
+docker compose run --rm gmlst typing mlst -s saureus_1 /data/sample.fasta
+```
+
+`docker-compose.yml` 使用命名卷存储方案缓存，下载的方案在多次运行间保持持久。
+
+#### 本地构建
+
+如果你想自行构建镜像（例如开发版本）：
+
+```bash
+docker build -t gmlst .
+```
+
 ## 验证安装
 
 无论你使用哪种安装方式，都建议做下面几步检查。
@@ -351,7 +404,7 @@ conda install -c bioconda blast
 
 建议做法：
 
-- 优先使用虚拟环境
+- 优先使用虚拟环境（缓存会自动从 `$CONDA_PREFIX` 或 `$VIRTUAL_ENV` 检测）
 - 不要使用 `sudo pip install`
 - 如有需要，显式指定可写的缓存目录
 
@@ -361,7 +414,7 @@ conda install -c bioconda blast
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install gmlst
-export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
+# 缓存自动检测到 .venv/.cache/gmlst
 ```
 
 ### Python 版本不符合要求

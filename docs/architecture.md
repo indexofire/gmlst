@@ -532,7 +532,7 @@ The visual stack is intentionally decoupled from the typing pipeline. It consume
 
 ## Cache management
 
-`gmlst/database/cache.py` is the core cache manager. By default it uses `~/.cache/gmlst`, unless `GMLST_CACHE_DIR` overrides it.
+`gmlst/database/cache.py` is the core cache manager. The cache root is resolved in order: explicit parameter, `GMLST_CACHE_DIR` env var, `$CONDA_PREFIX/share/gmlst` (conda), `$VIRTUAL_ENV/.cache/gmlst` (venv), or `~/.cache/gmlst` as fallback. Each conda or virtualenv environment gets its own isolated cache by default.
 
 Typical layout:
 

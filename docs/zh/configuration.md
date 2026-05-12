@@ -2,7 +2,7 @@
 
 `gmlst` 的配置主要分三类，CLI 参数、环境变量、本地缓存。实际使用时，像后端、方案、线程数、输出路径这类单次运行参数，更适合放在 CLI 里。像后端调优、提供方接口地址覆盖、临时文件目录这类跨多次运行都想复用的设置，更适合用环境变量。缓存则负责保存已下载方案和已构建索引，方便重复运行。
 
-本页只记录当前代码中真实实现的配置项。如果你想修改缓存根目录，请使用相关命令的 `--cache-dir`。旧版 README 提到过 `GMLST_CACHE_DIR`，但当前 Python 代码并没有实现这个环境变量。
+本页只记录当前代码中真实实现的配置项。缓存根目录可通过 `GMLST_CACHE_DIR` 环境变量设置，也可由 conda 或 virtualenv 环境自动检测，或通过命令行 `--cache-dir` 单次覆盖。
 
 ## 配置模型概览
 
@@ -45,7 +45,9 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 
 ### 缓存
 
-当前没有已实现的缓存根目录环境变量。如果你要改缓存位置，请在 `scheme`、`typing`、`utils` 等命令中使用 `--cache-dir`。
+| 变量 | 默认值 | 说明 | 使用者 |
+| --- | --- | --- | --- |
+| `GMLST_CACHE_DIR` | 自动检测 | 覆盖缓存根目录。未设置时按以下顺序自动检测：`$CONDA_PREFIX/share/gmlst`（conda 环境）、`$VIRTUAL_ENV/.cache/gmlst`（virtualenv）、`~/.cache/gmlst`（默认）。 | 所有 scheme、typing、utils 命令 |
 
 ### BLASTN
 
@@ -109,11 +111,15 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 
 ### 默认缓存布局
 
-默认缓存根目录：
+缓存根目录按以下顺序解析（优先级从高到低）：
 
-```text
-~/.cache/gmlst/
-```
+1. `--cache-dir` CLI 参数
+2. `GMLST_CACHE_DIR` 环境变量
+3. `$CONDA_PREFIX/share/gmlst`（conda 环境中）
+4. `$VIRTUAL_ENV/.cache/gmlst`（Python virtualenv 中）
+5. `~/.cache/gmlst`（默认）
+
+这意味着每个 conda 或 virtualenv 环境默认拥有独立的数据库缓存。如果需要在多个环境间共享缓存，请显式设置 `GMLST_CACHE_DIR`。
 
 典型结构：
 
@@ -143,12 +149,26 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 
 ### 覆盖缓存位置
 
-当你需要改缓存目录时，请使用 `--cache-dir`。
+使用 `--cache-dir` 进行单次命令覆盖，或使用 `GMLST_CACHE_DIR` 进行会话级覆盖。
 
 ```bash
+# 单次命令覆盖
 gmlst scheme list --cache-dir /data/gmlst-cache
 gmlst scheme download -s saureus_1 --cache-dir /data/gmlst-cache
 gmlst typing mlst -s saureus_1 --cache-dir /data/gmlst-cache sample.fasta
+
+# 会话级覆盖
+export GMLST_CACHE_DIR=/data/gmlst-cache
+gmlst scheme download -s saureus_1
+gmlst typing mlst -s saureus_1 sample.fasta
+```
+
+### 在多个 conda 环境间共享缓存
+
+默认情况下，每个 conda 环境使用 `$CONDA_PREFIX/share/gmlst` 作为缓存，数据库相互隔离。如果需要在所有环境间共享同一缓存：
+
+```bash
+export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 ```
 
 ### 离线使用
@@ -191,7 +211,7 @@ gmlst scheme update -s saureus_1 --cache-dir /data/gmlst-cache
 | 更适合 CLI 参数的情况 | 更适合环境变量的情况 |
 | --- | --- |
 | 本次运行要选方案、后端、输出路径、线程数 | 想把临时目录、提供方地址、minimap2 或 KMA 调优作为默认值 |
-| 这一次命令需要单独指定 `--cache-dir` | 想在很多次运行中统一使用某个 speed profile 或 fallback backend |
+| 这一次命令需要单独指定 `--cache-dir` | 想在多次运行或多个环境间共享缓存目录（`GMLST_CACHE_DIR`） |
 | 你正在并排比较不同流程 | 你正在维护一个稳定的批处理环境 |
 
 示例：

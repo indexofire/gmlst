@@ -61,6 +61,22 @@ pip install -e .
 gmlst --help
 ```
 
+### Option 4, Docker
+
+All tools pre-installed, no Python or conda setup needed.
+
+```bash
+docker pull ghcr.io/indexofire/gmlst:latest
+
+# Type a sample
+docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  typing mlst -s saureus_1 /data/sample.fasta
+
+# Web visualization
+docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  visual web --host 0.0.0.0 --port 8787
+```
+
 ### External tools managed by pixi
 
 - `blast >=2.14`
@@ -261,7 +277,7 @@ Key environment variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `GMLST_CACHE_DIR` | Override the default cache root, usually `~/.cache/gmlst` |
+| `GMLST_CACHE_DIR` | Override the cache root (auto-detected: `$CONDA_PREFIX/share/gmlst` in conda, `$VIRTUAL_ENV/.cache/gmlst` in venv, or `~/.cache/gmlst` by default) |
 | `GMLST_TMPDIR` | Override temporary working directory used during typing and refinement |
 | `GMLST_MINIMAP2_KMER_ENGINE` | Choose minimap2 k-mer support engine: `python`, `kmc`, or `auto` |
 | `GMLST_PUBMLST_BASE_URL` | Override PubMLST API base URL |

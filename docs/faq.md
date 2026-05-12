@@ -148,13 +148,19 @@ If you are behind a proxy or firewall, test provider access separately.
 
 ### Where is the cache stored?
 
-By default, `gmlst` uses `~/.cache/gmlst/`.
+The cache root is auto-detected: `$CONDA_PREFIX/share/gmlst` in conda environments, `$VIRTUAL_ENV/.cache/gmlst` in virtualenvs, or `~/.cache/gmlst` by default. Each environment gets its own isolated cache.
 
 You can override it:
 
 ```bash
 export GMLST_CACHE_DIR="$HOME/work/gmlst-cache"
 gmlst scheme list
+```
+
+To share a cache across conda environments:
+
+```bash
+export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 ```
 
 ### I want to use a different cache directory for one command
@@ -364,7 +370,7 @@ gmlst scheme export -s custom_1 --format grapetree -o mst.tsv
 
 Common ones are:
 
-- `GMLST_CACHE_DIR`, override cache root
+- `GMLST_CACHE_DIR`, override cache root (auto-detected from conda/venv by default)
 - `GMLST_TMPDIR`, override temporary working directory
 - `GMLST_MINIMAP2_KMER_ENGINE`, choose `python`, `kmc`, or `auto`
 - provider URL overrides, such as `GMLST_PUBMLST_BASE_URL`

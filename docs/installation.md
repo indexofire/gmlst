@@ -141,6 +141,59 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
+### Method 4: Install with Docker
+
+Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed.
+
+#### Pull the image
+
+```bash
+docker pull ghcr.io/indexofire/gmlst:latest
+```
+
+#### Run typing
+
+```bash
+# Download a scheme
+docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  scheme download -s saureus_1
+
+# Type a sample
+docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  typing mlst -s saureus_1 sample.fasta -o results.tsv
+```
+
+#### Run web visualization
+
+```bash
+docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+  visual web --host 0.0.0.0 --port 8787
+```
+
+Then open http://localhost:8787 in your browser.
+
+#### Using docker compose
+
+For convenience, use `docker compose` to manage the container and persistent cache:
+
+```bash
+# Start the web visualization service
+docker compose up web
+
+# Run a typing command
+docker compose run --rm gmlst typing mlst -s saureus_1 /data/sample.fasta
+```
+
+The `docker-compose.yml` mounts a named volume for the scheme cache, so downloaded schemes persist across runs.
+
+#### Build locally
+
+If you want to build the image yourself (e.g., for a development version):
+
+```bash
+docker build -t gmlst .
+```
+
 ## Verify Installation
 
 Use the checks below after any installation method.
@@ -351,7 +404,7 @@ Common cases:
 
 Fix:
 
-- prefer a virtual environment
+- prefer a virtual environment (cache auto-detected from `$CONDA_PREFIX` or `$VIRTUAL_ENV`)
 - avoid `sudo pip install`
 - if needed, set a writable cache directory
 
@@ -361,7 +414,7 @@ Example:
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install gmlst
-export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
+# Cache is auto-detected at .venv/.cache/gmlst
 ```
 
 ### Unsupported Python version

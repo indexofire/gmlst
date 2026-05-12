@@ -4,7 +4,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Bioinformatics](https://img.shields.io/badge/domain-bioinformatics-green.svg)](https://github.com/indexofire/gmlst)
 
-`gmlst` 是一个面向细菌基因组分型的高速 Python 3.12 命令行工具，支持传统多位点序列分型（MLST, Multi-Locus Sequence Typing）、大规模 cgMLST 和 wgMLST 方案，以及无预定义方案的发现型工作流。它同时支持组装基因组 FASTA 和原始测序 reads FASTQ，整合多种比对后端、多个公共数据库来源、本地自定义方案、离线缓存复用，以及本地 MST 可视化能力。
+`gmlst` 是一个面向细菌基因组数据分型的命令行工具，支持传统多位点序列分型（MLST, Multi-Locus Sequence Typing）、大规模 cg/wgMLST 方案，以及无预定义方案的发现型工作流。它同时支持组装基因组 FASTA 和原始测序 reads FASTQ，整合多种比对后端、多个公共数据库来源、本地自定义方案、离线缓存复用，以及本地 MST 可视化能力。
 
 [English](README.md) | 简体中文
 
@@ -16,20 +16,46 @@
 - 🗂️ **多数据提供方**：支持 PubMLST、Pasteur BIGSdb、Enterobase、cgmlst.org 和本地自定义方案。
 - 🧠 **灵活的 cgMLST 模式**：可选 `standard`、`chew-fast`、`chew-ultrafast`、`chew-bsr`、`chew-balanced`，适配不同速度与证据需求。
 - 🆕 **新等位基因工作流**：支持发现 novel allele、提取 novel profile，并构建实验室自定义 MLST 数据库。
-- 🔍 **无方案分型**：通过 `tgmlst` 进行 de novo 等位基因发现，不依赖预先选择的公共方案。
+- 🔍 **scheme-free 分型**：通过 `tgmlst` 进行 de novo 等位基因发现，不依赖预先选择的公共方案。
 - 📦 **丰富输出格式**：支持 `tsv`、`json`、`pretty`，也支持 GrapeTree 兼容导出。
 - 🌐 **本地可视化**：使用 `gmlst visual web` 启动 Flask + Vue 本地网页界面，查看 MST 结果。
-- 💾 **缓存优先**：已下载的方案和已构建索引会复用，便于离线运行和重复分析。
 - 🧵 **批量处理**：支持样本级并行 worker 和后端线程配置。
 - 🧬 **CDS 感知调用**：cgMLST 工作流可结合 Pyrodigal 进行 CDS 预测，并支持 chewBBACA 风格分类路径。
 
 ## 安装
 
-### 方式一，使用 pixi，推荐
+### 对于普通用户
+
+1. 使用 conda 安装的方式（推荐）
+
+```bash
+# 创建虚拟环境
+conda create -n gmlst
+conda activate gmlst
+
+# 安装gmlst工具
+conda install -c bioconda gmlst
+```
+
+2. 使用 pip 工具安装
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install gmlst
+
+# 后端工具就需要自行手动安装了
+conda install -c bioconda blast minimap2 mummer4 mmseqs2 prodigal kma kmc samtools
+```
+
+### 对于开发者
+
+1. 使用 pixi (推荐)。
 
 Pixi 可以同时管理 Python、外部生信工具和可编辑安装的项目环境。
 
 ```bash
+# 安装 pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 git clone https://github.com/indexofire/gmlst.git
 cd gmlst
@@ -37,20 +63,7 @@ pixi install
 pixi run gmlst --version
 ```
 
-### 方式二，使用 pip
-
-如果你已经有自己的 Python 环境和系统级工具管理方式，可以使用 pip 安装。
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install gmlst
-
-# 外部工具需单独安装，例如使用 conda 或 mamba
-conda install -c bioconda blast minimap2 mummer4 mmseqs2 prodigal kma kmc samtools
-```
-
-### 方式三，从源码安装
+2. 从源码安装
 
 ```bash
 git clone https://github.com/indexofire/gmlst.git
@@ -61,23 +74,7 @@ pip install -e .
 gmlst --help
 ```
 
-### 方式四，使用 Docker
-
-所有工具预装完成，无需配置 Python 或 conda。
-
-```bash
-docker pull ghcr.io/indexofire/gmlst:latest
-
-# 对样本进行分型
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
-  typing mlst -s saureus_1 /data/sample.fasta
-
-# Web 可视化
-docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
-  visual web --host 0.0.0.0 --port 8787
-```
-
-### pixi 环境中的外部工具
+**环境中的外部工具**
 
 - `blast >=2.14`
 - `minimap2 >=2.26`
@@ -88,7 +85,7 @@ docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
 - `kmc >=3.2.4`
 - `samtools >=1.23.1`
 
-### Python 依赖
+**Python 依赖**
 
 - `click`
 - `flask`
@@ -106,10 +103,10 @@ docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
 # 查看缓存中和可用的方案
 gmlst scheme list
 
-# 只看某一个 provider
+# 只看某一个 provider，例如 pubmlst
 gmlst scheme list -p pubmlst
 
-# 下载方案到本地缓存
+# 下载方案到本地缓存，例如下载金黄色葡萄球菌方案1
 gmlst scheme download -s saureus_1
 ```
 
@@ -130,6 +127,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
 
 ```bash
 # 批量处理多个组装文件并输出 TSV
+# 同时并行运行8个样本，每个样本默认1个thread
 gmlst typing mlst -s saureus_1 --max-workers 8 samples/*.fasta -o results.tsv
 
 # 保存 JSON，便于后续 novel 提取
@@ -137,6 +135,8 @@ gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 ```
 
 ### 4. 理解输出结果
+
+#### 1. MLST 结果
 
 默认输出为 TSV，风格与 `tseemann/mlst` 兼容。
 
@@ -147,13 +147,20 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 ```
 
 - 纯数字，表示 exact 已知等位基因匹配
-- `~23`，表示非 exact 但高覆盖的调用，通常对应 closest 或 novel 倾向位点，具体可结合 identity 判断
-- `15?`，表示 partial 命中，覆盖度不足
+- `~2`，表示非 exact 但高覆盖的调用，通常对应 closest 或 novel 倾向位点，具体可结合 identity 判断
+- `3?`，表示 partial 命中，覆盖度不足
 - `-`，表示该位点未找到
 
 如果想看更适合人工阅读的输出，可使用 `--format pretty`。如果要做自动化分析，推荐使用 `--format json`。
 
-## 比对后端
+#### 2. cgMLST/wgMLST 结果
+
+
+#### 3. tgMLST 结果
+
+## 算法说明
+
+### 比对后端
 
 | 后端 | 是否可直接作为 CLI 后端 | FASTA | FASTQ | 适用场景 | 说明 |
 | --- | --- | --- | --- | --- | --- |
@@ -169,7 +176,7 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 - 对于 FASTQ cgMLST，CLI 采用 KMA-first 策略，chew 风格 cgMLST 模式主要面向 FASTA 场景。
 - `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto` 可控制 minimap2 的 k-mer 支持评分引擎。
 
-## 数据提供方
+### 数据提供方
 
 | Provider | 数据来源 | 常见用途 |
 | --- | --- | --- |
@@ -179,12 +186,19 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 | `cgmlst` | cgmlst.org | 偏向 cgMLST 的公共方案 |
 | `local` | 本地缓存与自定义方案 | 实验室私有数据库和自定义导出方案 |
 
-示例：
+**示例：**
 
 ```bash
+# 显示所有 pubmlst 数据的方案
 gmlst scheme list -p pubmlst
+
+# 显示所有 enterobase 数据的 cgmlst 方案
 gmlst scheme list -p enterobase -t cgmlst
+
+# 显示本地自定义的方案
 gmlst scheme list -p local
+
+# 显示 saureus_1 方案的详细信息
 gmlst scheme show -s saureus_1
 ```
 

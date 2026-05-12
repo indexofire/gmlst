@@ -2,7 +2,7 @@
 
 `gmlst` is configured in three main ways: CLI flags, environment variables, and the local cache. In practice, use CLI flags for run-specific choices such as backend, scheme, threads, and output path. Use environment variables for backend tuning, provider endpoint overrides, and temporary-file behavior. Use the cache to keep downloaded schemes and built indexes available for repeat runs.
 
-This reference only documents settings that are implemented in the current codebase. If you need to change the cache root, use `--cache-dir` on the relevant commands. A `GMLST_CACHE_DIR` environment variable is mentioned in older README text, but it is not currently implemented in the Python code.
+This reference only documents settings that are implemented in the current codebase. The cache root can be set via the `GMLST_CACHE_DIR` environment variable, detected automatically from conda or virtualenv environments, or overridden per-command with `--cache-dir`.
 
 ## General configuration model
 
@@ -45,7 +45,9 @@ The cache stores downloaded schemes, catalogs, and backend-specific indexes. Onc
 
 ### Cache
 
-There is currently no implemented cache-root environment variable. Use `--cache-dir` on `scheme`, `typing`, and `utils` commands when you need a non-default cache location.
+| Name | Default | Description | Used By |
+| --- | --- | --- | --- |
+| `GMLST_CACHE_DIR` | auto-detected | Override the cache root directory. When unset, the cache root is resolved automatically: `$CONDA_PREFIX/share/gmlst` in conda environments, `$VIRTUAL_ENV/.cache/gmlst` in virtualenvs, or `~/.cache/gmlst` as final fallback. | All scheme, typing, and utils commands |
 
 ### BLASTN
 
@@ -109,7 +111,15 @@ No nucmer-specific environment variables are currently implemented. Choose the b
 
 ### Default cache layout
 
-Default cache root:
+The cache root is resolved in the following order (first match wins):
+
+1. `--cache-dir` CLI flag on the current command
+2. `GMLST_CACHE_DIR` environment variable
+3. `$CONDA_PREFIX/share/gmlst` when inside a conda environment
+4. `$VIRTUAL_ENV/.cache/gmlst` when inside a Python virtualenv
+5. `~/.cache/gmlst` (default)
+
+This means each conda or virtualenv environment gets its own isolated database cache by default. To share a cache across environments, set `GMLST_CACHE_DIR` explicitly.
 
 ```text
 ~/.cache/gmlst/
@@ -143,12 +153,26 @@ Typical structure:
 
 ### Overriding cache location
 
-Use `--cache-dir` on commands that work with schemes or typing.
+Use `--cache-dir` for a single command, or `GMLST_CACHE_DIR` for a session-wide override.
 
 ```bash
+# Per-command override
 gmlst scheme list --cache-dir /data/gmlst-cache
 gmlst scheme download -s saureus_1 --cache-dir /data/gmlst-cache
 gmlst typing mlst -s saureus_1 --cache-dir /data/gmlst-cache sample.fasta
+
+# Session-wide override
+export GMLST_CACHE_DIR=/data/gmlst-cache
+gmlst scheme download -s saureus_1
+gmlst typing mlst -s saureus_1 sample.fasta
+```
+
+### Sharing cache across conda environments
+
+By default, each conda environment uses `$CONDA_PREFIX/share/gmlst` as its cache, keeping databases isolated. To share one cache across all environments:
+
+```bash
+export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 ```
 
 ### Offline use
@@ -191,7 +215,7 @@ Use CLI flags when the setting belongs to one command invocation. Use environmen
 | Prefer CLI flag when... | Prefer environment variable when... |
 | --- | --- |
 | you are selecting scheme, backend, output, or threads for one run | you want a reusable default for temp space, provider endpoints, or minimap2/KMA tuning |
-| you need a one-off cache location with `--cache-dir` | you want the same fallback backend or speed profile for many runs |
+| you need a one-off cache location with `--cache-dir` | you want a shared cache directory across runs or environments (`GMLST_CACHE_DIR`) |
 | you are testing alternative workflows side by side | you are running a stable pipeline in a shared shell environment |
 
 Examples:

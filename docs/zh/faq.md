@@ -148,13 +148,19 @@ gmlst scheme download -s saureus_1 --download-tool wget
 
 ### 缓存目录在哪里？
 
-默认缓存路径是 `~/.cache/gmlst/`。
+缓存根目录会自动检测：conda 环境使用 `$CONDA_PREFIX/share/gmlst`，virtualenv 使用 `$VIRTUAL_ENV/.cache/gmlst`，默认回退到 `~/.cache/gmlst`。每个环境拥有独立的缓存。
 
 你也可以覆盖它：
 
 ```bash
 export GMLST_CACHE_DIR="$HOME/work/gmlst-cache"
 gmlst scheme list
+```
+
+如果需要在多个 conda 环境间共享缓存：
+
+```bash
+export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 ```
 
 ### 我想只对单条命令改缓存路径
@@ -364,7 +370,7 @@ gmlst scheme export -s custom_1 --format grapetree -o mst.tsv
 
 最常见的是：
 
-- `GMLST_CACHE_DIR`，覆盖缓存根目录
+- `GMLST_CACHE_DIR`，覆盖缓存根目录（默认从 conda/venv 自动检测）
 - `GMLST_TMPDIR`，覆盖临时目录
 - `GMLST_MINIMAP2_KMER_ENGINE`，可选 `python`、`kmc`、`auto`
 - 各种 provider URL 覆盖变量，例如 `GMLST_PUBMLST_BASE_URL`

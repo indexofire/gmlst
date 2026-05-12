@@ -1,0 +1,22 @@
+services:
+  gmlst:
+    image: ghcr.io/indexofire/gmlst:latest
+    build: .
+    volumes:
+      - ./data:/data
+      - gmlst-cache:/opt/conda/share/gmlst
+    working_dir: /data
+
+  web:
+    image: ghcr.io/indexofire/gmlst:latest
+    build: .
+    command: visual web --host 0.0.0.0 --port 8787
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./data:/data
+      - gmlst-cache:/opt/conda/share/gmlst
+    working_dir: /data
+
+volumes:
+  gmlst-cache:

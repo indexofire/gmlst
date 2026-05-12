@@ -1,18 +1,26 @@
 """Local database cache management.
 
-Schemes are stored under ``~/.cache/gmlst/<provider>/<scheme_name>/``.
+Schemes are stored under the cache root at ``<provider>/<scheme_name>/``.
 Each scheme directory contains:
   - ``<locus>.tfa``   allele FASTA files
   - ``<scheme>.txt``  ST profile TSV
   - ``.meta.json``    download metadata (provider, scheme_type, loci list, …)
 
-Catalogs are stored under ``~/.cache/gmlst/_catalog/<provider>.json``.
+Catalogs are stored under ``<cache_root>/_catalog/<provider>.json``.
+
+Cache root resolution order (first match wins):
+  1. Explicit ``root`` parameter passed to :class:`DatabaseCache`
+  2. ``GMLST_CACHE_DIR`` environment variable
+  3. ``$CONDA_PREFIX/share/gmlst`` when running inside a conda environment
+  4. ``$VIRTUAL_ENV/.cache/gmlst`` when running inside a Python virtualenv
+  5. ``~/.cache/gmlst`` (default)
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import time
 from collections import defaultdict
@@ -23,9 +31,24 @@ from gmlst.database.atomic import atomic_write_text
 from gmlst.database.download import DownloadTool
 from gmlst.database.schema import Scheme
 
-logger = logging.getLogger("gmlst.database.cache")
+logger = logging.getLogger("gmlst.database_cache")
 
-_DEFAULT_CACHE_ROOT = Path.home() / ".cache" / "gmlst"
+
+def _resolve_cache_root() -> Path:
+    """Resolve the default cache root using environment-aware fallbacks."""
+    env_dir = os.environ.get("GMLST_CACHE_DIR")
+    if env_dir:
+        return Path(env_dir)
+
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if conda_prefix:
+        return Path(conda_prefix) / "share" / "gmlst"
+
+    venv = os.environ.get("VIRTUAL_ENV")
+    if venv:
+        return Path(venv) / ".cache" / "gmlst"
+
+    return Path.home() / ".cache" / "gmlst"
 
 
 def _utc_now_iso() -> str:
@@ -38,11 +61,13 @@ class DatabaseCache:
     Parameters
     ----------
     root:
-        Root cache directory.  Defaults to ``~/.cache/gmlst``.
+        Root cache directory.  When *None*, the cache root is resolved
+        from environment variables (``GMLST_CACHE_DIR``, ``CONDA_PREFIX``,
+        ``VIRTUAL_ENV``) with a final fallback to ``~/.cache/gmlst``.
     """
 
     def __init__(self, root: Path | None = None) -> None:
-        self.root = root or _DEFAULT_CACHE_ROOT
+        self.root = root or _resolve_cache_root()
         self.root.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
