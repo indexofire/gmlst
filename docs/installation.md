@@ -143,38 +143,66 @@ gmlst utils check -b blastn
 
 ### Method 4: Install with Docker
 
-Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed.
+Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed. The image includes gmlst plus all external alignment tools (blastn, minimap2, nucmer, kma, mmseqs2, prodigal, samtools).
+
+#### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [docker-buildx](https://github.com/docker/buildx) plugin (usually bundled with Docker Desktop; on Linux install via package manager, e.g. `pacman -S docker-buildx` on Arch)
 
 #### Pull the image
 
 ```bash
-docker pull ghcr.io/indexofire/gmlst:latest
+docker pull indexofire/gmlst:latest
 ```
+
+#### Verify the image
+
+```bash
+docker run --rm indexofire/gmlst:latest --version
+```
+
+#### Data and cache management
+
+Container data is **ephemeral** — anything written inside a `docker run --rm` container is lost when the container exits. You must mount host directories for data persistence.
+
+| Path in container | Purpose | How to persist |
+|---|---|---|
+| `/data` | Input FASTA/FASTQ files, output results | `-v /host/path:/data` |
+| `/opt/conda/share/gmlst` | Scheme cache (downloaded databases, indexes) | Docker named volume or `-v` mount |
+
+The cache directory uses `$CONDA_PREFIX/share/gmlst` inside the container (see [Configuration](configuration.md) for the environment-aware resolution logic).
 
 #### Run typing
 
+Mount your working directory to `/data`:
+
 ```bash
-# Download a scheme
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+# Download a scheme (cache persists in named volume)
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   scheme download -s saureus_1
 
 # Type a sample
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   typing mlst -s saureus_1 sample.fasta -o results.tsv
+
+# Batch processing
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
+  typing mlst -s saureus_1 --max-workers 4 /data/samples/*.fasta -o results.tsv
 ```
 
 #### Run web visualization
 
 ```bash
-docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
   visual web --host 0.0.0.0 --port 8787
 ```
 
-Then open http://localhost:8787 in your browser.
+Then open http://localhost:8787 in your browser. Press `Ctrl+C` to stop.
 
 #### Using docker compose
 
-For convenience, use `docker compose` to manage the container and persistent cache:
+`docker compose` manages the container and persistent cache automatically:
 
 ```bash
 # Start the web visualization service
@@ -182,16 +210,36 @@ docker compose up web
 
 # Run a typing command
 docker compose run --rm gmlst typing mlst -s saureus_1 /data/sample.fasta
+
+# Download a scheme
+docker compose run --rm gmlst scheme download -s saureus_1
 ```
 
-The `docker-compose.yml` mounts a named volume for the scheme cache, so downloaded schemes persist across runs.
+The `docker-compose.yml` mounts a named volume (`gmlst-cache`) for the scheme cache, so downloaded schemes and indexes persist across runs without repeating downloads.
+
+#### Interactive shell (debugging)
+
+To enter the container for inspection:
+
+```bash
+docker run --rm -it --entrypoint="" indexofire/gmlst:latest bash
+```
+
+Inside the container you can check tools:
+
+```bash
+gmlst --version
+blastn -version
+minimap2 --version
+echo $CONDA_PREFIX
+```
 
 #### Build locally
 
 If you want to build the image yourself (e.g., for a development version):
 
 ```bash
-docker build -t gmlst .
+docker buildx build --load -t gmlst:latest .
 ```
 
 ## Verify Installation

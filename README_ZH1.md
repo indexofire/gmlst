@@ -245,10 +245,15 @@ gmlst utils extract -i typing_results.tsv -s saureus_1 --novel-allele --novel-pr
 示例：
 
 ```bash
+# 运行 standard 模式
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fna
+# 运行 chew-fast 模式
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
+# 运行 chew-ultrafast 模式
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fna
+# 运行 chew-bsr 模式
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-bsr sample.fna
+# 运行 chew-balanced 模式
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-balanced sample.fna
 ```
 

@@ -66,14 +66,14 @@ gmlst --help
 All tools pre-installed, no Python or conda setup needed.
 
 ```bash
-docker pull ghcr.io/indexofire/gmlst:latest
+docker pull indexofire/gmlst:latest
 
 # Type a sample
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   typing mlst -s saureus_1 /data/sample.fasta
 
 # Web visualization
-docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
   visual web --host 0.0.0.0 --port 8787
 ```
 

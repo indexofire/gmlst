@@ -143,38 +143,66 @@ gmlst utils check -b blastn
 
 ### 方式 4：使用 Docker 安装
 
-如果你想要一个开箱即用的完整环境（无需配置 Python 或 conda），推荐使用 Docker。
+如果你想要一个开箱即用的完整环境（无需配置 Python 或 conda），推荐使用 Docker。镜像包含 gmlst 以及所有外部比对工具（blastn、minimap2、nucmer、kma、mmseqs2、prodigal、samtools）。
+
+#### 前提条件
+
+- 已安装并运行 [Docker](https://docs.docker.com/get-docker/)
+- 已安装 [docker-buildx](https://github.com/docker/buildx) 插件（Docker Desktop 通常自带；Linux 通过包管理器安装，如 Arch 上执行 `pacman -S docker-buildx`）
 
 #### 拉取镜像
 
 ```bash
-docker pull ghcr.io/indexofire/gmlst:latest
+docker pull indexofire/gmlst:latest
 ```
+
+#### 验证镜像
+
+```bash
+docker run --rm indexofire/gmlst:latest --version
+```
+
+#### 数据与缓存管理
+
+容器内的数据是**临时的**——使用 `docker run --rm` 退出容器后，内部写入的所有数据都会丢失。必须通过挂载宿主机目录来持久化数据。
+
+| 容器内路径 | 用途 | 持久化方式 |
+|---|---|---|
+| `/data` | 输入 FASTA/FASTQ 文件、输出结果 | `-v /宿主机路径:/data` |
+| `/opt/conda/share/gmlst` | 方案缓存（已下载数据库、索引） | Docker 命名卷或 `-v` 挂载 |
+
+容器内缓存目录使用 `$CONDA_PREFIX/share/gmlst`（环境感知解析机制详见[配置参考](configuration.md)）。
 
 #### 运行分型
 
+将工作目录挂载到 `/data`：
+
 ```bash
-# 下载方案
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+# 下载方案（缓存在命名卷中持久保存）
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   scheme download -s saureus_1
 
 # 对样本进行分型
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   typing mlst -s saureus_1 sample.fasta -o results.tsv
+
+# 批量处理
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
+  typing mlst -s saureus_1 --max-workers 4 /data/samples/*.fasta -o results.tsv
 ```
 
 #### 运行 Web 可视化
 
 ```bash
-docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
   visual web --host 0.0.0.0 --port 8787
 ```
 
-然后在浏览器中打开 http://localhost:8787。
+然后在浏览器中打开 http://localhost:8787。按 `Ctrl+C` 停止。
 
 #### 使用 docker compose
 
-使用 `docker compose` 可以方便地管理容器和持久化缓存：
+`docker compose` 可以自动管理容器和持久化缓存：
 
 ```bash
 # 启动 Web 可视化服务
@@ -182,16 +210,36 @@ docker compose up web
 
 # 运行分型命令
 docker compose run --rm gmlst typing mlst -s saureus_1 /data/sample.fasta
+
+# 下载方案
+docker compose run --rm gmlst scheme download -s saureus_1
 ```
 
-`docker-compose.yml` 使用命名卷存储方案缓存，下载的方案在多次运行间保持持久。
+`docker-compose.yml` 使用命名卷（`gmlst-cache`）存储方案缓存，下载的方案和索引在多次运行间保持持久，无需重复下载。
+
+#### 交互式进入容器（调试用）
+
+进入容器内部进行检查：
+
+```bash
+docker run --rm -it --entrypoint="" indexofire/gmlst:latest bash
+```
+
+在容器内可以检查工具状态：
+
+```bash
+gmlst --version
+blastn -version
+minimap2 --version
+echo $CONDA_PREFIX
+```
 
 #### 本地构建
 
 如果你想自行构建镜像（例如开发版本）：
 
 ```bash
-docker build -t gmlst .
+docker buildx build --load -t gmlst:latest .
 ```
 
 ## 验证安装

@@ -1,6 +1,6 @@
 services:
   gmlst:
-    image: ghcr.io/indexofire/gmlst:latest
+    image: indexofire/gmlst:latest
     build: .
     volumes:
       - ./data:/data
@@ -8,7 +8,7 @@ services:
     working_dir: /data
 
   web:
-    image: ghcr.io/indexofire/gmlst:latest
+    image: indexofire/gmlst:latest
     build: .
     command: visual web --host 0.0.0.0 --port 8787
     ports:

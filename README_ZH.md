@@ -66,14 +66,14 @@ gmlst --help
 所有工具预装完成，无需配置 Python 或 conda。
 
 ```bash
-docker pull ghcr.io/indexofire/gmlst:latest
+docker pull indexofire/gmlst:latest
 
 # 对样本进行分型
-docker run --rm -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
   typing mlst -s saureus_1 /data/sample.fasta
 
 # Web 可视化
-docker run --rm -p 8787:8787 -v $(pwd):/data ghcr.io/indexofire/gmlst:latest \
+docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
   visual web --host 0.0.0.0 --port 8787
 ```
 
