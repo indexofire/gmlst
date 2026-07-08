@@ -28,27 +28,55 @@ import {
   visibleTableColumns,
 } from "./visualSelection.js";
 
-const PALETTE = [
-  "#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed",
-  "#0891b2", "#ea580c", "#0284c7", "#4f46e5", "#db2777",
-  "#059669", "#ca8a04", "#6366f1", "#be123c", "#0d9488",
-  "#c2410c", "#4338ca", "#9333ea", "#15803d", "#b91c1c",
-  "#0369a1", "#a21caf", "#4f46e5", "#b45309", "#0f766e",
-  "#9a3412", "#6d28d9", "#be185d", "#166534", "#991b1b",
-  "#1e40af", "#7e22ce", "#92400e", "#065f46", "#9f1239",
-  "#1d4ed8", "#a855f7", "#65a30d", "#e11d48", "#0e7490",
-  "#d946ef", "#84cc16", "#f43f5e", "#14b8a6", "#f97316",
-  "#8b5cf6", "#22c55e", "#ef4444", "#06b6d4", "#eab308",
-  "#ec4899", "#10b981", "#f59e0b", "#3b82f6", "#e879f9",
-  "#34d399", "#fb923c", "#818cf8", "#f472b6", "#a3e635",
-];
+import {
+  aggregateGraph,
+  buildNewick,
+  colorMapFor,
+  colorValueForNode,
+  correctBranchLengths,
+  edgeKey,
+  edgeLength,
+  filteredEdges,
+  getDescendants,
+  greedyRadialLayout,
+  highlightedPathEdges,
+  highlightedPathNodes,
+  legendItemStyle,
+  nodeRadius,
+  parseMaxWeight,
+  resolveCollapsedNodeSet,
+} from "./visualLayout.js";
 
-const LAYOUT_CENTER_X = 700;
-const LAYOUT_CENTER_Y = 450;
-const LAYOUT_MAX_RADIUS = 380;
+import {
+  parseSessionPayload,
+  readFileWithSizeCheck,
+} from "./fileInput.js";
+
+import {
+  buildGraphJsonPayload,
+  buildNewickString,
+  buildSessionJsonPayload,
+  compareJsonBlob,
+  downloadBlob,
+  downloadJson as downloadJsonBlob,
+  heatmapJsonBlob,
+  heatmapTsvBlob,
+  newickBlob,
+  svgBlob,
+  tableTsvBlob,
+} from "./tableExport.js";
+
+import EmptyState from "./components/EmptyState.vue";
+import DistanceMatrix from "./components/DistanceMatrix.vue";
+import CompareTable from "./components/CompareTable.vue";
+import AlleleHeatmap from "./components/AlleleHeatmap.vue";
+import LegendBar from "./components/LegendBar.vue";
+import { fetchMst, fetchDistanceMatrix, fetchAlleleHeatmap, fetchCompareResults, fetchCompareLoci } from "./mstApi.js";
+import { parseSessionState } from "./sessionPersistence.js";
 
 export default {
   name: "VisualApp",
+  components: { EmptyState, DistanceMatrix, CompareTable, AlleleHeatmap, LegendBar },
   data() {
     return {
       title: window.GMLST_VISUAL_TITLE || "gmlst visual web",
@@ -267,7 +295,7 @@ export default {
       return this.filteredHeatmapBaseView.labels.length;
     },
     heatmapAnnotationRows() {
-      const colorMap = this.colorMapFor(this.tableRows, this.colorBy);
+      const colorMap = colorMapFor(this.tableRows, this.colorBy, this.colorScheme);
       return heatmapAnnotations(
         this.filteredHeatmapView.labels,
         this.tableRows,
@@ -349,10 +377,13 @@ export default {
     },
     collapsedNodeSet() {
       const graph = this.currentCollapseSourceGraph || this.currentRenderedGraph;
-      return this.resolveCollapsedNodeSet(
+      return resolveCollapsedNodeSet(
         graph?.nodes || [],
         graph?.edges || [],
         this.currentLayout?.parent,
+        this.collapsedNodes,
+        this.collapseThreshold,
+        edgeKey,
       );
     },
     thresholdHistogramBars() {
@@ -551,16 +582,24 @@ export default {
       if (!file) {
         return;
       }
-      this.tsvText = await file.text();
-      this.setStatus("ok", "Profile loaded");
+      try {
+        this.tsvText = await readFileWithSizeCheck(file);
+        this.setStatus("ok", "Profile loaded");
+      } catch (error) {
+        this.setStatus("error", error.message);
+      }
     },
     async onMetadataFileChange(event) {
       const file = event.target.files?.[0];
       if (!file) {
         return;
       }
-      this.metadataText = await file.text();
-      this.setStatus("ok", "Metadata loaded");
+      try {
+        this.metadataText = await readFileWithSizeCheck(file);
+        this.setStatus("ok", "Metadata loaded");
+      } catch (error) {
+        this.setStatus("error", error.message);
+      }
     },
     async onSessionFileChange(event) {
       const file = event.target.files?.[0];
@@ -568,7 +607,7 @@ export default {
         return;
       }
       try {
-        const payload = JSON.parse(await file.text());
+        const payload = parseSessionPayload(await readFileWithSizeCheck(file));
         this.applySessionPayload(payload);
         this.setStatus("ok", "Session restored");
       } catch (error) {
@@ -597,168 +636,6 @@ export default {
       this.summary.metaFields = this.metadataFields.length;
       const sampleText = sampleCount ? ` from ${sampleCount} samples` : "";
       this.statsLine = `Rendered ${nodeCount} nodes and ${edgeCount} edges${sampleText}.`;
-    },
-    parseMaxWeight() {
-      const raw = this.maxWeight.trim();
-      if (!raw) {
-        return null;
-      }
-      const parsed = Number(raw);
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        return null;
-      }
-      return Math.floor(parsed);
-    },
-    resolveCollapsedNodeSet(nodes, edges, parentMap) {
-      const manual = new Set(
-        Object.keys(this.collapsedNodes).filter((id) => this.collapsedNodes[id]),
-      );
-      if (this.collapseThreshold <= 0 || !nodes.length || !edges.length || !parentMap) {
-        return manual;
-      }
-      const edgeByKey = new Map();
-      for (const edge of edges) {
-        edgeByKey.set(this.edgeKey(edge.source, edge.target), edge);
-      }
-      for (const node of nodes) {
-        if (manual.has(String(node.id))) {
-          continue;
-        }
-        const parentId = parentMap.get(node.id);
-        if (parentId === undefined || parentId === -1) {
-          continue;
-        }
-        const edge = edgeByKey.get(this.edgeKey(node.id, parentId));
-        if (edge && Number(edge.weight) > this.collapseThreshold) {
-          manual.add(String(parentId));
-        }
-      }
-      return manual;
-    },
-    filteredEdges(edges) {
-      const maxWeight = this.parseMaxWeight();
-      if (maxWeight === null) {
-        return edges;
-      }
-      return edges.filter((edge) => Number(edge.weight) <= maxWeight);
-    },
-    aggregateGraph(nodes, edges) {
-      const groupByKey = new Map();
-      const nodeToGroup = new Map();
-
-      for (const node of nodes) {
-        const key = node.profile_key || `id:${node.id}`;
-        if (!groupByKey.has(key)) {
-          groupByKey.set(key, []);
-        }
-        groupByKey.get(key).push(node);
-      }
-
-      const aggNodes = [];
-      let groupId = 0;
-      for (const members of groupByKey.values()) {
-        const first = members[0];
-        const label =
-          members.length === 1
-            ? first.label
-            : `${first.label} (+${members.length - 1})`;
-        const aggNode = {
-          id: groupId,
-          label,
-          meta: first.meta || {},
-          member_count: members.length,
-        };
-        aggNodes.push(aggNode);
-        for (const member of members) {
-          nodeToGroup.set(member.id, groupId);
-        }
-        groupId += 1;
-      }
-
-      const edgeMap = new Map();
-      for (const edge of edges) {
-        const source = nodeToGroup.get(edge.source);
-        const target = nodeToGroup.get(edge.target);
-        if (source === undefined || target === undefined || source === target) {
-          continue;
-        }
-        const left = Math.min(source, target);
-        const right = Math.max(source, target);
-        const key = `${left}:${right}`;
-        const previous = edgeMap.get(key);
-        if (!previous || edge.weight < previous.weight) {
-          edgeMap.set(key, {
-            source: left,
-            target: right,
-            weight: edge.weight,
-          });
-        }
-      }
-
-      return {
-        nodes: aggNodes,
-        edges: Array.from(edgeMap.values()),
-      };
-    },
-    colorMapFor(nodes, colorField) {
-      if (!colorField) {
-        return new Map();
-      }
-      const schemes = {
-        default: PALETTE,
-        pastel: [
-          "#a1c9f4", "#ffb482", "#8de5a1", "#ff9f9b", "#d0bbff",
-          "#debb9b", "#fab0e4", "#cfcfcf", "#ff3154", "#9bf4d4",
-          "#67d5cd", "#f7c0bb", "#96ceb4", "#ffeaa7", "#dfe6e9",
-          "#fd79a8", "#6c5ce7", "#00b894", "#fdcb6e", "#e17055",
-        ],
-        vivid: [
-          "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",
-          "#911eb4", "#42d4f4", "#f032e6", "#bfef45", "#fabed4",
-          "#469990", "#dcbeff", "#9a6324", "#fffac8", "#800000",
-          "#aaffc3", "#808000", "#ffd8b1", "#000075", "#a9a9a9",
-        ],
-        warm: [
-          "#e74c3c", "#e67e22", "#f39c12", "#d35400", "#c0392b",
-          "#ff6b6b", "#ffa07a", "#ff8c42", "#e84393", "#fd79a8",
-          "#fab1a0", "#f8a5c2", "#f78fb3", "#e77f67", "#cf6a87",
-          "#c44569", "#f19066", "#f5cd79", "#e15f41", "#b33939",
-        ],
-        cool: [
-          "#2980b9", "#27ae60", "#1abc9c", "#16a085", "#2ecc71",
-          "#3498db", "#0984e3", "#00b894", "#6c5ce7", "#a29bfe",
-          "#74b9ff", "#55efc4", "#81ecec", "#00cec9", "#0984e3",
-          "#6a89cc", "#82ccdd", "#78e08f", "#b8e994", "#38ada9",
-        ],
-      };
-      const activePalette = schemes[this.colorScheme] || PALETTE;
-      const counts = new Map();
-      for (const node of nodes) {
-        const value = colorField === "cluster_id" ? String(node.cluster_id) : node.meta?.[colorField];
-        if (value) {
-          counts.set(value, (counts.get(value) || 0) + 1);
-        }
-      }
-      const values = Array.from(counts.entries())
-        .sort((left, right) => {
-          if (right[1] !== left[1]) {
-            return right[1] - left[1];
-          }
-          return left[0].localeCompare(right[0]);
-        })
-        .map(([value]) => value);
-      const mapping = new Map();
-      values.forEach((value, index) => {
-        if (index < activePalette.length) {
-          mapping.set(value, activePalette[index]);
-        } else {
-          const hue = (index * 137.508) % 360;
-          const chroma = 60 + (index % 3) * 15;
-          const luminance = 50 + (index % 4) * 5;
-          mapping.set(value, `hcl(${hue}, ${chroma}%, ${luminance}%)`);
-        }
-      });
-      return mapping;
     },
     onThresholdChange() {
       this.maxWeight = this.edgeWeightThreshold > 0 ? String(this.edgeWeightThreshold) : "";
@@ -806,7 +683,7 @@ export default {
       const nodes = this.lastData?.nodes || [];
       let count = 0;
       for (const node of nodes) {
-        if (this._colorValueForNode(node, this.colorBy) === value) {
+        if (colorValueForNode(node, this.colorBy) === value) {
           count += 1;
         }
       }
@@ -817,13 +694,7 @@ export default {
       this.setStatus("ok", `Selected ${count} nodes with ${this.colorBy} = ${value}`);
     },
     legendItemStyle(item) {
-      const isHidden = this.hiddenLegendValues[item.value];
-      return {
-        background: isHidden ? "#e2e8f0" : `${item.color}18`,
-        borderColor: isHidden ? "#cbd5e1" : `${item.color}66`,
-        color: isHidden ? "#94a3b8" : "#1f2937",
-        cursor: "pointer",
-      };
+      return legendItemStyle(item, this.hiddenLegendValues);
     },
     applyViewTransform() {
       const svg = this.$refs.svg;
@@ -987,13 +858,6 @@ export default {
     },
     hideTooltip() {
       this.tooltip.visible = false;
-    },
-    nodeRadius(node) {
-      const count = Number(node.member_count || 1);
-      if (!this.scaleNodeSize) {
-        return count > 1 ? 11 : 8;
-      }
-      return Math.min(22, 7 + Math.sqrt(Math.max(1, count)) * 3);
     },
     _applyLegendHover() {
       const svg = this.$refs.svg;
@@ -1160,73 +1024,15 @@ export default {
       return valueForColumn(row, key) || "-";
     },
     applySessionPayload(payload) {
-      this.tsvText = payload.inputs?.tsv || "";
-      this.metadataText = payload.inputs?.metadata_tsv || "";
-      this.includeMissing = Boolean(payload.options?.include_missing);
-      this.aggregateProfiles = payload.options?.aggregate_profiles !== false;
-      this.layoutMode = payload.options?.layout_mode || "tree";
-      this.edgeLengthMode = payload.options?.edge_length_mode || "linear";
-      this.edgeLengthScale = Number(payload.options?.edge_length_scale ?? 50) || 50;
-      this.longBranchMode = payload.options?.long_branch_mode || "normal";
-      this.longBranchThreshold = Number(payload.options?.long_branch_threshold ?? 0) || 0;
-      this.colorBy = payload.options?.color_by || "";
-      this.maxWeight = payload.options?.max_weight ?? "";
-      this.showEdgeLabels = payload.options?.show_edge_labels !== false;
-      this.scaleNodeSize = payload.options?.scale_node_size !== false;
-      this.aggregateNodes = Boolean(payload.options?.aggregate_nodes);
-      this.correctnessOverlay = payload.options?.correctness_overlay !== false;
-      this.viewFilterMode = payload.options?.view_filter_mode || "all";
-      this.manualRootId = payload.options?.manual_root_id ?? null;
-      this.overlapRelief = payload.options?.overlap_relief !== false;
-      this.nodePositionOverrides = payload.options?.node_position_overrides || {};
-      this.nodeSearchQuery = payload.options?.node_search_query || "";
+      Object.assign(this, parseSessionState(payload));
       this.nodeSearchActive = Boolean(this.nodeSearchQuery.trim());
-      this.collapsedNodes = payload.options?.collapsed_nodes || {};
-      this.collapseThreshold = payload.options?.collapse_threshold || 0;
-      this.hiddenLegendValues = payload.options?.hidden_legend_values || {};
-      this._hiddenNodeIds = payload.options?.hidden_node_ids || {};
-      this._customNodeColors = payload.options?.custom_node_colors || {};
       this.hoveredLegendValue = null;
-      this.lastData = payload.response || null;
-      this.currentLayout = null;
-      this.currentRenderedGraph = null;
-      this.currentEdgeWeightGraph = null;
-      this.currentCollapseSourceGraph = null;
-      this.metadataFields = this.lastData?.metadata_fields || [];
-      this.tableRows = this.lastData?.table_rows || [];
-      this.clusterSummary = this.lastData?.cluster_summary || [];
-      this.clusterFilter = payload.options?.cluster_filter ?? "";
-      this.analysisView = payload.options?.analysis_view || "graph";
-      this.distanceMatrix = this.lastData?.matrix || [];
-      this.matrixLabels = this.lastData?.labels || [];
-      this.heatmapLoci = this.lastData?.loci || [];
-      this.heatmapCells = this.lastData?.cells || [];
-      this.compareLeftLabel = payload.options?.compare_left_label || "";
-      this.compareRightLabel = payload.options?.compare_right_label || "";
-      this.locusDiff = payload.response?.locus_diff || null;
-      this.suggestedColorFields = this.lastData?.suggested_color_fields || [];
-      this.edgeWeightThreshold = payload.options?.max_weight ? Number(payload.options.max_weight) : 0;
       this.fitView();
       if (this.lastData) {
         this.$nextTick(() => {
           this.redrawFromLastData();
         });
       }
-    },
-    _colorValueForNode(node, field) {
-      if (!field) return "";
-      return String(field === "cluster_id" ? node.cluster_id ?? "" : node.meta?.[field] ?? "");
-    },
-    _edgeLength(weight) {
-      const w = Math.max(1, Number(weight) || 1);
-      const scale = Number(this.edgeLengthScale) || 50;
-      if (this.edgeLengthMode === "log") {
-        return scale * Math.log2(w + 1);
-      }
-      if (this.edgeLengthMode === "sqrt") {
-        return scale * Math.sqrt(w);
-      }
-      return scale * w;
     },
     _drawScaleBar(svg) {
       svg?.querySelector(".scale-bar")?.remove();
@@ -1250,7 +1056,7 @@ export default {
       let bestFallback = null;
 
       for (const value of candidates) {
-        const renderedLength = this._edgeLength(value) * viewScale;
+        const renderedLength = edgeLength(value, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
         const candidate = {
           value,
           renderedLength,
@@ -1273,7 +1079,7 @@ export default {
         barWeight = bestFallback.value;
       }
 
-      const barLen = this._edgeLength(barWeight) * viewScale;
+      const barLen = edgeLength(barWeight, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
       const vb = svg.viewBox.baseVal;
       const svgH = vb.height || 900;
       const x = 30;
@@ -1335,28 +1141,6 @@ export default {
 
       svg.appendChild(g);
     },
-    _getDescendants(nodeId, parentMap) {
-      const children = new Map();
-      for (const [childId, parentId] of parentMap.entries()) {
-        if (parentId !== -1 && parentId !== undefined) {
-          if (!children.has(parentId)) {
-            children.set(parentId, []);
-          }
-          children.get(parentId).push(childId);
-        }
-      }
-      const result = [];
-      const queue = children.get(nodeId) || [];
-      while (queue.length) {
-        const id = queue.shift();
-        result.push(id);
-        const kids = children.get(id);
-        if (kids) {
-          queue.push(...kids);
-        }
-      }
-      return result;
-    },
     _getNodePosition(nodeId) {
       if (this.nodePositionOverrides[nodeId]) {
         return this.nodePositionOverrides[nodeId];
@@ -1382,7 +1166,7 @@ export default {
             y: point[1],
             baseX: point[0],
             baseY: point[1],
-            radius: this.nodeRadius(node),
+            radius: nodeRadius(node, this.scaleNodeSize),
           };
         })
         .filter(Boolean);
@@ -1410,7 +1194,7 @@ export default {
           d3
             .forceLink(simLinks)
             .id((node) => node.id)
-            .distance((edge) => this._edgeLength(edge.weight) * 0.6)
+            .distance((edge) => edgeLength(edge.weight, this.edgeLengthMode, this.edgeLengthScale) * 0.6)
             .strength(0.08),
         )
         .force(
@@ -1432,179 +1216,6 @@ export default {
         }
       });
       return relaxed;
-    },
-    _greedyRadialLayout(nodes, edges, rootId, depthMap) {
-      const nodeById = new Map(nodes.map((node) => [node.id, node]));
-      const children = new Map(nodes.map((node) => [node.id, []]));
-      const parentMap = new Map();
-
-      for (const edge of edges) {
-        if (depthMap.get(edge.source) < depthMap.get(edge.target)) {
-          children.get(edge.source)?.push(edge.target);
-          parentMap.set(edge.target, edge.source);
-        } else if (depthMap.get(edge.target) < depthMap.get(edge.source)) {
-          children.get(edge.target)?.push(edge.source);
-          parentMap.set(edge.source, edge.target);
-        }
-      }
-
-      children.forEach((childList) => {
-        childList.sort((left, right) => {
-          const leftCount = Number(nodeById.get(left)?.member_count || 1);
-          const rightCount = Number(nodeById.get(right)?.member_count || 1);
-          return rightCount - leftCount;
-        });
-      });
-
-      const leafCount = new Map();
-      const computeLeaves = (nodeId) => {
-        const kids = children.get(nodeId) || [];
-        if (kids.length === 0) {
-          leafCount.set(nodeId, 1);
-          return 1;
-        }
-        let total = 0;
-        for (const kid of kids) {
-          total += computeLeaves(kid);
-        }
-        leafCount.set(nodeId, total);
-        return total;
-      };
-
-      const roots = [rootId];
-      for (const node of nodes) {
-        if (!parentMap.has(node.id) && node.id !== rootId) {
-          roots.push(node.id);
-        }
-      }
-
-      const uniqueRoots = [...new Set(roots.filter((nodeId) => nodeById.has(nodeId)))];
-      for (const nodeId of uniqueRoots) {
-        computeLeaves(nodeId);
-      }
-
-      const nodeAngles = new Map();
-      const nodeRadii = new Map();
-      const maxWeightedDepth = Math.max(...nodes.map((node) => depthMap.get(node.id) || 0), 1);
-      const maxRadius = LAYOUT_MAX_RADIUS;
-
-      const assignAngles = (nodeId, startAngle, endAngle) => {
-        nodeAngles.set(nodeId, (startAngle + endAngle) / 2);
-        nodeRadii.set(nodeId, ((depthMap.get(nodeId) || 0) / maxWeightedDepth) * maxRadius);
-
-        const kids = children.get(nodeId) || [];
-        if (kids.length === 0) {
-          return;
-        }
-
-        const totalLeaves = leafCount.get(nodeId) || kids.length;
-        let currentAngle = startAngle;
-
-        for (const kid of kids) {
-          const kidLeaves = leafCount.get(kid) || 1;
-          const kidSpan = (endAngle - startAngle) * (kidLeaves / totalLeaves);
-          assignAngles(kid, currentAngle, currentAngle + kidSpan);
-          currentAngle += kidSpan;
-        }
-      };
-
-      if (uniqueRoots.length === 1) {
-        assignAngles(uniqueRoots[0], 0, 2 * Math.PI);
-      } else {
-        const rootSpan = (2 * Math.PI) / uniqueRoots.length;
-        uniqueRoots.forEach((nodeId, index) => {
-          assignAngles(nodeId, index * rootSpan, (index + 1) * rootSpan);
-        });
-      }
-
-      const centerX = LAYOUT_CENTER_X;
-      const centerY = LAYOUT_CENTER_Y;
-      const positions = new Map();
-      for (const node of nodes) {
-        const angle = (nodeAngles.get(node.id) || 0) - Math.PI / 2;
-        const radius = nodeRadii.get(node.id) || 0;
-        positions.set(node.id, [
-          centerX + radius * Math.cos(angle),
-          centerY + radius * Math.sin(angle),
-        ]);
-      }
-
-      return positions;
-    },
-    _correctBranchLengths(nodes, edges, positions, depthMap) {
-      const parentMap = new Map();
-      const kids = new Map(nodes.map((node) => [node.id, []]));
-
-      for (const edge of edges) {
-        if (depthMap.get(edge.source) < depthMap.get(edge.target)) {
-          parentMap.set(edge.target, { id: edge.source, weight: edge.weight });
-          kids.get(edge.source)?.push(edge.target);
-        } else if (depthMap.get(edge.target) < depthMap.get(edge.source)) {
-          parentMap.set(edge.source, { id: edge.target, weight: edge.weight });
-          kids.get(edge.target)?.push(edge.source);
-        }
-      }
-
-      const roots = nodes.filter((node) => !parentMap.has(node.id));
-      if (!roots.length) {
-        return positions;
-      }
-
-      const maxWeightedDepth = Math.max(...nodes.map((node) => depthMap.get(node.id) || 0), 1);
-      const maxRadius = LAYOUT_MAX_RADIUS;
-      const centerX = LAYOUT_CENTER_X;
-      const centerY = LAYOUT_CENTER_Y;
-      const order = [];
-      const visited = new Set();
-
-      for (const root of roots) {
-        if (visited.has(root.id)) {
-          continue;
-        }
-        visited.add(root.id);
-        const queue = [root.id];
-        while (queue.length) {
-          const current = queue.shift();
-          order.push(current);
-          for (const child of kids.get(current) || []) {
-            if (!visited.has(child)) {
-              visited.add(child);
-              queue.push(child);
-            }
-          }
-        }
-      }
-
-      const corrected = new Map(positions);
-      for (let iteration = 0; iteration < 6; iteration += 1) {
-        for (const current of order) {
-          const parentInfo = parentMap.get(current);
-          if (!parentInfo) {
-            continue;
-          }
-
-          const parentPos = corrected.get(parentInfo.id);
-          const currentPos = corrected.get(current);
-          if (!parentPos || !currentPos) {
-            continue;
-          }
-
-          const targetDist = ((depthMap.get(current) || 0) / maxWeightedDepth) * maxRadius;
-          const dx = currentPos[0] - centerX;
-          const dy = currentPos[1] - centerY;
-          const angle = Math.atan2(dy, dx);
-          const currentDist = Math.sqrt(dx * dx + dy * dy);
-
-          if (Math.abs(currentDist - targetDist) > 2) {
-            corrected.set(current, [
-              centerX + targetDist * Math.cos(angle),
-              centerY + targetDist * Math.sin(angle),
-            ]);
-          }
-        }
-      }
-
-      return corrected;
     },
     computePositions(nodes, edges, layoutMode, rootId) {
       const nodeById = new Map(nodes.map((node) => [node.id, node]));
@@ -1658,7 +1269,7 @@ export default {
               continue;
             }
             parent.set(next.id, current);
-            depth.set(next.id, (depth.get(current) || 0) + this._edgeLength(next.weight));
+            depth.set(next.id, (depth.get(current) || 0) + edgeLength(next.weight, this.edgeLengthMode, this.edgeLengthScale));
             componentByNode.set(next.id, componentIndex);
             children.get(current)?.push(next.id);
             queue.push(next.id);
@@ -1730,8 +1341,8 @@ export default {
         };
       }
 
-      let radialPositions = this._greedyRadialLayout(nodes, edges, effectiveRoot, depth);
-      radialPositions = this._correctBranchLengths(nodes, edges, radialPositions, depth);
+      let radialPositions = greedyRadialLayout(nodes, edges, effectiveRoot, depth);
+      radialPositions = correctBranchLengths(nodes, edges, radialPositions, depth);
       const componentByNodeRadial = componentByNode;
       const componentCountRadial = componentRoots.length;
       Object.entries(this.nodePositionOverrides).forEach(([nodeId, point]) => {
@@ -1747,31 +1358,6 @@ export default {
         componentByNode: componentByNodeRadial,
         componentCount: componentCountRadial,
       };
-    },
-    edgeKey(source, target) {
-      const left = Math.min(source, target);
-      const right = Math.max(source, target);
-      return `${left}:${right}`;
-    },
-    highlightedPathEdges(nodeId, parentMap) {
-      const edgeKeys = new Set();
-      let current = nodeId;
-      while (parentMap.has(current) && parentMap.get(current) !== -1) {
-        const parent = parentMap.get(current);
-        edgeKeys.add(this.edgeKey(current, parent));
-        current = parent;
-      }
-      return edgeKeys;
-    },
-    highlightedPathNodes(nodeId, parentMap) {
-      const nodeIds = new Set([nodeId]);
-      let current = nodeId;
-      while (parentMap.has(current) && parentMap.get(current) !== -1) {
-        const parent = parentMap.get(current);
-        nodeIds.add(parent);
-        current = parent;
-      }
-      return nodeIds;
     },
     filterRenderedGraph(nodes, edges, layoutData) {
       if (!this.inspectedItem?.nodeId || this.viewFilterMode === "all") {
@@ -1792,8 +1378,8 @@ export default {
         };
       }
       if (this.viewFilterMode === "path") {
-        const visibleNodeIds = this.highlightedPathNodes(this.inspectedItem.nodeId, layoutData.parent);
-        const visibleEdgeKeys = this.highlightedPathEdges(this.inspectedItem.nodeId, layoutData.parent);
+        const visibleNodeIds = highlightedPathNodes(this.inspectedItem.nodeId, layoutData.parent);
+        const visibleEdgeKeys = highlightedPathEdges(this.inspectedItem.nodeId, layoutData.parent, edgeKey);
         return {
           nodes: nodes.filter((node) => visibleNodeIds.has(node.id)),
           edges: edges.filter((edge) => visibleEdgeKeys.has(edge.edgeKey)),
@@ -1821,19 +1407,23 @@ export default {
     },
     _prepareGraphData(rawNodes, rawEdges) {
       const activeGraph = this.aggregateNodes
-        ? this.aggregateGraph(rawNodes, rawEdges)
+        ? aggregateGraph(rawNodes, rawEdges)
         : { nodes: rawNodes, edges: rawEdges };
-      const visibleEdges = this.filteredEdges(activeGraph.edges);
+      const maxWeight = parseMaxWeight(this.maxWeight);
+      const visibleEdges = filteredEdges(activeGraph.edges, maxWeight);
       const fullLayoutData = this.computePositions(
         activeGraph.nodes,
         visibleEdges,
         this.layoutMode,
         this.lastData?.layout?.root_id,
       );
-      const collapseSet = this.resolveCollapsedNodeSet(
+      const collapseSet = resolveCollapsedNodeSet(
         activeGraph.nodes,
         visibleEdges,
         fullLayoutData.parent,
+        this.collapsedNodes,
+        this.collapseThreshold,
+        edgeKey,
       );
       let graphNodes = activeGraph.nodes;
       let graphEdges = visibleEdges;
@@ -1890,11 +1480,11 @@ export default {
           this.lastData?.layout?.root_id,
         )
         : fullLayoutData;
-      const colorMap = this.colorMapFor(activeGraph.nodes, this.colorBy);
+      const colorMap = colorMapFor(activeGraph.nodes, this.colorBy, this.colorScheme);
       const selectedNode = selectedNodeId(this.inspectedItem);
       const highlightedEdgeKeys =
         this.correctnessOverlay && this.inspectedItem?.kind === "node"
-          ? this.highlightedPathEdges(this.inspectedItem.nodeId, layoutData.parent)
+          ? highlightedPathEdges(this.inspectedItem.nodeId, layoutData.parent, edgeKey)
           : new Set();
       const searchQuery = this.nodeSearchQuery.trim().toLowerCase();
       const hasSearch = this.nodeSearchActive && searchQuery.length > 0;
@@ -1917,7 +1507,7 @@ export default {
                 layoutData.componentByNode.get(node.id)
               : true;
           const nodeLabel = String(node.label || "");
-          const legendValue = this._colorValueForNode(node, this.colorBy);
+          const legendValue = colorValueForNode(node, this.colorBy);
           const legendSelect = this._legendSelectValue
             ? legendValue === this._legendSelectValue
             : true;
@@ -1931,7 +1521,7 @@ export default {
             x: point[0],
             y: point[1],
             color: this._customNodeColors[String(node.id)] || colorMap.get(legendValue) || "#2563eb",
-            radius: this.nodeRadius(node),
+            radius: nodeRadius(node, this.scaleNodeSize),
             isRoot,
             sameComponent,
             isSelected: selectedNode === node.id,
@@ -1951,8 +1541,8 @@ export default {
           if (!sourcePoint || !targetPoint || !sourceNode || !targetNode) {
             return null;
           }
-          const edgeKey = this.edgeKey(edge.source, edge.target);
-          const inHighlightedPath = highlightedEdgeKeys.has(edgeKey);
+          const edgeKeyValue = edgeKey(edge.source, edge.target);
+          const inHighlightedPath = highlightedEdgeKeys.has(edgeKeyValue);
           const sameComponent =
             layoutData.componentByNode.get(edge.source) === layoutData.componentByNode.get(edge.target);
           return {
@@ -1961,7 +1551,7 @@ export default {
             targetPoint,
             midX: (sourcePoint[0] + targetPoint[0]) / 2,
             midY: (sourcePoint[1] + targetPoint[1]) / 2,
-            edgeKey,
+            edgeKey: edgeKeyValue,
             inHighlightedPath,
             sameComponent,
             sourceClusterId: sourceNode.cluster_id,
@@ -1985,7 +1575,7 @@ export default {
       const maxEdgeWeight = weightExtent[1] ?? 0;
       const finalGraph = {
         nodes: edgeWeightGraph.nodes,
-        edges: this.filteredEdges(edgeWeightGraph.edges),
+        edges: filteredEdges(edgeWeightGraph.edges, maxWeight),
       };
       return {
         activeGraph,
@@ -2419,7 +2009,7 @@ export default {
           .attr("transform", (node) => `translate(${node.x},${node.y})`)
           .attr("opacity", nodeGroupOpacity)
           .style("cursor", "pointer")
-          .attr("data-legend-value", (node) => this._colorValueForNode(node, this.colorBy))
+          .attr("data-legend-value", (node) => colorValueForNode(node, this.colorBy))
           .attr("data-node-color", (node) => node.color)
           .attr("data-radius", (node) => node.radius)
           .attr("data-dimmed", (node) => node.legendDimmed || node.searchDimmed ? "1" : "0")
@@ -2628,7 +2218,7 @@ export default {
               if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
                 return;
               }
-              const descendants = this._getDescendants(node.id, layout.parent);
+              const descendants = getDescendants(node.id, layout.parent);
               const overrides = { ...this.nodePositionOverrides };
               overrides[node.id] = [newX, newY];
               for (const childId of descendants) {
@@ -2716,22 +2306,12 @@ export default {
       this._building = true;
       try {
         this.setStatus("ok", "Building MST...");
-        const response = await fetch("/api/mst", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tsv: this.tsvText,
-            metadata_tsv: this.metadataText,
-            include_missing: this.includeMissing,
-            aggregate_profiles: this.aggregateProfiles,
-          }),
+        const data = await fetchMst({
+          tsv: this.tsvText,
+          metadataTsv: this.metadataText,
+          includeMissing: this.includeMissing,
+          aggregateProfiles: this.aggregateProfiles,
         });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "request failed");
-        }
 
         this._resetViewState(data, "graph");
         this.manualRootId = null;
@@ -2763,22 +2343,12 @@ export default {
       this._building = true;
       try {
         this.setStatus("ok", "Building distance matrix...");
-        const response = await fetch("/api/distance-matrix", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tsv: this.tsvText,
-            metadata_tsv: this.metadataText,
-            include_missing: this.includeMissing,
-            aggregate_profiles: this.aggregateProfiles,
-          }),
+        const data = await fetchDistanceMatrix({
+          tsv: this.tsvText,
+          metadataTsv: this.metadataText,
+          includeMissing: this.includeMissing,
+          aggregateProfiles: this.aggregateProfiles,
         });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "request failed");
-        }
 
         this._resetViewState(data, "matrix");
         this.clusterSummary = data.cluster_summary || [];
@@ -2803,21 +2373,11 @@ export default {
       this._building = true;
       try {
         this.setStatus("ok", "Building allele heatmap...");
-        const response = await fetch("/api/allele-heatmap", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tsv: this.tsvText,
-            metadata_tsv: this.metadataText,
-            aggregate_profiles: this.aggregateProfiles,
-          }),
+        const data = await fetchAlleleHeatmap({
+          tsv: this.tsvText,
+          metadataTsv: this.metadataText,
+          aggregateProfiles: this.aggregateProfiles,
         });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "request failed");
-        }
 
         this._resetViewState(data, "heatmap");
         this.clusterSummary = [];
@@ -2843,20 +2403,10 @@ export default {
       this._building = true;
       try {
         this.setStatus("ok", "Comparing result sets...");
-        const response = await fetch("/api/compare-results", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            left_tsv: this.compareLeftTsv,
-            right_tsv: this.compareRightTsv,
-          }),
+        const data = await fetchCompareResults({
+          leftTsv: this.compareLeftTsv,
+          rightTsv: this.compareRightTsv,
         });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "request failed");
-        }
 
         this.analysisView = "compare";
         this.currentRenderedGraph = null;
@@ -3058,29 +2608,6 @@ export default {
         new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }),
       );
     },
-    _buildNewick(nodeId, parent, weightMap, childrenMap, visited) {
-      visited.add(nodeId);
-      const kids = childrenMap.get(nodeId) || [];
-      const label = this.currentRenderedGraph.nodes.find((n) => n.id === nodeId)?.label || String(nodeId);
-      const childNewicks = [];
-      for (const kidId of kids) {
-        if (!visited.has(kidId)) {
-          childNewicks.push(this._buildNewick(kidId, nodeId, weightMap, childrenMap, visited));
-        }
-      }
-      let result = "";
-      if (childNewicks.length > 0) {
-        result += `(${childNewicks.join(",")})`;
-      }
-      result += String(label).replace(/[\s()[\]{}:;,]/g, "_");
-      if (parent !== null) {
-        const w = weightMap.get(String(nodeId));
-        if (w !== undefined) {
-          result += `:${Number(w).toFixed(2)}`;
-        }
-      }
-      return result;
-    },
     exportNewick() {
       if (!this.currentLayout || !this.currentRenderedGraph) {
         this.setStatus("error", "Build a graph before exporting Newick");
@@ -3122,9 +2649,10 @@ export default {
         return;
       }
       const parts = [];
+      const renderedNodes = this.currentRenderedGraph.nodes;
       for (const root of roots) {
         const visited = new Set();
-        parts.push(this._buildNewick(root, null, weightMap, childrenMap, visited));
+        parts.push(buildNewick(root, null, weightMap, childrenMap, visited, renderedNodes));
       }
       const newick = parts.join("\n") + ";";
       this._downloadBlob("gmlst_tree.nwk", new Blob([newick], { type: "text/plain;charset=utf-8" }));
@@ -3164,23 +2692,13 @@ export default {
         return;
       }
       try {
-        const response = await fetch("/api/locus-diff", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            tsv: this.tsvText,
-            metadata_tsv: this.metadataText,
-            include_missing: this.includeMissing,
-            left_label: this.compareLeftLabel,
-            right_label: this.compareRightLabel,
-          }),
+        const data = await fetchCompareLoci({
+          tsv: this.tsvText,
+          metadataTsv: this.metadataText,
+          includeMissing: this.includeMissing,
+          leftLabel: this.compareLeftLabel,
+          rightLabel: this.compareRightLabel,
         });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "request failed");
-        }
         this.locusDiff = data;
         this.setStatus("ok", "Locus difference report ready");
       } catch (error) {
@@ -3905,40 +3423,16 @@ export default {
             </h2>
             <p class="viz-stats">{{ statsLine }}</p>
           </div>
-          <div class="legend">
-            <div v-if="legendItems.length === 0" class="legend-title">Legend: fixed node color</div>
-            <template v-else>
-              <div class="legend-header">
-                <span class="legend-title">Legend · {{ colorBy }}</span>
-                <button
-                  v-if="Object.keys(hiddenLegendValues).length > 0"
-                  class="legend-reset"
-                  @click="showAllLegendValues"
-                >Show all</button>
-              </div>
-              <span
-                v-for="item in legendItems"
-                :key="item.value"
-                class="legend-item"
-                :class="{ 'legend-hidden': hiddenLegendValues[item.value], 'legend-hovered': hoveredLegendValue === item.value }"
-                :style="legendItemStyle(item)"
-                tabindex="0"
-                role="button"
-                :aria-pressed="String(!!hiddenLegendValues[item.value])"
-                :aria-label="item.value"
-                @click="toggleLegendValue(item.value)"
-                @keydown.enter="toggleLegendValue(item.value)"
-                @keydown.space.prevent="toggleLegendValue(item.value)"
-                @contextmenu.prevent="selectNodesByLegendValue(item.value)"
-                @mouseenter="hoveredLegendValue = item.value"
-                @mouseleave="hoveredLegendValue = null"
-              >
-                <span class="dot" :style="{ background: hiddenLegendValues[item.value] ? '#94a3b8' : item.color }"></span>
-                {{ item.value }}
-                <span class="legend-count">{{ item.count }}</span>
-              </span>
-            </template>
-          </div>
+          <LegendBar
+            :items="legendItems"
+            :color-by="colorBy"
+            :hidden-values="hiddenLegendValues"
+            :hovered-value="hoveredLegendValue"
+            @toggle="toggleLegendValue"
+            @show-all="showAllLegendValues"
+            @select-by-value="selectNodesByLegendValue"
+            @update:hovered-value="hoveredLegendValue = $event"
+          />
         </div>
         <div v-if="analysisView === 'graph'" ref="canvas" class="canvas" role="region" aria-label="Graph viewport — drag to pan, scroll to zoom, right-click nodes to hide">
           <div v-if="_building" class="loading-overlay">
@@ -3956,213 +3450,52 @@ export default {
               <div v-for="line in tooltip.lines" :key="line" class="line">{{ line }}</div>
             </div>
           </template>
-          <div v-else class="empty-state">
-            <div class="empty-state-intro">
-              <div class="empty-state-badge">Start analysis</div>
-              <h3>Build a view from your profile table</h3>
-              <p>
-                The right panel becomes your analysis surface after you build a result. Start by
-                loading a profile TSV on the left, then generate an MST for the clearest first-pass
-                overview.
-              </p>
-            </div>
-            <div class="empty-state-workflow">
-              <p class="section-title">Workflow</p>
-              <div class="workflow-steps workflow-steps-analysis">
-                <div class="workflow-step is-active">1. Load profile TSV</div>
-                <div class="workflow-step">2. Build MST or another view</div>
-                <div class="workflow-step is-muted">3. Inspect, filter, and compare samples</div>
-              </div>
-            </div>
-            <div class="empty-state-entry-grid">
-              <button
-                class="empty-state-entry empty-state-entry-primary"
-                :disabled="!hasProfileInput"
-                @click="buildMst"
-              >
-                <span class="empty-state-entry-label">Recommended first view</span>
-                <strong>Build MST</strong>
-                <span>
-                  Best default when you want to understand overall sample relationships quickly.
-                </span>
-              </button>
-              <button
-                class="empty-state-entry"
-                :disabled="!hasProfileInput"
-                @click="buildDistanceMatrix"
-              >
-                <span class="empty-state-entry-label">Dense comparison</span>
-                <strong>Distance matrix</strong>
-                <span>Use when you want exact pairwise distances between samples.</span>
-              </button>
-              <button
-                class="empty-state-entry"
-                :disabled="!hasProfileInput"
-                @click="buildAlleleHeatmap"
-              >
-                <span class="empty-state-entry-label">Locus-level scan</span>
-                <strong>Allele heatmap</strong>
-                <span>Use when you want to inspect allele patterns across many loci.</span>
-              </button>
-            </div>
-            <div class="empty-state-help-grid">
-              <div class="empty-state-help-card">
-                <strong>Recommended first pass</strong>
-                <ul class="empty-state-list">
-                  <li>Upload or paste a profile TSV</li>
-                  <li>Add metadata only if you need coloring or filtering</li>
-                  <li>Build MST for the clearest first-pass result</li>
-                </ul>
-              </div>
-              <div class="empty-state-help-card">
-                <strong>Before you build</strong>
-                <ul class="empty-state-list">
-                  <li v-if="hasProfileInput">Your profile TSV is loaded and ready for analysis</li>
-                  <li v-else>Load or paste a profile TSV to enable the analysis entry points above</li>
-                  <li>Add metadata only when you want coloring, filtering, or labels</li>
-                  <li>Use result comparison for comparing two separate TSV outputs</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <EmptyState
+            v-else
+            :has-profile-input="hasProfileInput"
+            @build-mst="buildMst"
+            @build-distance-matrix="buildDistanceMatrix"
+            @build-allele-heatmap="buildAlleleHeatmap"
+          />
         </div>
-        <div v-else-if="analysisView === 'matrix'" class="matrix-panel">
-          <div v-if="matrixTruncated" class="status-message warn">
-            Showing first {{ matrixRenderLimit }} of {{ matrixTruncatedCount }} rows. Export JSON for full data.
-          </div>
-          <table class="matrix-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th v-for="label in filteredDistanceMatrixView.labels" :key="label">{{ label }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, rowIndex) in filteredDistanceMatrixView.matrix"
-                :key="filteredDistanceMatrixView.labels[rowIndex] || rowIndex"
-              >
-                <th>{{ filteredDistanceMatrixView.labels[rowIndex] || rowIndex }}</th>
-                <td v-for="(value, colIndex) in row" :key="`${rowIndex}-${colIndex}`">
-                  <div
-                    class="matrix-cell"
-                    :style="{
-                      backgroundColor: `rgba(30, 93, 168, ${Number(value) === 0 ? 0.06 : Math.max(0.1, ((Number(value) || 0) / matrixMaxValue) * 0.62)})`,
-                      color:
-                        ((Number(value) || 0) / matrixMaxValue) > 0.62
-                          ? '#f8fafc'
-                          : '#1e293b',
-                    }"
-                    :title="matrixTitle(filteredDistanceMatrixView.labels[rowIndex], filteredDistanceMatrixView.labels[colIndex], value)"
-                    @click="triggerCompareFromPair(filteredDistanceMatrixView.labels[rowIndex], filteredDistanceMatrixView.labels[colIndex])"
-                  >
-                    {{ value }}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else-if="analysisView === 'heatmap'" class="matrix-panel">
-          <div class="table-toolbar">
-            <input
-              v-model="heatmapLocusQuery"
-              class="table-search"
-              type="text"
-              placeholder="Filter loci"
-            />
-            <button class="btn btn-secondary btn-chip" @click="exportHeatmapTsv">
-              Export heatmap TSV
-            </button>
-            <button class="btn btn-secondary btn-chip" @click="exportHeatmapJson">
-              Export heatmap JSON
-            </button>
-          </div>
-          <div v-if="heatmapTruncated" class="status-message warn">
-            Showing first {{ matrixRenderLimit }} of {{ heatmapTruncatedCount }} rows. Export JSON for full data.
-          </div>
-          <div v-if="heatmapLociTruncated" class="status-message warn">
-            Showing first {{ lociRenderLimit }} of {{ heatmapLociTruncatedCount }} loci. Use locus filter to narrow.
-          </div>
-          <table class="matrix-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th v-if="colorBy">{{ colorBy }}</th>
-                <th v-for="locus in filteredHeatmapLociView.loci" :key="locus">{{ locus }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, rowIndex) in filteredHeatmapLociView.cells"
-                :key="filteredHeatmapView.labels[rowIndex] || rowIndex"
-              >
-                <th
-                  @click="fillCompareFromPair(filteredHeatmapView.labels[rowIndex], compareRightLabel || filteredHeatmapView.labels[rowIndex])"
-                  @dblclick="triggerCompareFromPair(compareLeftLabel || filteredHeatmapView.labels[rowIndex], filteredHeatmapView.labels[rowIndex])"
-                >
-                  {{ filteredHeatmapView.labels[rowIndex] || rowIndex }}
-                </th>
-                <td v-if="colorBy">
-                  <div
-                    class="matrix-cell annotation-cell"
-                    :style="{ background: heatmapAnnotationRows[rowIndex]?.color || '#e5e7eb' }"
-                    :title="`${filteredHeatmapView.labels[rowIndex]} · ${colorBy}: ${heatmapAnnotationRows[rowIndex]?.value || '-'}`"
-                  >
-                    {{ heatmapAnnotationRows[rowIndex]?.value || '-' }}
-                  </div>
-                </td>
-                <td v-for="(cell, cellIndex) in row" :key="`${rowIndex}-${cellIndex}`">
-                  <div
-                    class="matrix-cell"
-                    :class="heatmapClass(cell.state)"
-                    :title="`${filteredHeatmapView.labels[rowIndex]} · ${filteredHeatmapLociView.loci[cellIndex]}: ${cell.value} (${cell.state})`"
-                  >
-                    {{ cell.value }}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="matrix-panel">
-          <div v-if="compareResultsSummary" class="compare-summary-grid">
-            <div class="metric"><span>Matched</span><strong>{{ compareResultsSummary.matched_samples }}</strong></div>
-            <div class="metric"><span>Same ST</span><strong>{{ compareResultsSummary.same_st }}</strong></div>
-            <div class="metric"><span>Different ST</span><strong>{{ compareResultsSummary.different_st }}</strong></div>
-            <div class="metric"><span>Locus diff</span><strong>{{ compareResultsSummary.samples_with_locus_differences }}</strong></div>
-            <div class="metric"><span>Left only</span><strong>{{ compareResultsSummary.left_only }}</strong></div>
-            <div class="metric"><span>Right only</span><strong>{{ compareResultsSummary.right_only }}</strong></div>
-          </div>
-          <div class="table-toolbar">
-            <select v-model="compareStatusFilter">
-              <option value="">All statuses</option>
-              <option v-for="option in compareStatusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-          <table class="isolate-table">
-            <thead>
-              <tr>
-                <th>Sample</th>
-                <th>Left ST</th>
-                <th>Right ST</th>
-                <th>Diff loci</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in filteredCompareRows" :key="row.sample_id">
-                <td>{{ row.sample_id }}</td>
-                <td>{{ row.left_st || '-' }}</td>
-                <td>{{ row.right_st || '-' }}</td>
-                <td>{{ row.differing_loci_count }}</td>
-                <td>{{ row.status }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DistanceMatrix
+          v-else-if="analysisView === 'matrix'"
+          :labels="filteredDistanceMatrixView.labels"
+          :matrix="filteredDistanceMatrixView.matrix"
+          :max-value="matrixMaxValue"
+          :truncated="matrixTruncated"
+          :render-limit="matrixRenderLimit"
+          :truncated-count="matrixTruncatedCount"
+          @compare-pair="triggerCompareFromPair"
+        />
+        <AlleleHeatmap
+          v-else-if="analysisView === 'heatmap'"
+          :locus-query="heatmapLocusQuery"
+          :loci="filteredHeatmapLociView.loci"
+          :cells="filteredHeatmapLociView.cells"
+          :labels="filteredHeatmapView.labels"
+          :annotation-rows="heatmapAnnotationRows"
+          :color-by="colorBy"
+          :truncated="heatmapTruncated"
+          :render-limit="matrixRenderLimit"
+          :truncated-count="heatmapTruncatedCount"
+          :loci-truncated="heatmapLociTruncated"
+          :loci-render-limit="lociRenderLimit"
+          :loci-truncated-count="heatmapLociTruncatedCount"
+          @update:locus-query="heatmapLocusQuery = $event"
+          @export-tsv="exportHeatmapTsv"
+          @export-json="exportHeatmapJson"
+          @fill-compare="fillCompareFromPair($event, compareRightLabel || $event)"
+          @trigger-compare="triggerCompareFromPair(compareLeftLabel || $event, $event)"
+        />
+        <CompareTable
+          v-else
+          :summary="compareResultsSummary"
+          :rows="filteredCompareRows"
+          :status-options="compareStatusOptions"
+          :status-filter="compareStatusFilter"
+          @update:status-filter="compareStatusFilter = $event"
+        />
       </section>
     </main>
             </div>

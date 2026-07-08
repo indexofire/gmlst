@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
@@ -371,9 +373,39 @@ def create_visual_app(*, title: str) -> Flask:
     )
     app.config["GMLST_VISUAL_TITLE"] = title
     app.config["MAX_CONTENT_LENGTH"] = _MAX_CONTENT_LENGTH
+    app.config["SECRET_KEY"] = secrets.token_urlsafe(32)
 
     werkzeug_logger = logging.getLogger("werkzeug")
     werkzeug_logger.addFilter(_QuietNotFoundFilter())
+
+    @app.before_request
+    def _enforce_same_origin() -> tuple[object, int] | None:
+        if request.method not in ("POST", "PUT", "DELETE", "PATCH"):
+            return None
+        origin = request.headers.get("Origin")
+        referer = request.headers.get("Referer")
+        host_url = request.host_url.rstrip("/")
+        if origin is not None and origin.rstrip("/") != host_url:
+            return jsonify({"error": "Cross-origin requests are not allowed"}), 403
+        if origin is None and referer is not None:
+            parsed = urlparse(referer)
+            if f"{parsed.scheme}://{parsed.netloc}" != host_url:
+                return jsonify({"error": "Cross-origin requests are not allowed"}), 403
+        return None
+
+    @app.after_request
+    def _set_security_headers(response: Any) -> Any:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'"
+        )
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "same-origin"
+        return response
 
     @app.get("/")
     def index() -> str:

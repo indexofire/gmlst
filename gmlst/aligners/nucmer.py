@@ -29,8 +29,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from gmlst.aligners.base import AlignmentResult, AlleleMatch
-from gmlst.aligners.blastn import _split_allele_id
+from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger("gmlst.aligners.nucmer")
@@ -190,7 +189,7 @@ def _parse_coords(path: Path, loci: list[str]) -> list[AlleleMatch]:
             except (ValueError, IndexError):
                 continue
 
-            locus, allele_id = _split_allele_id(allele_name)
+            locus, allele_id = split_allele_id(allele_name)
             if locus not in loci_set:
                 continue
             if identity < _MIN_IDENTITY:

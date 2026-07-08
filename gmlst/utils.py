@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import gzip
 import logging
 import os
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TextIO
 
 logger = logging.getLogger("gmlst")
 
@@ -156,17 +158,30 @@ def get_temp_root() -> Path | None:
 
 
 # ---------------------------------------------------------------------------
+# Text I/O helper
+# ---------------------------------------------------------------------------
+
+
+@contextmanager
+def open_text(path: Path) -> Iterator[TextIO]:
+    """Open a text file for reading, transparently handling .gz compression."""
+    if path.suffix.lower() == ".gz":
+        with gzip.open(path, "rt") as fh:
+            yield fh
+    else:
+        with open(path) as fh:
+            yield fh
+
+
+# ---------------------------------------------------------------------------
 # FASTA helpers
 # ---------------------------------------------------------------------------
 
 
 def count_sequences(fasta: Path) -> int:
     """Count the number of sequences in a FASTA file (supports .gz)."""
-    import gzip
-
-    opener = gzip.open if fasta.suffix == ".gz" else open
     count = 0
-    with opener(fasta, "rt") as fh:  # type: ignore[call-overload]
+    with open_text(fasta) as fh:
         for line in fh:
             if line.startswith(">"):
                 count += 1

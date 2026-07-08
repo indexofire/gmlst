@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import gzip
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
+
+from gmlst.utils import open_text
 
 
 @dataclass
@@ -36,8 +37,7 @@ class FastqReader:
 
     def records(self) -> Generator[FastqRecord, None, None]:
         """Yield :class:`FastqRecord` objects one at a time."""
-        opener = gzip.open if self.path.suffix.lower() == ".gz" else open
-        with opener(self.path, "rt") as fh:  # type: ignore[call-overload]
+        with open_text(self.path) as fh:
             while True:
                 header = fh.readline().rstrip()
                 if not header:

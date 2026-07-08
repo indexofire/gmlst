@@ -24,6 +24,7 @@ import json
 import logging
 import time
 from pathlib import Path
+from typing import Any
 
 from gmlst.database.atomic import atomic_write_text
 from gmlst.database.download import (
@@ -31,13 +32,16 @@ from gmlst.database.download import (
     download_file,
     fetch_json,
 )
-from gmlst.database.providers.base import SchemeInfo, download_required_files
+from gmlst.database.providers.base import (
+    SchemeInfo,
+    download_required_files,
+    generate_scheme_base_name,
+)
 
 logger = logging.getLogger("gmlst.database.providers.bigsdb")
 
 _RETRY_DELAY = 2.0  # kept for any callers
 _MAX_RETRIES = 3  # kept for any callers
-_MAX_RETRIES = 3
 
 # How to classify schemes by description keyword
 _TYPE_KEYWORDS: dict[str, list[str]] = {
@@ -46,57 +50,28 @@ _TYPE_KEYWORDS: dict[str, list[str]] = {
     "wgmlst": ["wgmlst", "whole genome mlst", "whole-genome"],
 }
 
+
+def _load_mapping_json(filename: str) -> dict[str, Any]:
+    """Load a JSON mapping file from package data, filtering keys starting with '_'."""
+    try:
+        import importlib.resources as pkg_resources
+
+        mapping_path = Path(str(pkg_resources.files("gmlst") / "data" / filename))
+        if mapping_path.is_file():
+            with mapping_path.open() as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return {k: v for k, v in data.items() if not k.startswith("_")}
+    except Exception as e:
+        logger.debug("Could not load %s: %s", filename, e)
+    return {}
+
+
 # Load organism name mapping for all providers
-_ORGANISM_MAPPINGS: dict[str, dict[str, str]] = {}
-
-
-def _load_organism_mappings() -> dict[str, dict[str, str]]:
-    """Load organism name mappings from config file.
-
-    Returns a dict of {provider: {organism_key: full_name}}
-    """
-    try:
-        import importlib.resources as pkg_resources
-
-        mapping_file = pkg_resources.files("gmlst") / "data" / "organism_mapping.json"
-        mapping_path = Path(str(mapping_file))
-        if mapping_path.is_file():
-            with mapping_path.open() as f:
-                data = json.load(f)
-                # Extract mappings for each provider (excluding keys starting with '_')
-                return {
-                    provider: mappings
-                    for provider, mappings in data.items()
-                    if not provider.startswith("_") and isinstance(mappings, dict)
-                }
-    except Exception as e:
-        logger.debug("Could not load organism mappings: %s", e)
-    return {}
-
-
-_ORGANISM_MAPPINGS = _load_organism_mappings()
-_ORGANISM_MAPPING: dict[str, str] = {}
-
-
-def _load_organism_mapping() -> dict[str, str]:
-    """Load organism name mapping from config file."""
-    try:
-        import importlib.resources as pkg_resources
-
-        mapping_file = (
-            pkg_resources.files("gmlst") / "data" / "pasteur_organism_mapping.json"
-        )
-        mapping_path = Path(str(mapping_file))
-        if mapping_path.is_file():
-            with mapping_path.open() as f:
-                data = json.load(f)
-                return {k: v for k, v in data.items() if not k.startswith("_")}
-    except Exception as e:
-        logger.debug("Could not load organism mapping: %s", e)
-    return {}
-
-
-_ORGANISM_MAPPING = _load_organism_mapping()
+_ORGANISM_MAPPINGS: dict[str, dict[str, str]] = _load_mapping_json(
+    "organism_mapping.json"
+)
+_ORGANISM_MAPPING: dict[str, str] = _load_mapping_json("pasteur_organism_mapping.json")
 
 
 class BigSdbProvider:
@@ -148,7 +123,7 @@ class BigSdbProvider:
                     organism_name = provider_mappings[org_name]
 
                 # Generate short base name for scheme naming (e.g., "lmonocytogenes")
-                base_name = _generate_scheme_base_name(organism_name)
+                base_name = generate_scheme_base_name(organism_name)
 
                 try:
                     schemes = _fetch_schemes(seqdef_url)
@@ -504,7 +479,7 @@ class BigSdbProvider:
 
             mapped_organism = provider_mappings.get(org_name, "")
             mapped_base_name = (
-                _generate_scheme_base_name(mapped_organism).lower()
+                generate_scheme_base_name(mapped_organism).lower()
                 if mapped_organism
                 else ""
             )
@@ -640,56 +615,6 @@ def _extract_organism_name(db_description: str) -> str | None:
     if len(name) < 3 or name.endswith("spp."):
         return None
 
-    return name
-
-
-def _generate_scheme_base_name(organism_name: str) -> str:
-    """Generate short scheme base name from full organism name.
-
-    Rules:
-    1. For species (e.g., 'Listeria monocytogenes'):
-       first letter of genus + species = 'lmonocytogenes'
-    2. For genus only (e.g., 'Neisseria spp.'):
-       full genus name only = 'neisseria'
-    3. For multi-species labels containing '/' in species token
-       (e.g., 'Campylobacter jejuni/coli'):
-       use genus only = 'campylobacter'
-
-    Examples:
-        'Listeria monocytogenes' -> 'lmonocytogenes'
-        'Staphylococcus aureus' -> 'saureus'
-        'Neisseria spp.' -> 'neisseria'
-        'Campylobacter jejuni/coli' -> 'campylobacter'
-        'Klebsiella pneumoniae' -> 'kpneumoniae'
-    """
-    if not organism_name:
-        return "unknown"
-
-    # Normalize: lowercase and remove extra spaces
-    name = organism_name.lower().strip()
-
-    # Handle 'spp.' or 'sp.' cases (genus only)
-    if (
-        " spp." in name
-        or name.endswith(" spp")
-        or " sp." in name
-        or name.endswith(" sp")
-    ):
-        # Extract genus name only
-        genus = name.split()[0]
-        return genus
-
-    # Handle full species name (genus + species)
-    parts = name.split()
-    if len(parts) >= 2:
-        genus = parts[0]
-        species = parts[1]
-        if "/" in species:
-            return genus
-        # Return first letter of genus + full species name
-        return f"{genus[0]}{species}"
-
-    # Fallback: just return the name as-is (single word)
     return name
 
 

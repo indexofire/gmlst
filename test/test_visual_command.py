@@ -1789,3 +1789,89 @@ def test_heatmap_api_tsv_export_endpoint_returns_valid_tsv() -> None:
     assert cells
     assert len(cells) == len(labels)
     assert all(len(row) == len(loci) for row in cells)
+
+
+def test_create_visual_app_sets_secret_key() -> None:
+    app = create_visual_app(title="secret test")
+    assert app.config["SECRET_KEY"]
+    assert len(app.config["SECRET_KEY"]) >= 32
+
+
+def test_security_headers_present_on_index() -> None:
+    app = create_visual_app(title="headers test")
+    client = app.test_client()
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["Content-Security-Policy"] == (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'"
+    )
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["Referrer-Policy"] == "same-origin"
+
+
+def test_security_headers_present_on_error_response() -> None:
+    app = create_visual_app(title="headers error test")
+    client = app.test_client()
+    response = client.post("/api/mst", json={"tsv": ""})
+    assert response.status_code == 400
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["Referrer-Policy"] == "same-origin"
+
+
+def test_cross_origin_post_blocked() -> None:
+    app = create_visual_app(title="csrf test")
+    client = app.test_client()
+    blocked = client.post(
+        "/api/mst",
+        json={"tsv": ""},
+        headers={"Origin": "http://evil.com"},
+    )
+    assert blocked.status_code == 403
+    assert blocked.get_json() == {"error": "Cross-origin requests are not allowed"}
+
+
+def test_cross_origin_post_blocked_by_referer() -> None:
+    app = create_visual_app(title="csrf referer test")
+    client = app.test_client()
+    blocked = client.post(
+        "/api/mst",
+        json={"tsv": ""},
+        headers={"Referer": "http://evil.com/page"},
+    )
+    assert blocked.status_code == 403
+    assert blocked.get_json() == {"error": "Cross-origin requests are not allowed"}
+
+
+def test_same_origin_post_allowed() -> None:
+    app = create_visual_app(title="same origin test")
+    client = app.test_client()
+    probe = client.get("/health")
+    host_url = probe.request.url.rstrip("/").replace("/health", "")
+    response = client.post(
+        "/api/mst",
+        json={"tsv": ""},
+        headers={"Origin": host_url},
+    )
+    assert response.status_code != 403
+
+
+def test_no_origin_post_allowed() -> None:
+    app = create_visual_app(title="no origin test")
+    client = app.test_client()
+    response = client.post("/api/mst", json={"tsv": ""})
+    assert response.status_code != 403
+
+
+def test_get_routes_unaffected_by_origin_check() -> None:
+    app = create_visual_app(title="get unaffected test")
+    client = app.test_client()
+    index = client.get("/", headers={"Origin": "http://evil.com"})
+    assert index.status_code == 200
+    health = client.get("/health", headers={"Origin": "http://evil.com"})
+    assert health.status_code == 200

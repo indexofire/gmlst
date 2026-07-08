@@ -230,7 +230,7 @@ def _align_evidence_fallback_loci_impl(
     return fallback_aln, fallback_elapsed
 
 
-def _apply_post_alignment_refinements_impl(
+def _refine_minimap2_hash_prefilter(
     *,
     locus_calls: dict[str, LocusCall],
     aln: AlignmentResult,
@@ -240,38 +240,14 @@ def _apply_post_alignment_refinements_impl(
     scheme,
     mode_overrides: CgmlstModeOverrides,
     use_minimap2_hash_prefilter: bool,
-    scheme_type: str,
     backend: str,
-    kma_fastq_mem_mode: bool,
-    threads: int,
-    count_same_copy: bool,
     min_identity: float,
     min_coverage: float,
     effective_min_depth: float,
-    minimap2_representative_main_alignment: bool,
-    ultrafast_second_pass_max_loci: int | None,
-    cache: DatabaseCache,
-    scheme_name: str,
-    provider: str,
-    allele_fastas: list[Path],
-    force_reindex: bool,
     align_targeted_loci_fn,
     recompute_all_loci_with_additional_alignment_fn,
-    confirm_loci_with_tuned_aligner_fn,
-    align_evidence_fallback_loci_fn,
-    merge_calls_from_alignment_fn,
     select_candidate_locus_fastas_fn,
-    get_aligner_fn,
-    low_confidence_loci_fn,
-    call_rank_fn,
-    ultrafast_confirmation_rank_fn,
-    ultrafast_second_pass_rank_fn,
-    adaptive_ultrafast_second_pass_budget_fn,
     minimap2_hash_refine_max_loci_fn,
-    kma_fastq_mem_confirm_max_loci_fn,
-    minimap2_bsr_confirm_max_loci_fn,
-    cgmlst_evidence_fallback_backend_fn,
-    cgmlst_evidence_fallback_max_loci_fn,
     logger: Logger,
 ) -> dict[str, LocusCall]:
     if use_minimap2_hash_prefilter and backend == "minimap2":
@@ -315,7 +291,28 @@ def _apply_post_alignment_refinements_impl(
                 min_coverage=min_coverage,
                 min_depth=effective_min_depth,
             )
+    return locus_calls
 
+
+def _refine_kma_fastq_mem_strict(
+    *,
+    locus_calls: dict[str, LocusCall],
+    scheme_type: str,
+    backend: str,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    kma_fastq_mem_mode: bool,
+    threads: int,
+    count_same_copy: bool,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    kma_fastq_mem_confirm_max_loci_fn,
+    call_rank_fn,
+    confirm_loci_with_tuned_aligner_fn,
+    logger: Logger,
+) -> None:
     if (
         scheme_type == "cgmlst"
         and backend == "kma"
@@ -360,6 +357,29 @@ def _apply_post_alignment_refinements_impl(
                     min_depth=effective_min_depth,
                 )
 
+
+def _refine_bsr_minimap2_confirmation(
+    *,
+    locus_calls: dict[str, LocusCall],
+    scheme_type: str,
+    backend: str,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    mode_overrides: CgmlstModeOverrides,
+    minimap2_representative_main_alignment: bool,
+    threads: int,
+    count_same_copy: bool,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    minimap2_bsr_confirm_max_loci_fn,
+    low_confidence_loci_fn,
+    ultrafast_confirmation_rank_fn,
+    call_rank_fn,
+    confirm_loci_with_tuned_aligner_fn,
+    logger: Logger,
+) -> None:
     bsr_confirm_max_loci_env = minimap2_bsr_confirm_max_loci_fn()
     bsr_confirm_max_loci = (
         bsr_confirm_max_loci_env
@@ -426,6 +446,27 @@ def _apply_post_alignment_refinements_impl(
                 sample.path.name,
             )
 
+
+def _refine_ultrafast_second_pass(
+    *,
+    locus_calls: dict[str, LocusCall],
+    scheme_type: str,
+    backend: str,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    minimap2_representative_main_alignment: bool,
+    ultrafast_second_pass_max_loci: int | None,
+    threads: int,
+    count_same_copy: bool,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    adaptive_ultrafast_second_pass_budget_fn,
+    ultrafast_second_pass_rank_fn,
+    confirm_loci_with_tuned_aligner_fn,
+    logger: Logger,
+) -> None:
     if (
         scheme_type == "cgmlst"
         and backend == "minimap2"
@@ -474,6 +515,34 @@ def _apply_post_alignment_refinements_impl(
                 min_depth=effective_min_depth,
             )
 
+
+def _refine_evidence_fallback(
+    *,
+    locus_calls: dict[str, LocusCall],
+    scheme_type: str,
+    backend: str,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    mode_overrides: CgmlstModeOverrides,
+    threads: int,
+    count_same_copy: bool,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    cache: DatabaseCache,
+    scheme_name: str,
+    provider: str,
+    allele_fastas: list[Path],
+    force_reindex: bool,
+    cgmlst_evidence_fallback_backend_fn,
+    cgmlst_evidence_fallback_max_loci_fn,
+    low_confidence_loci_fn,
+    get_aligner_fn,
+    align_evidence_fallback_loci_fn,
+    merge_calls_from_alignment_fn,
+    logger: Logger,
+) -> None:
     fallback_backend = (
         mode_overrides.evidence_fallback_backend
         if mode_overrides.evidence_fallback_backend is not None
@@ -530,5 +599,162 @@ def _apply_post_alignment_refinements_impl(
                         min_coverage=min_coverage,
                         min_depth=effective_min_depth,
                     )
+
+
+def _apply_post_alignment_refinements_impl(
+    *,
+    locus_calls: dict[str, LocusCall],
+    aln: AlignmentResult,
+    aligner,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    mode_overrides: CgmlstModeOverrides,
+    use_minimap2_hash_prefilter: bool,
+    scheme_type: str,
+    backend: str,
+    kma_fastq_mem_mode: bool,
+    threads: int,
+    count_same_copy: bool,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    minimap2_representative_main_alignment: bool,
+    ultrafast_second_pass_max_loci: int | None,
+    cache: DatabaseCache,
+    scheme_name: str,
+    provider: str,
+    allele_fastas: list[Path],
+    force_reindex: bool,
+    align_targeted_loci_fn,
+    recompute_all_loci_with_additional_alignment_fn,
+    confirm_loci_with_tuned_aligner_fn,
+    align_evidence_fallback_loci_fn,
+    merge_calls_from_alignment_fn,
+    select_candidate_locus_fastas_fn,
+    get_aligner_fn,
+    low_confidence_loci_fn,
+    call_rank_fn,
+    ultrafast_confirmation_rank_fn,
+    ultrafast_second_pass_rank_fn,
+    adaptive_ultrafast_second_pass_budget_fn,
+    minimap2_hash_refine_max_loci_fn,
+    kma_fastq_mem_confirm_max_loci_fn,
+    minimap2_bsr_confirm_max_loci_fn,
+    cgmlst_evidence_fallback_backend_fn,
+    cgmlst_evidence_fallback_max_loci_fn,
+    logger: Logger,
+) -> dict[str, LocusCall]:
+    locus_calls = _refine_minimap2_hash_prefilter(
+        locus_calls=locus_calls,
+        aln=aln,
+        aligner=aligner,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        mode_overrides=mode_overrides,
+        use_minimap2_hash_prefilter=use_minimap2_hash_prefilter,
+        backend=backend,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        align_targeted_loci_fn=align_targeted_loci_fn,
+        recompute_all_loci_with_additional_alignment_fn=(
+            recompute_all_loci_with_additional_alignment_fn
+        ),
+        select_candidate_locus_fastas_fn=select_candidate_locus_fastas_fn,
+        minimap2_hash_refine_max_loci_fn=minimap2_hash_refine_max_loci_fn,
+        logger=logger,
+    )
+
+    _refine_kma_fastq_mem_strict(
+        locus_calls=locus_calls,
+        scheme_type=scheme_type,
+        backend=backend,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        kma_fastq_mem_mode=kma_fastq_mem_mode,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        kma_fastq_mem_confirm_max_loci_fn=kma_fastq_mem_confirm_max_loci_fn,
+        call_rank_fn=call_rank_fn,
+        confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
+        logger=logger,
+    )
+
+    _refine_bsr_minimap2_confirmation(
+        locus_calls=locus_calls,
+        scheme_type=scheme_type,
+        backend=backend,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        mode_overrides=mode_overrides,
+        minimap2_representative_main_alignment=minimap2_representative_main_alignment,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        minimap2_bsr_confirm_max_loci_fn=minimap2_bsr_confirm_max_loci_fn,
+        low_confidence_loci_fn=low_confidence_loci_fn,
+        ultrafast_confirmation_rank_fn=ultrafast_confirmation_rank_fn,
+        call_rank_fn=call_rank_fn,
+        confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
+        logger=logger,
+    )
+
+    _refine_ultrafast_second_pass(
+        locus_calls=locus_calls,
+        scheme_type=scheme_type,
+        backend=backend,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        minimap2_representative_main_alignment=minimap2_representative_main_alignment,
+        ultrafast_second_pass_max_loci=ultrafast_second_pass_max_loci,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        adaptive_ultrafast_second_pass_budget_fn=(
+            adaptive_ultrafast_second_pass_budget_fn
+        ),
+        ultrafast_second_pass_rank_fn=ultrafast_second_pass_rank_fn,
+        confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
+        logger=logger,
+    )
+
+    _refine_evidence_fallback(
+        locus_calls=locus_calls,
+        scheme_type=scheme_type,
+        backend=backend,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        mode_overrides=mode_overrides,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        cache=cache,
+        scheme_name=scheme_name,
+        provider=provider,
+        allele_fastas=allele_fastas,
+        force_reindex=force_reindex,
+        cgmlst_evidence_fallback_backend_fn=cgmlst_evidence_fallback_backend_fn,
+        cgmlst_evidence_fallback_max_loci_fn=cgmlst_evidence_fallback_max_loci_fn,
+        low_confidence_loci_fn=low_confidence_loci_fn,
+        get_aligner_fn=get_aligner_fn,
+        align_evidence_fallback_loci_fn=align_evidence_fallback_loci_fn,
+        merge_calls_from_alignment_fn=merge_calls_from_alignment_fn,
+        logger=logger,
+    )
 
     return locus_calls

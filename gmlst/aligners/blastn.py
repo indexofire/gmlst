@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from gmlst.aligners.base import AlignmentResult, AlleleMatch
+from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger("gmlst.aligners.blastn")
@@ -237,7 +237,7 @@ def _parse_blast_output(
             qlen = int(parts[4])
 
             # Parse locus + allele from query id (e.g. "arcC_1")
-            locus, allele_id = _split_allele_id(qseqid)
+            locus, allele_id = split_allele_id(qseqid)
             if locus not in loci_set:
                 continue
 
@@ -273,15 +273,3 @@ def _parse_blast_output(
             match.copy_count = max(1, len(copies.get(key, set())))
 
     return list(best.values())
-
-
-def _split_allele_id(qseqid: str) -> tuple[str, str]:
-    """Split ``arcC_1`` → ``("arcC", "1")``.
-
-    Handles both ``_`` and ``-`` separators.
-    """
-    for sep in ("_", "-"):
-        if sep in qseqid:
-            locus, allele_id = qseqid.rsplit(sep, 1)
-            return locus, allele_id
-    return qseqid, "1"

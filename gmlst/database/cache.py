@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 import time
 from collections import defaultdict
@@ -55,6 +56,49 @@ def _utc_now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+# Strict whitelist for path-component identifiers (scheme names, providers,
+# aligner backends). The first character must be a letter, digit, or
+# underscore; subsequent characters may also include ``.`` and ``-``. This
+# implicitly rejects path separators, leading dots, absolute paths, drive
+# letters, and most shell metacharacters.
+_SCHEME_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
+
+
+def _validate_scheme_identifier(value: str, label: str) -> str:
+    """Validate that *value* is safe as a single path component.
+
+    Scheme names, providers, and backends are joined directly into filesystem
+    paths under the cache root, so a value like ``"../etc"`` could escape it.
+    Enforces layered checks: empty, null bytes, separators, ``..`` substrings,
+    and a strict whitelist regex (defends-in-depth even though each later
+    check is mostly redundant with the regex).
+
+    Raises ``ValueError`` on any violation; returns *value* unchanged on success.
+    """
+    if not value:
+        raise ValueError(f"Invalid {label}: {value!r} (must be non-empty)")
+    if "\x00" in value:
+        raise ValueError(f"Invalid {label}: {value!r} (contains null byte)")
+    # Path separators are never allowed in a single path component.
+    if "/" in value or "\\" in value:
+        raise ValueError(
+            f"Invalid {label}: {value!r} (path separators are not allowed)"
+        )
+    # Reject any parent-directory reference, even as a substring (e.g. ``a..b``)
+    # so that future relaxation of the whitelist cannot reintroduce traversal.
+    if ".." in value:
+        raise ValueError(f"Invalid {label}: {value!r} ('..' sequences are not allowed)")
+    # Strict whitelist. Implicitly rejects leading dots (hidden files),
+    # absolute paths, drive letters, and any other shell metacharacters.
+    if not _SCHEME_IDENTIFIER_RE.match(value):
+        raise ValueError(
+            f"Invalid {label}: {value!r} "
+            "(allowed: letters, digits, '_', '-', '.'; "
+            "must start with a letter, digit, or '_')"
+        )
+    return value
+
+
 class DatabaseCache:
     """Manage locally cached MLST schemes from any provider.
 
@@ -76,6 +120,8 @@ class DatabaseCache:
 
     def scheme_dir(self, name: str, provider: str = "pubmlst") -> Path:
         """Return the directory for a cached scheme."""
+        _validate_scheme_identifier(name, "scheme name")
+        _validate_scheme_identifier(provider, "provider")
         return self.root / provider / name
 
     def is_downloaded(self, name: str, provider: str = "pubmlst") -> bool:
@@ -114,6 +160,16 @@ class DatabaseCache:
         if force:
             scheme_dir = self.scheme_dir(name, provider)
             if scheme_dir.exists():
+                # Defense in depth: even though scheme_dir() now validates
+                # name/provider, verify the resolved path stays inside the
+                # cache root before the destructive rmtree.
+                resolved = scheme_dir.resolve()
+                try:
+                    resolved.relative_to(self.root.resolve())
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Refusing to delete path outside cache root: {resolved}"
+                    ) from exc
                 shutil.rmtree(scheme_dir)
         if force or not self.is_downloaded(name, provider):
             self._download(
@@ -287,6 +343,9 @@ class DatabaseCache:
         self, scheme_name: str, backend: str, provider: str = "pubmlst"
     ) -> Path:
         """Return (and create) the aligner index directory for a scheme."""
+        _validate_scheme_identifier(scheme_name, "scheme name")
+        _validate_scheme_identifier(backend, "backend")
+        _validate_scheme_identifier(provider, "provider")
         idx = self.root / "_indexes" / provider / backend / scheme_name
         idx.mkdir(parents=True, exist_ok=True)
         return idx
@@ -417,7 +476,7 @@ class DatabaseCache:
 
     def _normalize_scheme_names(self, schemes: list[dict]) -> list[dict]:
         """Normalize scheme names to short format (e.g., 'lmonocytogenes_1')."""
-        from gmlst.database.providers.bigsdb import _generate_scheme_base_name
+        from gmlst.database.providers.base import generate_scheme_base_name
 
         # Group schemes by their base organism
         organism_groups: dict[str, list[dict]] = defaultdict(list)
@@ -429,7 +488,7 @@ class DatabaseCache:
         # Reassign scheme names with short format
         name_counters: dict[str, int] = defaultdict(int)
         for organism, group_schemes in organism_groups.items():
-            base_name = _generate_scheme_base_name(organism)
+            base_name = generate_scheme_base_name(organism)
 
             for scheme in group_schemes:
                 name_counters[base_name] += 1

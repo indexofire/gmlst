@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import csv
-import gzip
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from gmlst.fasta_io import iter_fasta_records
+from gmlst.utils import open_text
 
 # ---------------------------------------------------------------------------
 # Allele
@@ -93,8 +93,7 @@ class Scheme:
         with merged.open("w") as out:
             for locus in self.loci:
                 path = self.allele_files[locus]
-                opener = gzip.open if path.suffix == ".gz" else open
-                with opener(path, "rt") as fh:  # type: ignore[call-overload]
+                with open_text(path) as fh:
                     out.write(fh.read())
         return merged
 
@@ -109,8 +108,7 @@ class Scheme:
             self._profiles_loaded = True
             return
 
-        opener = gzip.open if self.profile_file.suffix == ".gz" else open
-        with opener(self.profile_file, "rt") as fh:  # type: ignore[call-overload]
+        with open_text(self.profile_file) as fh:
             reader = csv.DictReader(fh, delimiter="\t")
             for row in reader:
                 st_str = row.get("ST") or row.get("st")

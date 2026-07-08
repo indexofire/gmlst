@@ -179,3 +179,20 @@ class Aligner(Protocol):
             ``"fasta"`` for assembled genomes, ``"fastq"`` for raw reads.
         """
         ...
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+
+def split_allele_id(qseqid: str) -> tuple[str, str]:
+    """Split ``arcC_1`` → ``("arcC", "1")``.
+
+    Handles both ``_`` and ``-`` separators.
+    """
+    for sep in ("_", "-"):
+        if sep in qseqid:
+            locus, allele_id = qseqid.rsplit(sep, 1)
+            return locus, allele_id
+    return qseqid, "1"

@@ -92,6 +92,19 @@ _LEGACY_SCHEME_ALIASES: dict[str, str] = {
     "vibriospp_2": "vibrio_2",
 }
 
+# Ordered scheme_id prefix -> organism mapping (first match wins).
+_ORGANISM_BY_PREFIX: list[tuple[str, str]] = [
+    ("senterica", "Salmonella enterica"),
+    ("ecoli", "Escherichia coli"),
+    ("yenterocolitica", "Yersinia enterocolitica"),
+    ("kpneumoniae", "Klebsiella pneumoniae"),
+    ("mcatarrhalis", "Moraxella catarrhalis"),
+    ("cbotulinum", "Clostridium botulinum"),
+    ("spneumoniae", "Streptococcus pneumoniae"),
+    ("vibrio", "Vibrio spp."),
+    ("pluminescens", "Photorhabdus luminescens"),
+]
+
 
 def _classify_scheme_type(dir_name: str) -> str:
     """Infer scheme type from directory name."""
@@ -128,26 +141,14 @@ class EnterobaseProvider:
             if scheme_type != "all" and s_type != scheme_type:
                 continue
 
-            if scheme_id.startswith("senterica"):
-                organism = "Salmonella enterica"
-            elif scheme_id.startswith("ecoli"):
-                organism = "Escherichia coli"
-            elif scheme_id.startswith("yenterocolitica"):
-                organism = "Yersinia enterocolitica"
-            elif scheme_id.startswith("kpneumoniae"):
-                organism = "Klebsiella pneumoniae"
-            elif scheme_id.startswith("mcatarrhalis"):
-                organism = "Moraxella catarrhalis"
-            elif scheme_id.startswith("cbotulinum"):
-                organism = "Clostridium botulinum"
-            elif scheme_id.startswith("spneumoniae"):
-                organism = "Streptococcus pneumoniae"
-            elif scheme_id.startswith("vibrio"):
-                organism = "Vibrio spp."
-            elif scheme_id.startswith("pluminescens"):
-                organism = "Photorhabdus luminescens"
-            else:
-                organism = dir_name.split(".")[0]
+            organism = next(
+                (
+                    name
+                    for prefix, name in _ORGANISM_BY_PREFIX
+                    if scheme_id.startswith(prefix)
+                ),
+                dir_name.split(".")[0],
+            )
 
             n_loci = None
             with contextlib.suppress(OSError, ValueError):

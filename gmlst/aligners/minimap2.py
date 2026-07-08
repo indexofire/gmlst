@@ -45,8 +45,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from gmlst.aligners.base import AlignmentResult, AlleleMatch
-from gmlst.aligners.blastn import _split_allele_id
+from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
 from gmlst.fasta_io import iter_fasta_records
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import require_tool, run_cmd, temp_dir
@@ -388,7 +387,7 @@ def _parse_paf(
                 nmatch = int(cols[9])
                 blen = int(cols[10])
 
-            locus, allele_id = _split_allele_id(allele_name)
+            locus, allele_id = split_allele_id(allele_name)
             if locus not in loci_set:
                 continue
 
@@ -472,7 +471,7 @@ def _parse_paf_fastq_candidates(
             blen = int(cols[10])
             mapq = int(cols[11])
 
-            locus, allele_id = _split_allele_id(allele_name)
+            locus, allele_id = split_allele_id(allele_name)
             if locus not in loci_set:
                 continue
 
@@ -942,7 +941,7 @@ def _collect_targeted_evidence(
         if rname == "*":
             continue
 
-        locus, allele_id = _split_allele_id(rname)
+        locus, allele_id = split_allele_id(rname)
         key = (locus, allele_id)
         ref_seq = seqs.get(key)
         if ref_seq is None:
@@ -1259,7 +1258,7 @@ def _load_allele_sequences(path: Path) -> dict[tuple[str, str], str]:
         return seqs
 
     for name, sequence in iter_fasta_records(path):
-        locus, allele_id = _split_allele_id(name)
+        locus, allele_id = split_allele_id(name)
         seqs[(locus, allele_id)] = sequence
     return seqs
 

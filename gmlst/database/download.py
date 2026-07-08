@@ -27,6 +27,8 @@ import time
 from pathlib import Path
 from typing import Literal
 
+from gmlst.database.url_guard import assert_public_url
+
 logger = logging.getLogger("gmlst.download")
 
 DownloadTool = Literal["auto", "aria2c", "curl", "wget", "httpx", "requests"]
@@ -192,6 +194,11 @@ def download_file(
 
     Raises RuntimeError if all methods fail.
     """
+    # SSRF guard: validate the URL *before* handing it to any backend so a
+    # value that came from an external API response can never reach an
+    # internal network. UrlGuardError propagates to the caller unchanged.
+    assert_public_url(url)
+
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     connections = max_connections if max_connections is not None else 4
@@ -267,6 +274,8 @@ def download_file_requests(
     """
     import requests
 
+    assert_public_url(url)
+
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     for attempt in range(1, retries + 1):
@@ -304,6 +313,10 @@ def fetch_json(
     Used by bigsdb (PubMLST/Pasteur) for API calls.
     """
     import requests
+
+    # SSRF guard: validate the URL once before the retry loop. UrlGuardError
+    # must not be caught by the retry logic (it's not a transient error).
+    assert_public_url(url)
 
     for attempt in range(1, retries + 1):
         try:

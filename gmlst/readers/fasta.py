@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import gzip
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
+
+from gmlst.utils import open_text
 
 
 @dataclass
@@ -33,7 +34,6 @@ class FastaReader:
 
     def records(self) -> Generator[FastaRecord, None, None]:
         """Yield :class:`FastaRecord` objects one at a time."""
-        opener = gzip.open if self.path.suffix.lower() == ".gz" else open
         current_header: str | None = None
         seq_parts: list[str] = []
 
@@ -42,7 +42,7 @@ class FastaReader:
                 return FastaRecord(current_header, "".join(seq_parts))
             return None
 
-        with opener(self.path, "rt") as fh:  # type: ignore[call-overload]
+        with open_text(self.path) as fh:
             for line in fh:
                 line = line.rstrip()
                 if not line:

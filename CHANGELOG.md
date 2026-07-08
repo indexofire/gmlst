@@ -24,6 +24,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
+## [0.1.1] - 2026-07-07
+
+### Security
+- **SSRF protection**: Added `url_guard.py` with private-network IP filtering for all
+  outbound HTTP requests (`fetch_json`, `download_file`). Blocks loopback, RFC 1918,
+  link-local, and metadata-service endpoints.
+- **Path traversal fix**: `DatabaseCache.scheme_dir()` now validates scheme names and
+  provider identifiers against a strict whitelist regex. Defense-in-depth check ensures
+  `shutil.rmtree` can never operate outside the cache root.
+- **Flask CSRF protection**: Added `before_request` Origin/Referer validation on all
+  state-changing POST endpoints.
+- **Security headers**: Added `Content-Security-Policy`, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin` via `after_request`.
+- **Flask SECRET_KEY**: Now set via `secrets.token_urlsafe(32)` at app factory time.
+- **Docker non-root user**: Container now runs as `$MAMBA_USER` instead of root.
+- **Client-side file size guard**: Frontend file inputs enforce 64 MiB limit before
+  reading (`readFileWithSizeCheck`).
+
+### Changed
+- Split 3 core pipeline functions (301/282/272 lines) into focused phase helpers
+  (orchestrators now 48–157 lines).
+- Broke partial-initialization cycle in `core/adapters_*.py` — eliminated all 14
+  deferred `import gmlst.core as core` statements across 4 adapter modules.
+- Replaced `gzip.open`/`open` union pattern with typed `open_text` contextmanager,
+  removing 6 `# type: ignore[call-overload]` comments.
+- Promoted cross-module private symbols to public: `split_allele_id` → `aligners/base.py`,
+  `generate_scheme_base_name` → `database/providers/base.py`.
+- Converted 9-branch `elif` organism lookup in `enterobase.py` to ordered tuple table.
+- Merged duplicate `_load_organism_mappings` functions and removed duplicate
+  `_MAX_RETRIES` constant in `bigsdb.py`.
+
+### Frontend
+- Extracted 425 lines of pure functions from `App.vue` into `visualLayout.js` (with
+  22 unit tests).
+- Extracted file input and export logic into `fileInput.js` and `tableExport.js`.
+- Extracted MST API fetch logic into `mstApi.js`.
+- Extracted session persistence logic into `sessionPersistence.js`.
+- Created 5 presentational Vue components: `EmptyState`, `DistanceMatrix`,
+  `CompareTable`, `AlleleHeatmap`, `LegendBar`.
+- `App.vue` reduced from 4176 → 3509 lines (−16%).
+
+### Tests
+- Added 84 path-traversal security tests (`test_cache_security.py`).
+- Added 29 SSRF guard tests (`test_url_guard.py`).
+- Added 8 Flask security header/CSRF tests.
+- Total: 683 backend + 43 frontend tests, all passing.
+
+
 ## [0.1.0] - 2026-03-13
 
 ### Added
@@ -43,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **nucmer**: MUMmer4 backend for sensitive distant matches
 - **kmerhash**: Pure Python backend with no external dependencies (removed in later release)
 
-[0.1.0]: https://github.com/yourusername/gmlst/releases/tag/v0.1.0
+[0.1.1]: https://github.com/indexofire/gmlst/releases/tag/v0.1.1
+[0.1.0]: https://github.com/indexofire/gmlst/releases/tag/v0.1.0
 
 
 ## [0.1.4] - 2026-03-18

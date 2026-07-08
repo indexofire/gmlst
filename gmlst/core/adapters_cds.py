@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import gmlst.core as core
 from gmlst.readers.sample import SampleInput
 
 from . import cds as _cds
@@ -36,8 +37,6 @@ def write_cds_coordinates_impl(
     training_file: Path | None,
     closed_ends: bool,
 ) -> None:
-    import gmlst.core as core
-
     _cds.write_cds_coordinates_impl(
         samples=samples,
         output_path=output_path,

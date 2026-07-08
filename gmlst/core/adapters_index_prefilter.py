@@ -22,20 +22,18 @@ def ensure_full_index_impl(
     index_dir: Path,
     force_reindex: bool,
 ) -> Path:
-    import gmlst.core as core
-
-    return core._indexing.ensure_full_index_impl(
+    return _indexing.ensure_full_index_impl(
         aligner=aligner,
         backend=backend,
         scheme_name=scheme_name,
         allele_fastas=allele_fastas,
         index_dir=index_dir,
         force_reindex=force_reindex,
-        logger=core.logger,
-        index_is_empty_fn=core._index_is_empty,
-        purge_backend_index_fn=core._purge_backend_index,
-        find_index_fn=core._find_index,
-        is_index_stale_fn=core._is_index_stale,
+        logger=logger,
+        index_is_empty_fn=_indexing.index_is_empty_impl,
+        purge_backend_index_fn=_indexing.purge_backend_index_impl,
+        find_index_fn=_indexing.find_index_impl,
+        is_index_stale_fn=_indexing.is_index_stale_impl,
     )
 
 
@@ -74,18 +72,16 @@ def load_or_build_minimap2_representative_index_impl(
     representatives: dict[tuple[str, str], str],
     force_reindex: bool,
 ) -> Path:
-    import gmlst.core as core
-
-    return core._indexing.load_or_build_minimap2_representative_index_impl(
+    return _indexing.load_or_build_minimap2_representative_index_impl(
         aligner=aligner,
         index_dir=index_dir,
         representatives=representatives,
         force_reindex=force_reindex,
-        representative_fingerprint_fn=core._indexing.representative_fingerprint_impl,
-        is_index_stale_fn=core._is_index_stale,
-        purge_backend_index_fn=core._purge_backend_index,
-        allele_order_key_fn=core._allele_order_key,
-        logger=core.logger,
+        representative_fingerprint_fn=_indexing.representative_fingerprint_impl,
+        is_index_stale_fn=_indexing.is_index_stale_impl,
+        purge_backend_index_fn=_indexing.purge_backend_index_impl,
+        allele_order_key_fn=_prefilter.allele_order_key_impl,
+        logger=logger,
     )
 
 
@@ -130,9 +126,7 @@ def minimap2_representative_prefilter_candidates_impl(
     min_identity: float,
     min_coverage: float,
 ) -> tuple[dict[str, list[tuple[str, float]]], AlignmentResult | None]:
-    import gmlst.core as core
-
-    return core._prefilter.minimap2_representative_prefilter_candidates_impl(
+    return _prefilter.minimap2_representative_prefilter_candidates_impl(
         aligner=aligner,
         sample_path=sample_path,
         loci=loci,

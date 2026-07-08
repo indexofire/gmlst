@@ -130,261 +130,230 @@ def _finalize_sample_result(
     return st_result, index_path
 
 
-def _type_single_sample(ctx: TypingContext) -> tuple[STResult, Path | None]:
-    core_mod = ctx.core
-    sample = ctx.sample
-    scheme = ctx.scheme
-    backend = ctx.backend
-    aligner = ctx.aligner
-    index_path = ctx.index_path
-
-    core_mod.logger.info("Typing %s with %s …", sample.path.name, backend)
-
+def _resolve_sample_source(
+    sample,
+    aligner,
+    backend: str,
+) -> Path | tuple[Path, Path]:
     if not aligner.supports_fastq and sample.input_type == "fastq":
         raise ValueError(
             f"Backend '{backend}' does not support FASTQ input. "
             "Use 'minimap2' or 'kma'."
         )
-
-    sample_source: Path | tuple[Path, Path]
     if sample.mate_path is not None:
-        sample_source = (sample.path, sample.mate_path)
-    else:
-        sample_source = sample.path
-    exact_matches = _resolve_exact_matches(ctx, core_mod, sample)
+        return (sample.path, sample.mate_path)
+    return sample.path
 
-    if ctx.use_prefilter:
-        with core_mod.temp_dir("gmlst_cgpf_") as tmp:
-            prefilter_start = core_mod.time.perf_counter()
-            representative_aln: core_mod.AlignmentResult | None = None
-            if ctx.use_minimap2_hash_prefilter:
-                candidates, representative_aln = (
-                    core_mod._minimap2_representative_prefilter_candidates(
-                        aligner=aligner,
-                        sample_path=sample.path,
-                        loci=scheme.loci,
-                        representatives=ctx.minimap2_prefilter_representatives,
-                        representative_index_path=ctx.minimap2_prefilter_index_path,
-                        min_identity=ctx.min_identity,
-                        min_coverage=0.8,
-                    )
+
+def _run_prefilter_phase(
+    ctx: TypingContext,
+    core_mod,
+    sample,
+    scheme,
+    aligner,
+    backend: str,
+    sample_source,
+    exact_matches: dict[str, AlleleMatch],
+    index_path: Path | None,
+) -> tuple[AlignmentResult, Path | None]:
+    with core_mod.temp_dir("gmlst_cgpf_") as tmp:
+        prefilter_start = core_mod.time.perf_counter()
+        representative_aln: core_mod.AlignmentResult | None = None
+        if ctx.use_minimap2_hash_prefilter:
+            candidates, representative_aln = (
+                core_mod._minimap2_representative_prefilter_candidates(
+                    aligner=aligner,
+                    sample_path=sample.path,
+                    loci=scheme.loci,
+                    representatives=ctx.minimap2_prefilter_representatives,
+                    representative_index_path=ctx.minimap2_prefilter_index_path,
+                    min_identity=ctx.min_identity,
+                    min_coverage=0.8,
                 )
-            else:
-                candidates = core_mod.prefilter_assembly_candidates(
-                    allele_sequences=ctx.prefilter_alleles or {},
-                    assembly_sequences=core_mod._iter_fasta_sequences(sample.path),
-                    k=ctx.prefilter_k,
-                    top_n=ctx.effective_prefilter_top_n,
-                    stride=ctx.effective_prefilter_stride,
-                )
-            prefilter_elapsed = core_mod.time.perf_counter() - prefilter_start
-            core_mod.logger.info(
-                "Prefilter completed in %.3fs for %s (%d loci candidates)",
-                prefilter_elapsed,
-                sample.path.name,
-                len(candidates),
             )
-            if not core_mod._prefilter_is_confident(
-                candidates,
-                total_loci=len(scheme.loci),
-                min_loci_fraction=ctx.prefilter_min_loci_fraction,
-            ):
-                candidates = {}
-            if ctx.use_minimap2_hash_prefilter:
-                if (
-                    ctx.minimap2_representative_main_alignment
-                    and sample.input_type == "fasta"
-                ):
-                    candidate_fastas = []
-                    core_mod.logger.info(
-                        "Representative-only minimap2 main alignment enabled for %s",
-                        sample.path.name,
-                    )
-                else:
-                    candidate_loci = set(candidates.keys()) - set(exact_matches.keys())
-                    candidate_top_n = (
-                        ctx.mode_overrides.minimap2_hash_locus_top_n
-                        if ctx.mode_overrides.minimap2_hash_locus_top_n is not None
-                        else core_mod._minimap2_hash_locus_top_n()
-                    )
-                    if (
-                        candidate_top_n > 0
-                        and ctx.allele_sequence_cache is not None
-                        and candidate_loci
-                    ):
-                        candidate_alleles = {
-                            (locus, allele_id): sequence
-                            for locus in candidate_loci
-                            for allele_id, sequence in ctx.allele_sequence_cache.get(
-                                locus, {}
-                            ).items()
-                        }
-                        ranked_candidates = core_mod.prefilter_assembly_candidates(
-                            allele_sequences=candidate_alleles,
-                            assembly_sequences=core_mod._iter_fasta_sequences(
-                                sample.path
-                            ),
-                            k=ctx.prefilter_k,
-                            top_n=candidate_top_n,
-                            stride=ctx.effective_prefilter_stride,
-                        )
-                        candidate_fastas = core_mod._write_candidate_fastas(
-                            ctx.allele_sequence_cache,
-                            ranked_candidates,
-                            tmp,
-                        )
-                        unresolved_candidate_loci = candidate_loci - set(
-                            ranked_candidates.keys()
-                        )
-                        if unresolved_candidate_loci:
-                            candidate_fastas.extend(
-                                core_mod._select_candidate_locus_fastas(
-                                    scheme.allele_files,
-                                    unresolved_candidate_loci,
-                                )
-                            )
-                        core_mod.logger.info(
-                            "Minimap2 hash candidate narrowing retained "
-                            "%d/%d loci at top_n=%d",
-                            len(candidate_loci) - len(unresolved_candidate_loci),
-                            len(candidate_loci),
-                            candidate_top_n,
-                        )
-                    else:
-                        candidate_fastas = core_mod._select_candidate_locus_fastas(
-                            scheme.allele_files,
-                            candidate_loci,
-                        )
-            else:
-                if exact_matches:
-                    candidates = {
-                        locus: ranked
-                        for locus, ranked in candidates.items()
-                        if locus not in exact_matches
-                    }
-                candidate_fastas = core_mod._write_candidate_fastas(
-                    ctx.allele_sequence_cache,
-                    candidates,
-                    tmp,
-                )
-            if candidate_fastas:
-                sample_index_dir = tmp / "idx"
-                sample_index_dir.mkdir(parents=True, exist_ok=True)
-                if backend == "minimap2" and sample.input_type == "fasta":
-                    core_mod._write_merged_fasta(
-                        candidate_fastas,
-                        sample_index_dir / "alleles.fasta",
-                    )
-                    sample_index_path = sample_index_dir
-                    core_mod.logger.info(
-                        "Prepared minimap2 FASTA candidate database for %s "
-                        "without building .mmi index (%d files)",
-                        sample.path.name,
-                        len(candidate_fastas),
-                    )
-                else:
-                    index_start = core_mod.time.perf_counter()
-                    sample_index_path = aligner.index(
-                        candidate_fastas, sample_index_dir
-                    )
-                    index_elapsed = core_mod.time.perf_counter() - index_start
-                    core_mod.logger.info(
-                        "Candidate index build completed in %.3fs for %s (%d files)",
-                        index_elapsed,
-                        sample.path.name,
-                        len(candidate_fastas),
-                    )
-            else:
-                if (
-                    ctx.use_minimap2_hash_prefilter
-                    and backend == "minimap2"
-                    and sample.input_type == "fasta"
-                    and ctx.minimap2_representative_main_alignment
-                    and representative_aln is not None
-                ):
-                    sample_index_path = (
-                        ctx.minimap2_prefilter_index_path
-                        if ctx.minimap2_prefilter_index_path is not None
-                        else ctx.index_dir
-                    )
-                else:
-                    if index_path is None:
-                        index_path = core_mod._ensure_full_index(
-                            aligner=aligner,
-                            backend=backend,
-                            scheme_name=ctx.scheme_name,
-                            allele_fastas=ctx.allele_fastas,
-                            index_dir=ctx.index_dir,
-                            force_reindex=ctx.force_reindex,
-                        )
-                    sample_index_path = index_path
-                    core_mod.logger.info(
-                        "Using persistent full index for %s after prefilter fallback",
-                        sample.path.name,
-                    )
-            align_start = core_mod.time.perf_counter()
-            residual_loci = [
-                locus for locus in scheme.loci if locus not in exact_matches
-            ]
+        else:
+            candidates = core_mod.prefilter_assembly_candidates(
+                allele_sequences=ctx.prefilter_alleles or {},
+                assembly_sequences=core_mod._iter_fasta_sequences(sample.path),
+                k=ctx.prefilter_k,
+                top_n=ctx.effective_prefilter_top_n,
+                stride=ctx.effective_prefilter_stride,
+            )
+        prefilter_elapsed = core_mod.time.perf_counter() - prefilter_start
+        core_mod.logger.info(
+            "Prefilter completed in %.3fs for %s (%d loci candidates)",
+            prefilter_elapsed,
+            sample.path.name,
+            len(candidates),
+        )
+        if not core_mod._prefilter_is_confident(
+            candidates,
+            total_loci=len(scheme.loci),
+            min_loci_fraction=ctx.prefilter_min_loci_fraction,
+        ):
+            candidates = {}
+        if ctx.use_minimap2_hash_prefilter:
             if (
-                residual_loci
-                and ctx.use_minimap2_hash_prefilter
+                ctx.minimap2_representative_main_alignment
+                and sample.input_type == "fasta"
+            ):
+                candidate_fastas = []
+                core_mod.logger.info(
+                    "Representative-only minimap2 main alignment enabled for %s",
+                    sample.path.name,
+                )
+            else:
+                candidate_loci = set(candidates.keys()) - set(exact_matches.keys())
+                candidate_top_n = (
+                    ctx.mode_overrides.minimap2_hash_locus_top_n
+                    if ctx.mode_overrides.minimap2_hash_locus_top_n is not None
+                    else core_mod._minimap2_hash_locus_top_n()
+                )
+                if (
+                    candidate_top_n > 0
+                    and ctx.allele_sequence_cache is not None
+                    and candidate_loci
+                ):
+                    candidate_alleles = {
+                        (locus, allele_id): sequence
+                        for locus in candidate_loci
+                        for allele_id, sequence in ctx.allele_sequence_cache.get(
+                            locus, {}
+                        ).items()
+                    }
+                    ranked_candidates = core_mod.prefilter_assembly_candidates(
+                        allele_sequences=candidate_alleles,
+                        assembly_sequences=core_mod._iter_fasta_sequences(sample.path),
+                        k=ctx.prefilter_k,
+                        top_n=candidate_top_n,
+                        stride=ctx.effective_prefilter_stride,
+                    )
+                    candidate_fastas = core_mod._write_candidate_fastas(
+                        ctx.allele_sequence_cache,
+                        ranked_candidates,
+                        tmp,
+                    )
+                    unresolved_candidate_loci = candidate_loci - set(
+                        ranked_candidates.keys()
+                    )
+                    if unresolved_candidate_loci:
+                        candidate_fastas.extend(
+                            core_mod._select_candidate_locus_fastas(
+                                scheme.allele_files,
+                                unresolved_candidate_loci,
+                            )
+                        )
+                    core_mod.logger.info(
+                        "Minimap2 hash candidate narrowing retained "
+                        "%d/%d loci at top_n=%d",
+                        len(candidate_loci) - len(unresolved_candidate_loci),
+                        len(candidate_loci),
+                        candidate_top_n,
+                    )
+                else:
+                    candidate_fastas = core_mod._select_candidate_locus_fastas(
+                        scheme.allele_files,
+                        candidate_loci,
+                    )
+        else:
+            if exact_matches:
+                candidates = {
+                    locus: ranked
+                    for locus, ranked in candidates.items()
+                    if locus not in exact_matches
+                }
+            candidate_fastas = core_mod._write_candidate_fastas(
+                ctx.allele_sequence_cache,
+                candidates,
+                tmp,
+            )
+        if candidate_fastas:
+            sample_index_dir = tmp / "idx"
+            sample_index_dir.mkdir(parents=True, exist_ok=True)
+            if backend == "minimap2" and sample.input_type == "fasta":
+                core_mod._write_merged_fasta(
+                    candidate_fastas,
+                    sample_index_dir / "alleles.fasta",
+                )
+                sample_index_path = sample_index_dir
+                core_mod.logger.info(
+                    "Prepared minimap2 FASTA candidate database for %s "
+                    "without building .mmi index (%d files)",
+                    sample.path.name,
+                    len(candidate_fastas),
+                )
+            else:
+                index_start = core_mod.time.perf_counter()
+                sample_index_path = aligner.index(candidate_fastas, sample_index_dir)
+                index_elapsed = core_mod.time.perf_counter() - index_start
+                core_mod.logger.info(
+                    "Candidate index build completed in %.3fs for %s (%d files)",
+                    index_elapsed,
+                    sample.path.name,
+                    len(candidate_fastas),
+                )
+        else:
+            if (
+                ctx.use_minimap2_hash_prefilter
                 and backend == "minimap2"
                 and sample.input_type == "fasta"
                 and ctx.minimap2_representative_main_alignment
                 and representative_aln is not None
             ):
-                representative_matches = [
-                    match
-                    for match in representative_aln.matches
-                    if match.locus in residual_loci
-                ]
-                aln = core_mod.AlignmentResult(
-                    sample_id=representative_aln.sample_id,
-                    matches=representative_matches,
-                    failed_loci=[
-                        locus
-                        for locus in residual_loci
-                        if locus
-                        not in {match.locus for match in representative_matches}
-                    ],
-                    backend=representative_aln.backend,
-                    runtime_seconds=representative_aln.runtime_seconds,
-                )
-                core_mod.logger.info(
-                    "Using representative-only minimap2 main alignment for %s",
-                    sample.path.name,
-                )
-            elif residual_loci:
-                aln = aligner.align(
-                    sample_source,
-                    sample_index_path,
-                    residual_loci,
-                    sample.input_type,
+                sample_index_path = (
+                    ctx.minimap2_prefilter_index_path
+                    if ctx.minimap2_prefilter_index_path is not None
+                    else ctx.index_dir
                 )
             else:
-                aln = core_mod.AlignmentResult(
-                    sample_id=sample.sample_id,
-                    matches=[],
-                    failed_loci=[],
-                    backend=backend,
-                    runtime_seconds=0.0,
+                if index_path is None:
+                    index_path = core_mod._ensure_full_index(
+                        aligner=aligner,
+                        backend=backend,
+                        scheme_name=ctx.scheme_name,
+                        allele_fastas=ctx.allele_fastas,
+                        index_dir=ctx.index_dir,
+                        force_reindex=ctx.force_reindex,
+                    )
+                sample_index_path = index_path
+                core_mod.logger.info(
+                    "Using persistent full index for %s after prefilter fallback",
+                    sample.path.name,
                 )
-            align_elapsed = core_mod.time.perf_counter() - align_start
-            core_mod.logger.info(
-                "Alignment completed in %.3fs for %s",
-                align_elapsed,
-                sample.path.name,
-            )
-    else:
-        if index_path is None:
-            raise RuntimeError("missing aligner index path")
         align_start = core_mod.time.perf_counter()
         residual_loci = [locus for locus in scheme.loci if locus not in exact_matches]
-        if residual_loci:
+        if (
+            residual_loci
+            and ctx.use_minimap2_hash_prefilter
+            and backend == "minimap2"
+            and sample.input_type == "fasta"
+            and ctx.minimap2_representative_main_alignment
+            and representative_aln is not None
+        ):
+            representative_matches = [
+                match
+                for match in representative_aln.matches
+                if match.locus in residual_loci
+            ]
+            aln = core_mod.AlignmentResult(
+                sample_id=representative_aln.sample_id,
+                matches=representative_matches,
+                failed_loci=[
+                    locus
+                    for locus in residual_loci
+                    if locus not in {match.locus for match in representative_matches}
+                ],
+                backend=representative_aln.backend,
+                runtime_seconds=representative_aln.runtime_seconds,
+            )
+            core_mod.logger.info(
+                "Using representative-only minimap2 main alignment for %s",
+                sample.path.name,
+            )
+        elif residual_loci:
             aln = aligner.align(
                 sample_source,
-                index_path,
+                sample_index_path,
                 residual_loci,
                 sample.input_type,
             )
@@ -402,6 +371,84 @@ def _type_single_sample(ctx: TypingContext) -> tuple[STResult, Path | None]:
             align_elapsed,
             sample.path.name,
         )
+    return aln, index_path
+
+
+def _run_direct_alignment_phase(
+    core_mod,
+    sample,
+    scheme,
+    aligner,
+    backend: str,
+    sample_source,
+    exact_matches: dict[str, AlleleMatch],
+    index_path: Path | None,
+) -> AlignmentResult:
+    if index_path is None:
+        raise RuntimeError("missing aligner index path")
+    align_start = core_mod.time.perf_counter()
+    residual_loci = [locus for locus in scheme.loci if locus not in exact_matches]
+    if residual_loci:
+        aln = aligner.align(
+            sample_source,
+            index_path,
+            residual_loci,
+            sample.input_type,
+        )
+    else:
+        aln = core_mod.AlignmentResult(
+            sample_id=sample.sample_id,
+            matches=[],
+            failed_loci=[],
+            backend=backend,
+            runtime_seconds=0.0,
+        )
+    align_elapsed = core_mod.time.perf_counter() - align_start
+    core_mod.logger.info(
+        "Alignment completed in %.3fs for %s",
+        align_elapsed,
+        sample.path.name,
+    )
+    return aln
+
+
+def _type_single_sample(ctx: TypingContext) -> tuple[STResult, Path | None]:
+    core_mod = ctx.core
+    sample = ctx.sample
+    scheme = ctx.scheme
+    backend = ctx.backend
+    aligner = ctx.aligner
+    index_path = ctx.index_path
+
+    core_mod.logger.info("Typing %s with %s …", sample.path.name, backend)
+
+    sample_source = _resolve_sample_source(sample, aligner, backend)
+    exact_matches = _resolve_exact_matches(ctx, core_mod, sample)
+
+    if ctx.use_prefilter:
+        aln, index_path = _run_prefilter_phase(
+            ctx,
+            core_mod,
+            sample,
+            scheme,
+            aligner,
+            backend,
+            sample_source,
+            exact_matches,
+            index_path,
+        )
+    else:
+        aln = _run_direct_alignment_phase(
+            core_mod,
+            sample,
+            scheme,
+            aligner,
+            backend,
+            sample_source,
+            exact_matches,
+            index_path,
+        )
+
     return _finalize_sample_result(
         ctx,
         core_mod,
@@ -415,32 +462,30 @@ def _type_single_sample(ctx: TypingContext) -> tuple[STResult, Path | None]:
     )
 
 
-def run_typing_impl(
+def _setup_typing_config(
+    core,
     sample_paths: list[Path | SampleInput],
     scheme_name: str,
     backend: str,
     *,
-    provider: str = "pubmlst",
-    scheme_type: str = "mlst",
-    cgmlst_mode: str = "standard",
-    cache_root: Path | None = None,
-    min_identity: float = 95.0,
-    min_coverage: float = 0.95,
-    min_depth: float = 10.0,
-    force_reindex: bool = False,
-    threads: int = 1,
-    count_same_copy: bool = False,
-    prefilter_enabled: bool = True,
-    prefilter_k: int = 31,
-    prefilter_top_n: int = 20,
-    prefilter_min_loci_fraction: float = 0.3,
-    cds_coordinates_out: Path | None = None,
-    call_policy: str = "default",
-    chew_cds_gate: bool = True,
-    on_result: Callable[[STResult], None] | None = None,
-) -> list[STResult]:
-    import gmlst.core as core
-
+    provider: str,
+    scheme_type: str,
+    cgmlst_mode: str,
+    cache_root: Path | None,
+    min_identity: float,
+    min_coverage: float,
+    min_depth: float,
+    force_reindex: bool,
+    threads: int,
+    count_same_copy: bool,
+    prefilter_enabled: bool,
+    prefilter_k: int,
+    prefilter_top_n: int,
+    prefilter_min_loci_fraction: float,
+    cds_coordinates_out: Path | None,
+    call_policy: str,
+    chew_cds_gate: bool,
+) -> tuple[TypingContext, list[SampleInput]]:
     cache = core.DatabaseCache(cache_root)
     normalized_policy = call_policy.strip().lower()
     if normalized_policy not in {"default", "chewbbaca"}:
@@ -637,54 +682,115 @@ def run_typing_impl(
             closed_ends=cds_closed_ends,
         )
 
+    base_ctx = TypingContext(
+        core=core,
+        sample=None,
+        scheme=scheme,
+        backend=backend,
+        aligner=aligner,
+        cache=cache,
+        cache_root=cache_root,
+        scheme_name=scheme_name,
+        provider=provider,
+        mode_overrides=mode_overrides,
+        scheme_type=scheme_type,
+        use_prefilter=use_prefilter,
+        use_minimap2_hash_prefilter=use_minimap2_hash_prefilter,
+        use_exact_hash_prefilter=use_exact_hash_prefilter,
+        exact_hash_index=exact_hash_index,
+        protein_hash_index=protein_hash_index,
+        allele_sequence_cache=allele_sequence_cache,
+        prefilter_alleles=prefilter_alleles,
+        minimap2_prefilter_representatives=minimap2_prefilter_representatives,
+        minimap2_prefilter_index_path=minimap2_prefilter_index_path,
+        prefilter_k=prefilter_k,
+        effective_prefilter_top_n=effective_prefilter_top_n,
+        effective_prefilter_stride=effective_prefilter_stride,
+        prefilter_min_loci_fraction=prefilter_min_loci_fraction,
+        index_dir=index_dir,
+        index_path=index_path,
+        allele_fastas=allele_fastas,
+        force_reindex=force_reindex,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        min_depth=min_depth,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        kma_fastq_mem_mode=kma_fastq_mem_mode,
+        minimap2_representative_main_alignment=minimap2_representative_main_alignment,
+        ultrafast_second_pass_max_loci=ultrafast_second_pass_max_loci,
+        cds_prediction_mode=cds_prediction_mode,
+        cds_training_file=cds_training_file,
+        cds_closed_ends=cds_closed_ends,
+        normalized_policy=normalized_policy,
+        chew_cds_gate=chew_cds_gate,
+    )
+    return base_ctx, samples
+
+
+def _type_all_samples(
+    base_ctx: TypingContext,
+    samples: list[SampleInput],
+    on_result: Callable[[STResult], None] | None,
+) -> list[STResult]:
     results: list[STResult] = []
+    index_path = base_ctx.index_path
     for sample in samples:
-        base_ctx = TypingContext(
-            core=core,
-            sample=sample,
-            scheme=scheme,
-            backend=backend,
-            aligner=aligner,
-            cache=cache,
-            cache_root=cache_root,
-            scheme_name=scheme_name,
-            provider=provider,
-            mode_overrides=mode_overrides,
-            scheme_type=scheme_type,
-            use_prefilter=use_prefilter,
-            use_minimap2_hash_prefilter=use_minimap2_hash_prefilter,
-            use_exact_hash_prefilter=use_exact_hash_prefilter,
-            exact_hash_index=exact_hash_index,
-            protein_hash_index=protein_hash_index,
-            allele_sequence_cache=allele_sequence_cache,
-            prefilter_alleles=prefilter_alleles,
-            minimap2_prefilter_representatives=minimap2_prefilter_representatives,
-            minimap2_prefilter_index_path=minimap2_prefilter_index_path,
-            prefilter_k=prefilter_k,
-            effective_prefilter_top_n=effective_prefilter_top_n,
-            effective_prefilter_stride=effective_prefilter_stride,
-            prefilter_min_loci_fraction=prefilter_min_loci_fraction,
-            index_dir=index_dir,
-            index_path=index_path,
-            allele_fastas=allele_fastas,
-            force_reindex=force_reindex,
-            min_identity=min_identity,
-            min_coverage=min_coverage,
-            min_depth=min_depth,
-            threads=threads,
-            count_same_copy=count_same_copy,
-            kma_fastq_mem_mode=kma_fastq_mem_mode,
-            minimap2_representative_main_alignment=minimap2_representative_main_alignment,
-            ultrafast_second_pass_max_loci=ultrafast_second_pass_max_loci,
-            cds_prediction_mode=cds_prediction_mode,
-            cds_training_file=cds_training_file,
-            cds_closed_ends=cds_closed_ends,
-            normalized_policy=normalized_policy,
-            chew_cds_gate=chew_cds_gate,
-        )
-        st_result, index_path = _type_single_sample(base_ctx)
+        ctx = base_ctx.evolve(sample=sample, index_path=index_path)
+        st_result, index_path = _type_single_sample(ctx)
         results.append(st_result)
         if on_result is not None:
             on_result(st_result)
-
     return results
+
+
+def run_typing_impl(
+    sample_paths: list[Path | SampleInput],
+    scheme_name: str,
+    backend: str,
+    *,
+    provider: str = "pubmlst",
+    scheme_type: str = "mlst",
+    cgmlst_mode: str = "standard",
+    cache_root: Path | None = None,
+    min_identity: float = 95.0,
+    min_coverage: float = 0.95,
+    min_depth: float = 10.0,
+    force_reindex: bool = False,
+    threads: int = 1,
+    count_same_copy: bool = False,
+    prefilter_enabled: bool = True,
+    prefilter_k: int = 31,
+    prefilter_top_n: int = 20,
+    prefilter_min_loci_fraction: float = 0.3,
+    cds_coordinates_out: Path | None = None,
+    call_policy: str = "default",
+    chew_cds_gate: bool = True,
+    on_result: Callable[[STResult], None] | None = None,
+) -> list[STResult]:
+    import gmlst.core as core
+
+    base_ctx, samples = _setup_typing_config(
+        core,
+        sample_paths,
+        scheme_name,
+        backend,
+        provider=provider,
+        scheme_type=scheme_type,
+        cgmlst_mode=cgmlst_mode,
+        cache_root=cache_root,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        min_depth=min_depth,
+        force_reindex=force_reindex,
+        threads=threads,
+        count_same_copy=count_same_copy,
+        prefilter_enabled=prefilter_enabled,
+        prefilter_k=prefilter_k,
+        prefilter_top_n=prefilter_top_n,
+        prefilter_min_loci_fraction=prefilter_min_loci_fraction,
+        cds_coordinates_out=cds_coordinates_out,
+        call_policy=call_policy,
+        chew_cds_gate=chew_cds_gate,
+    )
+    return _type_all_samples(base_ctx, samples, on_result)

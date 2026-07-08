@@ -124,3 +124,53 @@ def download_required_files(
             raise RuntimeError(
                 f"[{provider_name}] Missing downloaded file: {dest_file}"
             )
+
+
+def generate_scheme_base_name(organism_name: str) -> str:
+    """Generate short scheme base name from full organism name.
+
+    Rules:
+    1. For species (e.g., 'Listeria monocytogenes'):
+       first letter of genus + species = 'lmonocytogenes'
+    2. For genus only (e.g., 'Neisseria spp.'):
+       full genus name only = 'neisseria'
+    3. For multi-species labels containing '/' in species token
+       (e.g., 'Campylobacter jejuni/coli'):
+       use genus only = 'campylobacter'
+
+    Examples:
+        'Listeria monocytogenes' -> 'lmonocytogenes'
+        'Staphylococcus aureus' -> 'saureus'
+        'Neisseria spp.' -> 'neisseria'
+        'Campylobacter jejuni/coli' -> 'campylobacter'
+        'Klebsiella pneumoniae' -> 'kpneumoniae'
+    """
+    if not organism_name:
+        return "unknown"
+
+    # Normalize: lowercase and remove extra spaces
+    name = organism_name.lower().strip()
+
+    # Handle 'spp.' or 'sp.' cases (genus only)
+    if (
+        " spp." in name
+        or name.endswith(" spp")
+        or " sp." in name
+        or name.endswith(" sp")
+    ):
+        # Extract genus name only
+        genus = name.split()[0]
+        return genus
+
+    # Handle full species name (genus + species)
+    parts = name.split()
+    if len(parts) >= 2:
+        genus = parts[0]
+        species = parts[1]
+        if "/" in species:
+            return genus
+        # Return first letter of genus + full species name
+        return f"{genus[0]}{species}"
+
+    # Fallback: just return the name as-is (single word)
+    return name

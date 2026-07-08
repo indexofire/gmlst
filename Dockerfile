@@ -17,8 +17,10 @@ RUN micromamba install -y -n base -c bioconda -c conda-forge \
 RUN micromamba run -n base pip install --no-cache-dir gmlst \
     && ln -s /opt/conda/bin/gmlst /usr/local/bin/gmlst
 
-RUN mkdir -p /data
+RUN mkdir -p /data && chown -R $MAMBA_USER:$MAMBA_USER /data
 WORKDIR /data
+
+USER $MAMBA_USER
 
 ENTRYPOINT ["gmlst"]
 CMD ["--help"]

@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
+from gmlst import core as _core
 from gmlst.aligners.base import AlignmentResult
 from gmlst.calling.allele import LocusCall
 from gmlst.core.types import CgmlstModeOverrides
 from gmlst.database.cache import DatabaseCache
 from gmlst.readers.sample import SampleInput
 
+from . import config as _config
+from . import prefilter as _prefilter
+from . import ranking as _ranking
 from . import refinement as _refinement
+
+logger = logging.getLogger("gmlst.core")
 
 
 def write_merged_fasta_impl(fasta_paths: list[Path], out_path: Path) -> None:
@@ -27,8 +34,6 @@ def align_targeted_loci_impl(
     merge_fasta_for_fasta: bool = True,
     force_build_index: bool = False,
 ) -> tuple[AlignmentResult, float]:
-    import gmlst.core as core
-
     return _refinement._align_targeted_loci_impl(
         aligner=aligner,
         sample_source=sample_source,
@@ -37,7 +42,7 @@ def align_targeted_loci_impl(
         loci=loci,
         targeted_fastas=targeted_fastas,
         temp_prefix=temp_prefix,
-        write_merged_fasta_fn=core._write_merged_fasta,
+        write_merged_fasta_fn=write_merged_fasta_impl,
         merge_fasta_for_fasta=merge_fasta_for_fasta,
         force_build_index=force_build_index,
     )
@@ -52,8 +57,6 @@ def merge_calls_from_alignment_impl(
     min_coverage: float,
     min_depth: float,
 ) -> None:
-    import gmlst.core as core
-
     _refinement._merge_calls_from_alignment_impl(
         base_calls=base_calls,
         alignment=alignment,
@@ -61,8 +64,8 @@ def merge_calls_from_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
-        call_all_loci_fn=core.call_all_loci,
-        merge_fallback_calls_fn=core._merge_fallback_calls,
+        call_all_loci_fn=_core.call_all_loci,
+        merge_fallback_calls_fn=merge_fallback_calls_impl,
     )
 
 
@@ -75,8 +78,6 @@ def recompute_all_loci_with_additional_alignment_impl(
     min_coverage: float,
     min_depth: float,
 ) -> dict[str, LocusCall]:
-    import gmlst.core as core
-
     return _refinement._recompute_all_loci_with_additional_alignment_impl(
         base_alignment=base_alignment,
         additional_alignment=additional_alignment,
@@ -84,7 +85,7 @@ def recompute_all_loci_with_additional_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
-        call_all_loci_fn=core.call_all_loci,
+        call_all_loci_fn=_core.call_all_loci,
     )
 
 
@@ -103,8 +104,6 @@ def confirm_loci_with_tuned_aligner_impl(
     min_coverage: float,
     min_depth: float,
 ) -> None:
-    import gmlst.core as core
-
     _refinement._confirm_loci_with_tuned_aligner_impl(
         base_calls=base_calls,
         backend=backend,
@@ -118,11 +117,11 @@ def confirm_loci_with_tuned_aligner_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
-        get_aligner_fn=core.get_aligner,
-        align_targeted_loci_fn=core._align_targeted_loci,
-        merge_calls_from_alignment_fn=core._merge_calls_from_alignment,
-        select_candidate_locus_fastas_fn=core._select_candidate_locus_fastas,
-        logger=core.logger,
+        get_aligner_fn=_core.get_aligner,
+        align_targeted_loci_fn=_core._align_targeted_loci,
+        merge_calls_from_alignment_fn=_core._merge_calls_from_alignment,
+        select_candidate_locus_fastas_fn=_prefilter.select_candidate_locus_fastas_impl,
+        logger=logger,
     )
 
 
@@ -140,8 +139,6 @@ def align_evidence_fallback_loci_impl(
     allele_fastas: list[Path],
     force_reindex: bool,
 ) -> tuple[AlignmentResult, float] | None:
-    import gmlst.core as core
-
     return _refinement._align_evidence_fallback_loci_impl(
         fallback_aligner=fallback_aligner,
         fallback_backend=fallback_backend,
@@ -154,9 +151,9 @@ def align_evidence_fallback_loci_impl(
         provider=provider,
         allele_fastas=allele_fastas,
         force_reindex=force_reindex,
-        select_candidate_locus_fastas_fn=core._select_candidate_locus_fastas,
-        align_targeted_loci_fn=core._align_targeted_loci,
-        ensure_full_index_fn=core._ensure_full_index,
+        select_candidate_locus_fastas_fn=_prefilter.select_candidate_locus_fastas_impl,
+        align_targeted_loci_fn=_core._align_targeted_loci,
+        ensure_full_index_fn=_core._ensure_full_index,
     )
 
 
@@ -186,8 +183,6 @@ def apply_post_alignment_refinements_impl(
     allele_fastas: list[Path],
     force_reindex: bool,
 ) -> dict[str, LocusCall]:
-    import gmlst.core as core
-
     return _refinement._apply_post_alignment_refinements_impl(
         locus_calls=locus_calls,
         aln=aln,
@@ -212,28 +207,28 @@ def apply_post_alignment_refinements_impl(
         provider=provider,
         allele_fastas=allele_fastas,
         force_reindex=force_reindex,
-        align_targeted_loci_fn=core._align_targeted_loci,
+        align_targeted_loci_fn=_core._align_targeted_loci,
         recompute_all_loci_with_additional_alignment_fn=(
-            core._recompute_all_loci_with_additional_alignment
+            recompute_all_loci_with_additional_alignment_impl
         ),
-        confirm_loci_with_tuned_aligner_fn=core._confirm_loci_with_tuned_aligner,
-        align_evidence_fallback_loci_fn=core._align_evidence_fallback_loci,
-        merge_calls_from_alignment_fn=core._merge_calls_from_alignment,
-        select_candidate_locus_fastas_fn=core._select_candidate_locus_fastas,
-        get_aligner_fn=core.get_aligner,
-        low_confidence_loci_fn=core._low_confidence_loci,
-        call_rank_fn=core._call_rank,
-        ultrafast_confirmation_rank_fn=core._ultrafast_confirmation_rank,
-        ultrafast_second_pass_rank_fn=core._ultrafast_second_pass_rank,
+        confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_impl,
+        align_evidence_fallback_loci_fn=align_evidence_fallback_loci_impl,
+        merge_calls_from_alignment_fn=_core._merge_calls_from_alignment,
+        select_candidate_locus_fastas_fn=_prefilter.select_candidate_locus_fastas_impl,
+        get_aligner_fn=_core.get_aligner,
+        low_confidence_loci_fn=_ranking._low_confidence_loci,
+        call_rank_fn=_ranking._call_rank,
+        ultrafast_confirmation_rank_fn=_ranking._ultrafast_confirmation_rank,
+        ultrafast_second_pass_rank_fn=_ranking._ultrafast_second_pass_rank,
         adaptive_ultrafast_second_pass_budget_fn=(
-            core._adaptive_ultrafast_second_pass_budget
+            _ranking._adaptive_ultrafast_second_pass_budget
         ),
-        minimap2_hash_refine_max_loci_fn=core._minimap2_hash_refine_max_loci,
-        kma_fastq_mem_confirm_max_loci_fn=core._kma_fastq_mem_confirm_max_loci,
-        minimap2_bsr_confirm_max_loci_fn=core._minimap2_bsr_confirm_max_loci,
-        cgmlst_evidence_fallback_backend_fn=core._cgmlst_evidence_fallback_backend,
-        cgmlst_evidence_fallback_max_loci_fn=core._cgmlst_evidence_fallback_max_loci,
-        logger=core.logger,
+        minimap2_hash_refine_max_loci_fn=_config._minimap2_hash_refine_max_loci,
+        kma_fastq_mem_confirm_max_loci_fn=_config._kma_fastq_mem_confirm_max_loci,
+        minimap2_bsr_confirm_max_loci_fn=_config._minimap2_bsr_confirm_max_loci,
+        cgmlst_evidence_fallback_backend_fn=_config._cgmlst_evidence_fallback_backend,
+        cgmlst_evidence_fallback_max_loci_fn=_config._cgmlst_evidence_fallback_max_loci,
+        logger=logger,
     )
 
 
@@ -241,11 +236,9 @@ def merge_fallback_calls_impl(
     base_calls: dict[str, LocusCall],
     fallback_calls: dict[str, LocusCall],
 ) -> None:
-    import gmlst.core as core
-
     for locus, fallback_call in fallback_calls.items():
         base_call = base_calls.get(locus)
-        if base_call is None or core._call_rank(fallback_call) > core._call_rank(
-            base_call
-        ):
+        if base_call is None or _ranking._call_rank(
+            fallback_call
+        ) > _ranking._call_rank(base_call):
             base_calls[locus] = fallback_call
