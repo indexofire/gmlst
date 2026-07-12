@@ -145,7 +145,21 @@ def temp_dir(prefix: str = "gmlst_") -> Generator[Path, None, None]:
     try:
         yield Path(tmp)
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        _force_rmtree(tmp)
+
+
+def _force_rmtree(path: Path, retries: int = 3, delay: float = 0.5) -> None:
+    """Remove a directory tree, retrying on failure to handle lingering file handles."""
+    import time
+
+    for attempt in range(retries):
+        try:
+            shutil.rmtree(path)
+            return
+        except OSError:
+            if attempt < retries - 1:
+                time.sleep(delay)
+    shutil.rmtree(path, ignore_errors=True)
 
 
 def get_temp_root() -> Path | None:

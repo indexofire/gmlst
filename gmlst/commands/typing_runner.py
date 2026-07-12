@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -89,6 +90,19 @@ def execute_typing_run(
 
         futures: dict[object, int] = {}
         ordered_results: list[object | None] = [None for _ in prepared_samples]
+        next_flush_idx = 0
+        flush_lock = threading.Lock()
+
+        def _try_flush() -> None:
+            nonlocal next_flush_idx
+            with flush_lock:
+                while next_flush_idx < len(ordered_results):
+                    result = ordered_results[next_flush_idx]
+                    if result is None:
+                        break
+                    on_result(result)
+                    next_flush_idx += 1
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for idx, sample_entry in enumerate(prepared_samples):
                 future = executor.submit(_worker, sample_entry)
@@ -97,10 +111,9 @@ def execute_typing_run(
                 idx = futures[future]
                 batch = future.result()
                 ordered_results[idx] = batch[0] if batch else None
+                _try_flush()
 
-        results = [result for result in ordered_results if result is not None]
-        for result in results:
-            on_result(result)
+        results = [r for r in ordered_results if r is not None]
         return results
 
     return run_typing_fn(

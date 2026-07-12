@@ -392,7 +392,13 @@ def _parse_paf(
                 continue
 
             coverage = (qend - qstart) / qlen if qlen > 0 else 0.0
-            identity = (nmatch / blen * 100.0) if blen > 0 else 0.0
+            nm = 0
+            for tag in cols[12:]:
+                if tag.startswith("NM:i:"):
+                    nm = int(tag[5:])
+                    break
+            total_aligned = nmatch + nm
+            identity = (nmatch / total_aligned * 100.0) if total_aligned > 0 else 0.0
             key = (locus, allele_id)
 
             existing = best.get(key)
@@ -445,7 +451,7 @@ def _parse_paf_fastq_candidates(
     total_cov_by_key: dict[tuple[str, str], float] = {}
     tlen_by_key: dict[tuple[str, str], int] = {}
     nmatch_by_key: dict[tuple[str, str], float] = {}
-    blen_by_key: dict[tuple[str, str], float] = {}
+    nm_by_key: dict[tuple[str, str], float] = {}
     intervals_by_key: dict[tuple[str, str], list[tuple[int, int]]] = {}
     support_reads_by_key: dict[tuple[str, str], float] = {}
 
@@ -483,8 +489,14 @@ def _parse_paf_fastq_candidates(
                 continue
 
             tspan = abs(tend - tstart)
-            identity = (nmatch / blen) if blen > 0 else 0.0
-            if blen <= 0:
+            nm = 0
+            for tag in cols[12:]:
+                if tag.startswith("NM:i:"):
+                    nm = int(tag[5:])
+                    break
+            total_aligned = nmatch + nm
+            identity = (nmatch / total_aligned) if total_aligned > 0 else 0.0
+            if total_aligned <= 0:
                 continue
 
             candidate = _ReadHit(
@@ -522,7 +534,7 @@ def _parse_paf_fastq_candidates(
                 hit.tspan * weight
             )
             nmatch_by_key[key] = nmatch_by_key.get(key, 0.0) + (hit.nmatch * weight)
-            blen_by_key[key] = blen_by_key.get(key, 0.0) + (hit.blen * weight)
+            nm_by_key[key] = nm_by_key.get(key, 0.0) + (hit.blen - hit.nmatch) * weight
             intervals_by_key.setdefault(key, []).append((hit.tstart, hit.tend))
             support_reads_by_key[key] = support_reads_by_key.get(key, 0.0) + weight
 
@@ -531,12 +543,13 @@ def _parse_paf_fastq_candidates(
         total_cov = total_cov_by_key.get((locus, allele_id), 0.0)
         tlen = float(tlen_int)
         nmatch_sum = nmatch_by_key.get((locus, allele_id), 0.0)
-        blen_sum = blen_by_key.get((locus, allele_id), 0.0)
+        nm_sum = nm_by_key.get((locus, allele_id), 0.0)
+        total_aligned = nmatch_sum + nm_sum
         intervals = intervals_by_key.get((locus, allele_id), [])
 
         covered_bases = _merged_interval_length(intervals)
         coverage = min(covered_bases / tlen, 1.0) if tlen > 0 else 0.0
-        identity = (nmatch_sum / blen_sum * 100.0) if blen_sum > 0 else 0.0
+        identity = (nmatch_sum / total_aligned * 100.0) if total_aligned > 0 else 0.0
         support_reads = support_reads_by_key.get((locus, allele_id), 0.0)
         depth = (total_cov / covered_bases) if covered_bases > 0 else 0.0
         match = AlleleMatch(

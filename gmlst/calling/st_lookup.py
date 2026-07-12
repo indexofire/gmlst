@@ -90,6 +90,8 @@ class STResult:
                 allele_parts.append(",".join(_sort_allele_ids(call.allele_ids)))
             elif count_same_copy and call.call_type == "exact" and call.copy_count > 1:
                 allele_parts.append(",".join([call.allele_id] * call.copy_count))
+            elif call.call_type == "exact" and call.copy_count > 1:
+                allele_parts.append(f"{call.allele_id}*")
             elif call.call_type == "exact":
                 allele_parts.append(call.allele_id)
             elif call.call_type == "closest":

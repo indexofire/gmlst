@@ -96,28 +96,16 @@ PubMLST runs on the BIGSdb platform. Since **1 January 2025**, PubMLST requires 
 4. Click **Create new API key**
 5. Copy the generated key (format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`)
 
+- **Auth method**: Personal API Key, passed as `X-API-Key: <key>` header (note: BIGSdb documents both `Authorization: Bearer` and OAuth, but PubMLST's actual server only accepts `X-API-Key`)
+
 #### How to use the API key in gmlst
 
-Once you have the key, set it as an environment variable:
-
 ```bash
-export GMLST_PUBMLST_API_KEY=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-```
-
-Or save it permanently via `gmlst config`:
-
-```bash
-gmlst config set GMLST_PUBMLST_API_KEY XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+gmlst config set GMLST_PUBMLST_API_KEY your-key-here
 source ~/.config/gmlst/env.sh
 ```
 
-After this, all PubMLST downloads will include the `Authorization: Bearer <key>` header automatically, allowing access to post-2024 data.
-
-Verify the key is set:
-
-```bash
-gmlst config get GMLST_PUBMLST_API_KEY
-```
+All PubMLST requests will include the `X-API-Key` header automatically. Without a key, only pre-2025 data is accessible (truncated profiles and alleles).
 
 #### References
 
@@ -148,41 +136,70 @@ Pasteur provides MLST and some larger schemes. Classification into `mlst`, `cgml
 
 ### Authentication notes
 
-Pasteur runs the same BIGSdb platform as PubMLST and has adopted the **same data access policy**: since **1 January 2025**, data curated after 31 December 2024 requires authentication. The auth mechanism is identical to PubMLST.
+Pasteur runs the same BIGSdb platform as PubMLST and has adopted the **same data access policy**: since **1 January 2025**, data curated after 31 December 2024 requires authentication. The auth mechanism is identical to PubMLST (`X-API-Key` header).
 
 #### How to obtain a Pasteur BIGSdb API key
 
-The process is more involved than PubMLST:
+The process requires human review and takes longer than PubMLST:
 
-1. Register at [bigsdb.pasteur.fr](https://bigsdb.pasteur.fr)
-2. Register to the specific databases you need access to (follow the procedure on the site)
-3. **Email the Pasteur BIGSdb team** to request an API key — explain:
-   - Why you need the key
-   - How you will use the API (e.g. automated typing pipeline)
-   - Whether this is for academic or commercial use
-4. The team will respond with your API key
+**Step 1: Create an account**
 
-Request page: <https://bigsdb.pasteur.fr/requesting-api-key/>
+Register at [bigsdb.pasteur.fr/register/](https://bigsdb.pasteur.fr/register/)
 
-#### How to use the API key in gmlst
+**Step 2: Register to specific databases**
 
-```bash
-export GMLST_PASTEUR_API_KEY=YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+After logging in, register to each species database you need access to (e.g. Bordetella, E. coli, Listeria). API key access is **only granted for databases you have registered to**.
+
+**Step 3: Request the API key by email**
+
+Contact the Pasteur team with the required information:
+
+| Your sector | Contact email |
+|---|---|
+| Academic / Non-profit / Public health | [bigsdb@pasteur.fr](mailto:bigsdb@pasteur.fr) |
+| Commercial / For-profit | [bigsdb-policy@pasteur.fr](mailto:bigsdb-policy@pasteur.fr) |
+
+Email template:
+
+```
+Subject: API Key Request for gmlst typing pipeline
+
+BIGSdb-Pasteur Username: <your username>
+Affiliation: <your institution>
+Email address: <your email>
+Sector: Academic / Non-profit
+Database(s) you intend to use:
+  - <species 1, e.g. Bordetella>
+  - <species 2, e.g. E. coli>
+Motivation:
+  I use gmlst (https://github.com/indexofire/gmlst), a bacterial genome
+  typing CLI tool, for automated MLST/cgMLST typing. I need API access
+  to download scheme allele sequences and ST profiles for integration
+  into our typing pipeline.
 ```
 
-Or via `gmlst config`:
+The team will review your request and respond with the API key (typically within a few business days).
+
+**Step 4: Set the key in gmlst**
 
 ```bash
-gmlst config set GMLST_PASTEUR_API_KEY YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+gmlst config set GMLST_PASTEUR_API_KEY your-pasteur-key
 source ~/.config/gmlst/env.sh
 ```
 
-The key format and header are the same as PubMLST (`Authorization: Bearer <key>`).
+Verify:
+
+```bash
+gmlst config get GMLST_PASTEUR_API_KEY
+```
+
+After this, all Pasteur requests will include the `X-API-Key` header automatically. Without a key, only pre-2025 data is accessible.
 
 #### References
 
 - [Pasteur API key request page](https://bigsdb.pasteur.fr/requesting-api-key/)
 - [Pasteur data access policy](https://bigsdb.pasteur.fr/news/novel-data-access-policy/)
+- [BIGSdb API authentication docs](https://bigsdb.readthedocs.io/en/latest/rest.html#api-oauth)
 
 ## Enterobase
 
