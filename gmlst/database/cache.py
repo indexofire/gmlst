@@ -35,6 +35,27 @@ from gmlst.database.schema import Scheme
 logger = logging.getLogger("gmlst.database_cache")
 
 
+def _load_blocked_schemes() -> dict[str, set[str]]:
+    """Load blocked scheme names per provider from data/blocked_schemes.json."""
+    try:
+        import importlib.resources as pkg_resources
+
+        blocked_path = Path(
+            str(pkg_resources.files("gmlst") / "data" / "blocked_schemes.json")
+        )
+        if blocked_path.is_file():
+            with blocked_path.open() as f:
+                data = json.load(f)
+                return {
+                    k: set(v)
+                    for k, v in data.items()
+                    if not k.startswith("_") and isinstance(v, list)
+                }
+    except (OSError, json.JSONDecodeError):
+        pass
+    return {}
+
+
 def _resolve_cache_root() -> Path:
     """Resolve the default cache root using environment-aware fallbacks."""
     env_dir = os.environ.get("GMLST_CACHE_DIR")
@@ -228,6 +249,17 @@ class DatabaseCache:
             provider_obj: Any = p
             provider_obj._token = token
 
+        extra: dict[str, Any] = {}
+        try:
+            catalog = self.load_catalog(provider)
+            if catalog:
+                for entry in catalog:
+                    if entry.get("scheme_name") == name:
+                        extra = entry.get("extra", {})
+                        break
+        except Exception:
+            pass
+
         changed = False
         updater = getattr(p, "update_scheme", None)
         if callable(updater):
@@ -238,6 +270,7 @@ class DatabaseCache:
                     resolved_scheme_type,
                     download_tool=download_tool,
                     max_connections=max_connections,
+                    extra=extra,
                 )
             )
         else:
@@ -373,6 +406,18 @@ class DatabaseCache:
             provider_obj: Any = p
             provider_obj._token = token
 
+        # Resolve extra metadata from catalog (e.g. Enterobase directory name)
+        extra: dict[str, Any] = {}
+        try:
+            catalog = self.load_catalog(provider)
+            if catalog:
+                for entry in catalog:
+                    if entry.get("scheme_name") == name:
+                        extra = entry.get("extra", {})
+                        break
+        except Exception:
+            pass
+
         dest = self.scheme_dir(name, provider)
         p.download_scheme(
             name,
@@ -380,6 +425,7 @@ class DatabaseCache:
             scheme_type=scheme_type,
             download_tool=download_tool,
             max_connections=max_connections,
+            extra=extra,
         )
         self._record_download_metadata(name, provider=provider)
 
@@ -558,9 +604,26 @@ class DatabaseCache:
         """Write catalog JSON to cache with globally unique scheme names.
 
         Ensures scheme names are unique across all providers by checking
-        existing catalogs and adjusting suffixes as needed.
+        existing catalogs and adjusting suffixes as needed. Blocked schemes
+        are filtered out before saving.
         """
         import time
+
+        blocked = _load_blocked_schemes().get(provider, set())
+        if blocked:
+            before = len(schemes)
+            schemes = [
+                s
+                for s in schemes
+                if s.get("scheme_name") not in blocked
+                and s.get("extra", {}).get("directory") not in blocked
+            ]
+            if before != len(schemes):
+                logger.info(
+                    "Filtered %d blocked scheme(s) for '%s'",
+                    before - len(schemes),
+                    provider,
+                )
 
         # First, normalize names within this provider's schemes
         schemes = self._normalize_scheme_names(schemes)

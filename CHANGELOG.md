@@ -24,6 +24,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
+## [0.1.2] - 2026-07-08
+
+### Fixed
+- **Download concurrency / 429 fix**: Decoupled aria2c `--split` and
+  `--max-connection-per-server` from `--max-concurrent-downloads`. Previously a
+  default of 8 concurrent files × 8 splits = 64 connections triggered nginx 429
+  from PubMLST/Pasteur. Per-server connections are now capped at 2.
+- **Partial-file cleanup**: `download_file_requests` and `download_required_files`
+  now `unlink` partial/empty files on failure. `download_files_batch` skip logic
+  checks `size > 0` instead of just `exists()`, preventing corrupt partial
+  downloads from being treated as complete on retry.
+- **Lowered default concurrency**: Provider defaults reduced from 8/16 to 4.
+  CLI `--connections/-x` default changed from `None` (provider fallback) to `4`.
+
+### Added
+- **`gmlst config` command**: New command group (`env`, `show`, `get`, `set`)
+  for inspecting and managing 29 environment variables. Writes to
+  `~/.config/gmlst/env.sh`.
+- **`gmlst scheme search` command**: Search across scheme name, organism,
+  description, and provider with a positional PATTERN argument.
+
+### Changed
+- **Positional arguments**: `scheme download`, `export`, and `update-custom`
+  now accept the scheme name as a positional argument. The `-s` flag is kept as
+  a hidden deprecated alias for backward compatibility.
+- **Scheme list highlighting**: Downloaded schemes are now shown in **bold**
+  and sorted first in the table.
+
+### Frontend
+- Added `is_valid_fasta` to `fasta_io.py` for post-download validation.
+- `scheme list` hint text updated to positional argument syntax.
+
+
 ## [0.1.1] - 2026-07-07
 
 ### Security
@@ -91,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **nucmer**: MUMmer4 backend for sensitive distant matches
 - **kmerhash**: Pure Python backend with no external dependencies (removed in later release)
 
+[0.1.2]: https://github.com/indexofire/gmlst/releases/tag/v0.1.2
 [0.1.1]: https://github.com/indexofire/gmlst/releases/tag/v0.1.1
 [0.1.0]: https://github.com/indexofire/gmlst/releases/tag/v0.1.0
 

@@ -34,7 +34,7 @@ def test_download_required_files_raises_when_output_is_missing(
         lambda *_args, **_kwargs: (1, 0),
     )
 
-    with pytest.raises(RuntimeError, match="Missing downloaded file"):
+    with pytest.raises(RuntimeError, match="Missing or empty downloaded file"):
         download_required_files(
             [("https://example.com/a", dest)],
             provider_name="demo",

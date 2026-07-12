@@ -5,6 +5,8 @@
     "senterica_5"
   ],
   "pasteur": [],
-  "enterobase": [],
+  "enterobase": [
+    "clostridium.Griffiths_MLST"
+  ],
   "cgmlst": []
 }

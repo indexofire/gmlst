@@ -593,7 +593,7 @@ def test_scheme_download_forwards_download_tool(monkeypatch) -> None:
     assert captured["provider"] == "pubmlst"
     assert captured["scheme_type"] == "mlst"
     assert captured["download_tool"] == "wget"
-    assert captured["max_connections"] is None
+    assert captured["max_connections"] == 4
 
 
 def test_scheme_download_forwards_connections(monkeypatch) -> None:
@@ -841,7 +841,7 @@ def test_scheme_update_uses_catalog_scheme_type(monkeypatch) -> None:
     assert captured["provider"] == "pubmlst"
     assert captured["scheme_type"] == "cgmlst"
     assert captured["download_tool"] == "auto"
-    assert captured["max_connections"] is None
+    assert captured["max_connections"] == 4
 
 
 def test_scheme_update_forwards_download_tool(monkeypatch) -> None:
@@ -883,7 +883,7 @@ def test_scheme_update_forwards_download_tool(monkeypatch) -> None:
     assert result.exit_code == 0
     assert captured["name"] == "ecoli_1"
     assert captured["download_tool"] == "aria2c"
-    assert captured["max_connections"] is None
+    assert captured["max_connections"] == 4
 
 
 def test_scheme_update_forwards_connections(monkeypatch) -> None:

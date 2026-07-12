@@ -19,6 +19,7 @@ class _DummyProviderIncremental:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> bool:
         assert download_tool == "auto"
         assert max_connections is None
@@ -48,6 +49,7 @@ class _DummyProviderFull:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> None:
         assert download_tool == "auto"
         assert max_connections is None

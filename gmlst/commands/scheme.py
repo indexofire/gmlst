@@ -241,6 +241,12 @@ def cmd_list(
     if scheme_type != "all":
         target_type = scheme_type.lower()
         all_schemes = [s for s in all_schemes if s.scheme_type.lower() == target_type]
+    else:
+        all_schemes = [
+            s
+            for s in all_schemes
+            if s.scheme_type.lower() in ("mlst", "cgmlst", "wgmlst", "rmlst")
+        ]
 
     # Filter schemes by name regex if specified
     if name:
@@ -258,6 +264,7 @@ def cmd_list(
             s
             for s in all_schemes
             if s.scheme_name not in blocked_schemes.get(s.provider, [])
+            and s.extra.get("directory", "") not in blocked_schemes.get(s.provider, [])
         ]
 
     # Filter to only show downloaded/cached schemes if --available flag is set
@@ -268,12 +275,17 @@ def cmd_list(
         if not all_schemes:
             console.print("[yellow]No downloaded schemes found.[/yellow]")
             console.print(
-                "Run [bold]gmlst scheme download -s <scheme_name>[/bold] to download."
+                "Run [bold]gmlst scheme download <scheme_name>[/bold] to download."
             )
             return
 
     # Sort schemes by name (natural sort: _1, _2, _10 instead of _1, _10, _2)
-    all_schemes.sort(key=lambda s: _natural_sort_key(s.scheme_name))
+    all_schemes.sort(
+        key=lambda s: (
+            not cache.is_downloaded(s.scheme_name, s.provider),
+            _natural_sort_key(s.scheme_name),
+        )
+    )
 
     payload = [
         {
@@ -323,7 +335,95 @@ def cmd_list(
         render_text=lambda: _render_scheme_list_text(payload),
         print_table=lambda: console.print(table),
     )
-    console.print("\nDownload: [bold]gmlst scheme download -s <scheme_name>[/bold]")
+    console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
+
+
+@scheme_group.command("search", context_settings=HELP_SETTINGS)
+@click.argument("pattern", required=True)
+@click.option(
+    "-p",
+    "--provider",
+    default="all",
+    show_default=True,
+    type=click.Choice(list(AVAILABLE_PROVIDERS) + ["all"], case_sensitive=False),
+    help="Filter by provider.",
+)
+@click.option(
+    "-t",
+    "--type",
+    "scheme_type",
+    default="all",
+    show_default=True,
+    type=click.Choice(["mlst", "cgmlst", "wgmlst", "all"], case_sensitive=False),
+    help="Filter by scheme type.",
+)
+@click.option(
+    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
+)
+def cmd_search(
+    pattern: str,
+    provider: str,
+    scheme_type: str,
+    cache_dir: Path | None,
+) -> None:
+    """Search schemes by name, organism, description, or provider.
+
+    PATTERN is a case-insensitive substring to search for.
+    """
+    cache = DatabaseCache(cache_dir)
+
+    providers_to_check = AVAILABLE_PROVIDERS if provider == "all" else [provider]
+    all_schemes = []
+    for prov in providers_to_check:
+        scheme_dicts = cache.load_catalog(prov)
+        if scheme_dicts:
+            schemes = [_DictSchemeInfo(d) for d in scheme_dicts]
+            all_schemes.extend(schemes)
+
+    if scheme_type != "all":
+        target_type = scheme_type.lower()
+        all_schemes = [s for s in all_schemes if s.scheme_type.lower() == target_type]
+    else:
+        all_schemes = [
+            s
+            for s in all_schemes
+            if s.scheme_type.lower() in ("mlst", "cgmlst", "wgmlst", "rmlst")
+        ]
+
+    blocked_schemes = _load_blocked_schemes()
+    if blocked_schemes:
+        all_schemes = [
+            s
+            for s in all_schemes
+            if s.scheme_name not in blocked_schemes.get(s.provider, [])
+            and s.extra.get("directory", "") not in blocked_schemes.get(s.provider, [])
+        ]
+
+    needle = pattern.lower()
+    matches = [
+        s
+        for s in all_schemes
+        if needle in s.scheme_name.lower()
+        or needle in (s.organism or "").lower()
+        or needle in (s.display_name or "").lower()
+        or needle in s.provider.lower()
+    ]
+
+    matches.sort(
+        key=lambda s: (
+            not cache.is_downloaded(s.scheme_name, s.provider),
+            _natural_sort_key(s.scheme_name),
+        )
+    )
+
+    if not matches:
+        console.print(f"[yellow]No schemes matching '{pattern}'.[/yellow]")
+        return
+
+    title = f"Search: '{pattern}' ({len(matches)} matches)"
+    table = _build_scheme_list_table(matches, cache, title, console.size.width)
+    console.print(table)
+    console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
 
 
 def _build_scheme_list_table(
@@ -355,11 +455,8 @@ def _build_scheme_list_table(
             if scheme.extra.get("auth_required")
             else ""
         )
-        status = (
-            "[green]✓[/green]"
-            if cache.is_downloaded(scheme.scheme_name, scheme.provider)
-            else "[dim]-[/dim]"
-        )
+        is_dl = cache.is_downloaded(scheme.scheme_name, scheme.provider)
+        status = "[green]✓[/green]" if is_dl else "[dim]-[/dim]"
         row = [
             status,
             scheme.scheme_name,
@@ -375,7 +472,7 @@ def _build_scheme_list_table(
         )
         if terminal_width >= 80:
             row.append(scheme.display_name + auth_note)
-        table.add_row(*row)
+        table.add_row(*row, style="bold" if is_dl else None)
     return table
 
 
@@ -455,12 +552,26 @@ def _render_scheme_show_text(payload: dict[str, object]) -> str:
         lines.append(f"Status: Downloaded -> {payload.get('scheme_dir', '')}")
     else:
         lines.append("Status: Not downloaded")
-        lines.append(f"Run: gmlst scheme download -s {payload.get('scheme_name', '')}")
+        lines.append(f"Run: gmlst scheme download {payload.get('scheme_name', '')}")
     return "\n".join(lines)
 
 
 @scheme_group.command("show", context_settings=HELP_SETTINGS)
-@click.option("--scheme", "-s", help="Scheme name, e.g. 'saureus_1'.")
+@click.argument("scheme", required=False)
+@click.option(
+    "--scheme",
+    "-s",
+    "scheme_opt",
+    hidden=True,
+    help="[deprecated] Use positional argument instead.",
+)
+@click.option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="Show per-locus allele statistics (requires downloaded scheme).",
+)
 @click.option(
     "--format",
     "-f",
@@ -477,10 +588,16 @@ def _render_scheme_show_text(payload: dict[str, object]) -> str:
 def cmd_show(
     ctx: click.Context,
     scheme: str | None,
+    scheme_opt: str | None,
+    show_all: bool,
     output_format: str,
     cache_dir: Path | None,
 ) -> None:
-    """Show detailed information about a specific scheme."""
+    """Show detailed information about a specific scheme.
+
+    SCHEME is the scheme name, e.g. 'saureus_1'.
+    """
+    scheme = scheme or scheme_opt
     if not scheme:
         console.print(
             "[yellow]No scheme specified.[/yellow] "
@@ -509,7 +626,9 @@ def cmd_show(
     _, scheme_info = matches[0]
 
     blocked_schemes = _load_blocked_schemes()
-    if scheme in blocked_schemes.get(str(scheme_info.get("provider", "")), []):
+    provider_blocked = blocked_schemes.get(str(scheme_info.get("provider", "")), set())
+    scheme_dir = scheme_info.get("extra", {}).get("directory", "")
+    if scheme in provider_blocked or scheme_dir in provider_blocked:
         err_console.print(
             f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
             f"'{scheme_info.provider}'."
@@ -543,6 +662,30 @@ def cmd_show(
         "downloaded_at": scheme_meta.get("downloaded_at", ""),
         "updated_at": scheme_meta.get("updated_at", ""),
     }
+
+    locus_stats: list[dict[str, object]] = []
+    if show_all and is_downloaded:
+        try:
+            loaded = cache.load_scheme(scheme, scheme_info.provider)
+            from gmlst.fasta_io import iter_fasta_records
+
+            for locus, tfa_path in sorted(loaded.allele_files.items()):
+                lengths: list[int] = []
+                for _header, seq in iter_fasta_records(tfa_path):
+                    lengths.append(len(seq))
+                if lengths:
+                    locus_stats.append(
+                        {
+                            "locus": locus,
+                            "alleles": len(lengths),
+                            "min_len": min(lengths),
+                            "max_len": max(lengths),
+                            "avg_len": round(sum(lengths) / len(lengths)),
+                        }
+                    )
+        except (FileNotFoundError, OSError):
+            pass
+        payload["locus_stats"] = locus_stats
 
     output_mode = output_format.lower()
     if output_mode == "json":
@@ -581,7 +724,7 @@ def cmd_show(
         table.add_row("Status", f"Downloaded -> {scheme_dir}")
     else:
         table.add_row("Status", "Not downloaded")
-        table.add_row("Run", f"gmlst scheme download -s {scheme}")
+        table.add_row("Run", f"gmlst scheme download {scheme}")
 
     emit_output_table(
         output=None,
@@ -589,9 +732,55 @@ def cmd_show(
         print_table=lambda: console.print(table),
     )
 
+    if show_all:
+        if not is_downloaded:
+            console.print(
+                "\n[yellow]Scheme not downloaded."
+                " Use [bold]gmlst scheme download[/bold] first.[/yellow]"
+            )
+            return
+        if not locus_stats:
+            console.print("\n[dim]No allele files found.[/dim]")
+            return
+
+        from rich.box import MINIMAL_HEAVY_HEAD as _MINIMAL
+
+        locus_table = Table(
+            title="Allele Statistics",
+            box=_MINIMAL,
+            expand=True,
+            padding=(0, 1),
+        )
+        locus_table.add_column("Locus", style="cyan", no_wrap=True)
+        locus_table.add_column("Alleles", justify="right", style="green")
+        locus_table.add_column("Min bp", justify="right", style="dim")
+        locus_table.add_column("Max bp", justify="right", style="dim")
+        locus_table.add_column("Avg bp", justify="right", style="dim")
+
+        total_alleles = 0
+        for stat in locus_stats:
+            locus_table.add_row(
+                str(stat["locus"]),
+                str(stat["alleles"]),
+                str(stat["min_len"]),
+                str(stat["max_len"]),
+                str(stat["avg_len"]),
+            )
+            total_alleles += int(stat["alleles"])
+
+        console.print(locus_table)
+        console.print(f"\nTotal: {len(locus_stats)} loci, {total_alleles} alleles")
+
 
 @scheme_group.command("download", context_settings=HELP_SETTINGS, no_args_is_help=True)
-@click.option("--scheme", "-s", required=True, help="Scheme name, e.g. 'saureus_1'.")
+@click.argument("scheme", required=False)
+@click.option(
+    "--scheme",
+    "-s",
+    "scheme_opt",
+    hidden=True,
+    help="[deprecated] Use positional argument instead.",
+)
 @click.option("--force", is_flag=True, help="Re-download even if cached.")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
 @click.option(
@@ -606,23 +795,31 @@ def cmd_show(
     "--connections",
     "-x",
     type=click.IntRange(1, 128),
-    default=None,
-    help="Maximum concurrent connections/downloads for scheme download.",
+    default=4,
+    show_default=True,
+    help="Maximum concurrent downloads for scheme download.",
 )
 @click.option("--token", envvar="ENTEROBASE_TOKEN", help="API token (Enterobase only).")
 @click.option(
     "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
 )
 def cmd_download(
-    scheme: str,
+    scheme: str | None,
+    scheme_opt: str | None,
     force: bool,
     quiet: bool,
     download_tool: str,
-    connections: int | None,
+    connections: int,
     token: str | None,
     cache_dir: Path | None,
 ) -> None:
-    """Download MLST/cgMLST scheme data from catalog."""
+    """Download MLST/cgMLST scheme data from catalog.
+
+    SCHEME is the scheme name, e.g. 'saureus_1'.
+    """
+    scheme = scheme or scheme_opt
+    if not scheme:
+        raise click.UsageError("Scheme name is required.")
     if quiet:
         setup_logging(verbose=False, quiet=True)
 
@@ -636,7 +833,9 @@ def cmd_download(
     detected_type = str(match_info.get("scheme_type", "mlst"))
 
     blocked_schemes = _load_blocked_schemes()
-    if scheme in blocked_schemes.get(detected_provider, []):
+    provider_blocked = blocked_schemes.get(detected_provider, set())
+    scheme_dir = match_info.get("extra", {}).get("directory", "")
+    if scheme in provider_blocked or scheme_dir in provider_blocked:
         err_console.print(
             f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
             f"'{detected_provider}'."
@@ -700,8 +899,8 @@ def cmd_download(
     "--connections",
     "-x",
     type=click.IntRange(1, 128),
-    default=None,
-    help="Maximum concurrent connections/downloads for scheme update.",
+    default=4,
+    help="Maximum concurrent downloads for scheme update.",
 )
 @click.option(
     "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
@@ -728,7 +927,7 @@ def cmd_update(
             console.print("Refreshing provider catalogs before scheme update ...")
             for prov in AVAILABLE_PROVIDERS:
                 try:
-                    cache.update_catalog(prov, token=token)
+                    cache.update_catalog(prov, scheme_type="all", token=token)
                 except (OSError, ValueError):
                     continue
 
@@ -743,7 +942,9 @@ def cmd_update(
         scheme_type = str(match_info.get("scheme_type", "mlst"))
 
         blocked_schemes = _load_blocked_schemes()
-        if scheme in blocked_schemes.get(provider, []):
+        provider_blocked = blocked_schemes.get(provider, set())
+        scheme_dir = match_info.get("extra", {}).get("directory", "")
+        if scheme in provider_blocked or scheme_dir in provider_blocked:
             err_console.print(
                 f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
                 f"'{provider}'."
@@ -776,7 +977,7 @@ def cmd_update(
         if not cached_schemes:
             console.print("[yellow]No cached schemes found.[/yellow]")
             console.print(
-                "Run [bold]gmlst scheme download -s <scheme_name>[/bold] to download."
+                "Run [bold]gmlst scheme download <scheme_name>[/bold] to download."
             )
             return
 
@@ -786,7 +987,7 @@ def cmd_update(
             )
             for prov in AVAILABLE_PROVIDERS:
                 try:
-                    cache.update_catalog(prov, token=token)
+                    cache.update_catalog(prov, scheme_type="all", token=token)
                 except (OSError, ValueError):
                     continue
 
@@ -835,7 +1036,7 @@ def cmd_update(
         total = 0
         for prov in AVAILABLE_PROVIDERS:
             try:
-                schemes = cache.update_catalog(prov, token=token)
+                schemes = cache.update_catalog(prov, scheme_type="all", token=token)
                 console.print(f"  [green]{prov}:[/green] {len(schemes)} schemes")
                 total += len(schemes)
             except Exception as exc:
@@ -1093,11 +1294,13 @@ def _update_local_catalog(
     context_settings=HELP_SETTINGS,
     no_args_is_help=True,
 )
+@click.argument("scheme", required=False)
 @click.option(
     "--scheme",
     "-s",
-    required=True,
-    help="Custom scheme to update (e.g., custom_1).",
+    "scheme_opt",
+    hidden=True,
+    help="[deprecated] Use positional argument instead.",
 )
 @click.option(
     "--data-dir",
@@ -1111,15 +1314,20 @@ def _update_local_catalog(
     "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
 )
 def cmd_update_custom(
-    scheme: str,
+    scheme: str | None,
+    scheme_opt: str | None,
     data_dir: Path,
     cache_dir: Path | None,
 ) -> None:
     """Update a custom scheme with additional novel data.
 
+    SCHEME is the custom scheme name (e.g., custom_1).
     Only works with local (custom) schemes. The novel data will be merged
     with the existing scheme, continuing the numbering from where it left off.
     """
+    scheme = scheme or scheme_opt
+    if not scheme:
+        raise click.UsageError("Scheme name is required.")
     from gmlst.novel import NovelDataReader
 
     cache = DatabaseCache(cache_dir)
@@ -1235,11 +1443,13 @@ def cmd_update_custom(
 
 
 @scheme_group.command("export", context_settings=HELP_SETTINGS, no_args_is_help=True)
+@click.argument("scheme", required=False)
 @click.option(
     "--scheme",
     "-s",
-    required=True,
-    help="Scheme to export (e.g., custom_1).",
+    "scheme_opt",
+    hidden=True,
+    help="[deprecated] Use positional argument instead.",
 )
 @click.option(
     "--format",
@@ -1258,16 +1468,21 @@ def cmd_update_custom(
     "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
 )
 def cmd_export(
-    scheme: str,
+    scheme: str | None,
+    scheme_opt: str | None,
     format: str,
     output: Path,
     cache_dir: Path | None,
 ) -> None:
     """Export a scheme profile data to various formats.
 
+    SCHEME is the scheme name (e.g., custom_1).
     GrapeTree format: TSV with ST column, compatible with GrapeTree MST visualization.
     Original format: Copy of the scheme's profile file.
     """
+    scheme = scheme or scheme_opt
+    if not scheme:
+        raise click.UsageError("Scheme name is required.")
     cache = DatabaseCache(cache_dir)
 
     # Try to find scheme in any provider

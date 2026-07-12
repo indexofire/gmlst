@@ -41,7 +41,11 @@ def test_enterobase_download_scheme_writes_remote_metadata(
         lambda url: {"etag": f"head:{url}"},
     )
 
-    provider.download_scheme("ecoli_1", tmp_path)
+    provider.download_scheme(
+        "ecoli_mlst",
+        tmp_path,
+        extra={"directory": "Escherichia.Achtman7GeneMLST"},
+    )
 
     meta = json.loads((tmp_path / ".meta.json").read_text())
     assert meta["profiles_remote"] == {
@@ -80,4 +84,8 @@ def test_enterobase_download_scheme_fails_on_decompression_error(
     )
 
     with pytest.raises(RuntimeError, match="Failed to decompress abc"):
-        provider.download_scheme("ecoli_1", tmp_path)
+        provider.download_scheme(
+            "ecoli_mlst",
+            tmp_path,
+            extra={"directory": "Escherichia.Achtman7GeneMLST"},
+        )

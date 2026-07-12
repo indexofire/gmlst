@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gmlst"
-version = "0.1.1"
+version = "0.1.2"
 description = "Fast bacterial genome typing with MLST, cgMLST, and scheme-free discovery"
 readme = "README.md"
 license = {text = "MIT"}

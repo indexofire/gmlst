@@ -27,69 +27,29 @@ logger = logging.getLogger("gmlst.database.providers.enterobase")
 
 _BASE_URL = "https://enterobase.warwick.ac.uk/schemes"
 
-# Scheme mapping: scheme_id -> directory name
-# Note: Includes both catalog names (ecoli_1) and legacy names (ecoli_mlst)
-_SCHEME_MAP: dict[str, str] = {
-    # Salmonella
-    "senterica_1": "Salmonella.Achtman7GeneMLST",
-    "senterica_2": "Salmonella.cgMLSTv2",
-    "senterica_3": "Salmonella.rMLST",
-    "senterica_4": "Salmonella.wgMLST",
+_SCHEME_ALIASES: dict[str, str] = {
     "senterica_mlst": "Salmonella.Achtman7GeneMLST",
     "senterica_cgmlst": "Salmonella.cgMLSTv2",
     "senterica_rmlst": "Salmonella.rMLST",
     "senterica_wgmlst": "Salmonella.wgMLST",
-    # E. coli
-    "ecoli_1": "Escherichia.Achtman7GeneMLST",
-    "ecoli_2": "Escherichia.cgMLSTv1",
-    "ecoli_3": "Escherichia.wgMLST",
     "ecoli_mlst": "Escherichia.Achtman7GeneMLST",
     "ecoli_cgmlst": "Escherichia.cgMLSTv1",
     "ecoli_wgmlst": "Escherichia.wgMLST",
-    # Yersinia
-    "yenterocolitica_1": "Yersinia.Achtman7GeneMLST",
-    "yenterocolitica_2": "Yersinia.McNally",
-    "yenterocolitica_3": "Yersinia.cgMLSTv1",
-    "yenterocolitica_4": "Yersinia.wgMLST",
-    "yenterocolitica_mlst": "Yersinia.Achtman7GeneMLST",
-    "yenterocolitica_mcnally": "Yersinia.McNally",
-    "yenterocolitica_cgmlst": "Yersinia.cgMLSTv1",
-    "yenterocolitica_wgmlst": "Yersinia.wgMLST",
-    # Klebsiella
-    "kpneumoniae_1": "klebsiella.pasteur7gene",
-    "kpneumoniae_2": "klebsiella.pasteurcgmlst",
-    "kpneumoniae_mlst": "klebsiella.pasteur7gene",
-    "kpneumoniae_cgmlst": "klebsiella.pasteurcgmlst",
-    # Moraxella
-    "mcatarrhalis_1": "Moraxella.Achtman7GeneMLST",
-    "mcatarrhalis_mlst": "Moraxella.Achtman7GeneMLST",
-    # Clostridium
-    "cbotulinum_1": "clostridium.Griffiths",
-    "cbotulinum_2": "clostridium.Griffiths_MLST",
-    "cbotulinum_3": "clostridium.cgMLSTv1",
-    "cbotulinum_4": "clostridium.wgMLST",
-    "cbotulinum_mlst": "clostridium.Griffiths",
-    "cbotulinum_griffiths": "clostridium.Griffiths_MLST",
-    "cbotulinum_cgmlst": "clostridium.cgMLSTv1",
-    "cbotulinum_wgmlst": "clostridium.wgMLST",
-    # Streptococcus
-    "spneumoniae_1": "Streptococcus.cgMLSTv1",
-    "spneumoniae_2": "Streptococcus.wgMLSTv1",
+    "yersinia_mlst": "Yersinia.Achtman7GeneMLST",
+    "yersinia_mcnally": "Yersinia.McNally",
+    "yersinia_cgmlst": "Yersinia.cgMLSTv1",
+    "yersinia_wgmlst": "Yersinia.wgMLST",
+    "klebsiella_mlst": "klebsiella.pasteur7gene",
+    "klebsiella_cgmlst": "klebsiella.pasteurcgmlst",
+    "moraxella_mlst": "Moraxella.Achtman7GeneMLST",
+    "clostridium_mlst": "clostridium.Griffiths",
+    "clostridium_cgmlst": "clostridium.cgMLSTv1",
+    "clostridium_wgmlst": "clostridium.wgMLST",
     "spneumoniae_cgmlst": "Streptococcus.cgMLSTv1",
     "spneumoniae_wgmlst": "Streptococcus.wgMLSTv1",
-    # Vibrio
-    "vibrio_1": "Vibrio.Lan7Gene",
-    "vibrio_2": "VIBwgMLST.cgMLSTv1",
     "vibrio_mlst": "Vibrio.Lan7Gene",
     "vibrio_cgmlst": "VIBwgMLST.cgMLSTv1",
-    # Photorhabdus
-    "pluminescens_1": "Photorhabdus.cgMLSTv1",
     "pluminescens_cgmlst": "Photorhabdus.cgMLSTv1",
-}
-
-_LEGACY_SCHEME_ALIASES: dict[str, str] = {
-    "vibriospp_1": "vibrio_1",
-    "vibriospp_2": "vibrio_2",
 }
 
 # Ordered scheme_id prefix -> organism mapping (first match wins).
@@ -109,10 +69,10 @@ _ORGANISM_BY_PREFIX: list[tuple[str, str]] = [
 def _classify_scheme_type(dir_name: str) -> str:
     """Infer scheme type from directory name."""
     lower = dir_name.lower()
-    if "wgmlst" in lower:
-        return "wgmlst"
-    elif "cgmlst" in lower:
+    if "cgmlst" in lower:
         return "cgmlst"
+    elif "wgmlst" in lower:
+        return "wgmlst"
     elif "rmlst" in lower:
         return "rmlst"
     return "mlst"
@@ -124,6 +84,11 @@ class EnterobaseProvider:
     def __init__(self, token: str | None = None) -> None:
         self._token = token
 
+    def _auth_headers(self) -> dict[str, str]:
+        if self._token:
+            return {"Authorization": f"Basic {self._token}"}
+        return {}
+
     @property
     def name(self) -> str:
         return "enterobase"
@@ -132,23 +97,58 @@ class EnterobaseProvider:
     def label(self) -> str:
         return "Enterobase"
 
-    def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
-        """Return available Enterobase schemes."""
-        results: list[SchemeInfo] = []
+    def _discover_remote_directories(self) -> list[str]:
+        """Fetch the list of scheme directories from the Enterobase /schemes/ index."""
+        try:
+            resp = requests.get(
+                _BASE_URL + "/", timeout=30, headers=self._auth_headers()
+            )
+            resp.raise_for_status()
+            dirs = re.findall(r'href="([^"]+)/"', resp.text)
+            return [d for d in dirs if d not in ("../", "..")]
+        except Exception as exc:
+            logger.debug("Failed to discover Enterobase directories: %s", exc)
+            return []
 
-        for scheme_id, dir_name in _SCHEME_MAP.items():
+    @staticmethod
+    def _derive_organism(dir_name: str) -> str:
+        genus = dir_name.split(".")[0].lower()
+        for prefix, name in _ORGANISM_BY_PREFIX:
+            if genus.startswith(prefix.replace("spp", "")):
+                return name
+        return dir_name.split(".")[0]
+
+    def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
+        """Return available Enterobase schemes.
+
+        Discovers scheme directories dynamically from the Enterobase /schemes/
+        HTTP index. Falls back to the static _SCHEME_ALIASES if the network is
+        unavailable.
+        """
+        results: list[SchemeInfo] = []
+        seen_dirs: set[str] = set()
+
+        remote_dirs = self._discover_remote_directories()
+        if remote_dirs:
+            source_dirs = remote_dirs
+            logger.debug(
+                "Discovered %d Enterobase scheme directories from server",
+                len(remote_dirs),
+            )
+        else:
+            source_dirs = list(_SCHEME_ALIASES.values())
+            logger.debug("Using static aliases (%d dirs)", len(source_dirs))
+
+        for dir_name in source_dirs:
+            if dir_name in seen_dirs:
+                continue
+            seen_dirs.add(dir_name)
+
             s_type = _classify_scheme_type(dir_name)
             if scheme_type != "all" and s_type != scheme_type:
                 continue
 
-            organism = next(
-                (
-                    name
-                    for prefix, name in _ORGANISM_BY_PREFIX
-                    if scheme_id.startswith(prefix)
-                ),
-                dir_name.split(".")[0],
-            )
+            organism = self._derive_organism(dir_name)
 
             n_loci = None
             with contextlib.suppress(OSError, ValueError):
@@ -156,7 +156,7 @@ class EnterobaseProvider:
 
             results.append(
                 SchemeInfo(
-                    scheme_name=scheme_id,
+                    scheme_name=dir_name,
                     display_name=dir_name.replace(".", " "),
                     organism=organism,
                     scheme_type=s_type,
@@ -171,7 +171,14 @@ class EnterobaseProvider:
     def _count_loci(self, dir_name: str) -> int:
         """Count number of loci by listing the scheme HTTP directory."""
         url = f"{_BASE_URL}/{dir_name}/"
-        resp = requests.get(url, timeout=120)
+        resp = requests.get(url, timeout=120, headers=self._auth_headers())
+        if resp.status_code == 403:
+            logger.warning(
+                "[enterobase] Directory '%s' returned 403 Forbidden. "
+                "This scheme may require authentication or be restricted.",
+                dir_name,
+            )
+            return 0
         resp.raise_for_status()
         return sum(
             1
@@ -186,15 +193,17 @@ class EnterobaseProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> None:
         """Download allele FASTAs and ST profiles from Enterobase via HTTP.
 
         Uses aria2c batch mode for parallel downloading when available.
         All .fasta.gz files are downloaded first, then decompressed to .tfa.
         """
-        scheme_name = _resolve_enterobase_scheme_name(scheme_name, scheme_type)
-
-        dir_name = _SCHEME_MAP[scheme_name]
+        dir_name = (extra or {}).get("directory")
+        if not dir_name:
+            resolved = _resolve_enterobase_scheme_name(scheme_name, scheme_type)
+            dir_name = _SCHEME_ALIASES[resolved]
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("[enterobase] Downloading %s (%s) …", scheme_name, dir_name)
@@ -214,7 +223,7 @@ class EnterobaseProvider:
             url_dest_pairs,
             provider_name=self.name,
             download_tool=download_tool,
-            max_connections=max_connections or 16,
+            max_connections=max_connections or 4,
         )
         success = len(url_dest_pairs)
 
@@ -247,6 +256,12 @@ class EnterobaseProvider:
         )
         profiles_headers = _head_remote_file(f"{_BASE_URL}/{dir_name}/profiles.list.gz")
 
+        def _count_fasta(path: Path) -> int:
+            if not path.exists():
+                return 0
+            with path.open() as fh:
+                return sum(1 for line in fh if line.startswith(">"))
+
         meta = {
             "scheme": scheme_name,
             "provider": self.name,
@@ -254,6 +269,13 @@ class EnterobaseProvider:
             "directory": dir_name,
             "downloaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "loci": loci,
+            "locus_meta": {
+                locus: {"records": _count_fasta(dest_dir / f"{locus}.tfa")}
+                for locus in loci
+            },
+            "profile_meta": {
+                "records": _count_profile_rows_local(dest_dir, scheme_name),
+            },
             "profiles_remote": profiles_headers,
             "locus_remote": new_locus_meta,
         }
@@ -267,11 +289,12 @@ class EnterobaseProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> bool:
-        scheme_name = _resolve_enterobase_scheme_name(scheme_name, scheme_type)
-
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        dir_name = _SCHEME_MAP[scheme_name]
+        dir_name = (extra or {}).get("directory")
+        if not dir_name:
+            resolved = _resolve_enterobase_scheme_name(scheme_name, scheme_type)
+            dir_name = _SCHEME_ALIASES[resolved]
         meta_file = dest_dir / ".meta.json"
         local_meta: dict = {}
         if meta_file.exists():
@@ -328,7 +351,7 @@ class EnterobaseProvider:
                 pairs,
                 provider_name=self.name,
                 download_tool=download_tool,
-                max_connections=max_connections or 16,
+                max_connections=max_connections or 4,
             )
 
             for locus in changed_loci:
@@ -352,6 +375,13 @@ class EnterobaseProvider:
             )
 
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+        def _count_fasta(path: Path) -> int:
+            if not path.exists():
+                return 0
+            with path.open() as fh:
+                return sum(1 for line in fh if line.startswith(">"))
+
         meta = {
             "scheme": scheme_name,
             "provider": self.name,
@@ -360,6 +390,13 @@ class EnterobaseProvider:
             "downloaded_at": local_meta.get("downloaded_at", now),
             "updated_at": now,
             "loci": loci,
+            "locus_meta": {
+                locus: {"records": _count_fasta(dest_dir / f"{locus}.tfa")}
+                for locus in loci
+            },
+            "profile_meta": {
+                "records": _count_profile_rows_local(dest_dir, scheme_name),
+            },
             "profiles_remote": profiles_headers,
             "locus_remote": new_locus_meta,
         }
@@ -370,7 +407,13 @@ class EnterobaseProvider:
     def _get_loci(self, dir_name: str) -> list[str]:
         """Get list of locus names from the scheme HTTP directory listing."""
         url = f"{_BASE_URL}/{dir_name}/"
-        resp = requests.get(url, timeout=30)
+        resp = requests.get(url, timeout=30, headers=self._auth_headers())
+        if resp.status_code == 403:
+            raise RuntimeError(
+                f"Enterobase returned 403 Forbidden for '{dir_name}'. "
+                "This scheme may require authentication (--token) or "
+                "be unavailable. Try the same scheme from another provider."
+            )
         resp.raise_for_status()
 
         loci = []
@@ -476,6 +519,18 @@ def _headers_changed(old: dict, new: dict[str, str]) -> bool:
     )
 
 
+def _count_profile_rows_local(dest_dir: Path, scheme_name: str) -> int:
+    profile_file = dest_dir / f"{scheme_name}.txt"
+    if not profile_file.exists():
+        return 0
+    count = 0
+    with profile_file.open() as fh:
+        for line in fh:
+            if line.strip():
+                count += 1
+    return max(count - 1, 0)
+
+
 def _is_valid_fasta_file(path: Path) -> bool:
     if not path.exists() or path.stat().st_size == 0:
         return False
@@ -494,16 +549,11 @@ def _is_valid_fasta_file(path: Path) -> bool:
 
 
 def _resolve_enterobase_scheme_name(scheme_name: str, scheme_type: str) -> str:
-    candidate = _LEGACY_SCHEME_ALIASES.get(scheme_name, scheme_name)
-    if candidate in _SCHEME_MAP:
-        return candidate
-
-    typed_candidate = _LEGACY_SCHEME_ALIASES.get(
-        f"{scheme_name}_{scheme_type}", f"{scheme_name}_{scheme_type}"
-    )
-    if typed_candidate in _SCHEME_MAP:
-        return typed_candidate
-
+    if scheme_name in _SCHEME_ALIASES:
+        return scheme_name
+    typed = f"{scheme_name}_{scheme_type}"
+    if typed in _SCHEME_ALIASES:
+        return typed
     raise ValueError(
         f"Unknown Enterobase scheme: {scheme_name}. "
         "Run 'gmlst scheme list -p enterobase' to see available schemes."

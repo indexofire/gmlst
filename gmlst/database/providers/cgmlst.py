@@ -69,6 +69,7 @@ class CgmlstProvider:
         scheme_type: str = "cgmlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> None:
         """Download cgMLST scheme alleles from cgMLST.org.
 
@@ -157,6 +158,7 @@ class CgmlstProvider:
         scheme_type: str = "cgmlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> bool:
         meta_file = dest_dir / ".meta.json"
         local_meta: dict = {}

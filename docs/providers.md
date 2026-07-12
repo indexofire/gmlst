@@ -86,7 +86,43 @@ Within the provider, `BigSdbProvider.list_schemes()` generates short names from 
 
 ### Authentication notes
 
-The current source tree documents and implements PubMLST as an open BIGSdb REST provider. There is no dedicated PubMLST token configuration path in `gmlst/database/providers/bigsdb.py` today. If you need authenticated BIGSdb access, the supported route in this codebase is the private BIGSdb mechanism described below.
+PubMLST runs on the BIGSdb platform. Since **1 January 2025**, PubMLST requires authentication to access alleles, profiles, and isolates added after 31 December 2024. Pre-2025 data remains accessible anonymously.
+
+#### How to obtain a PubMLST API key
+
+1. Register an account at [pubmlst.org](https://pubmlst.org)
+2. Log in and navigate to your profile page
+3. Go to **Preferences** → **API keys**
+4. Click **Create new API key**
+5. Copy the generated key (format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`)
+
+#### How to use the API key in gmlst
+
+Once you have the key, set it as an environment variable:
+
+```bash
+export GMLST_PUBMLST_API_KEY=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+```
+
+Or save it permanently via `gmlst config`:
+
+```bash
+gmlst config set GMLST_PUBMLST_API_KEY XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+source ~/.config/gmlst/env.sh
+```
+
+After this, all PubMLST downloads will include the `Authorization: Bearer <key>` header automatically, allowing access to post-2024 data.
+
+Verify the key is set:
+
+```bash
+gmlst config get GMLST_PUBMLST_API_KEY
+```
+
+#### References
+
+- [BIGSdb API authentication docs](https://bigsdb.readthedocs.io/en/latest/rest.html#api-oauth)
+- [PubMLST data access policy change](http://pubmlst.org/change-data-access-policy)
 
 ## Pasteur
 
@@ -110,6 +146,44 @@ Pasteur provides MLST and some larger schemes. Classification into `mlst`, `cgml
 
 `gmlst/database/providers/bigsdb.py` loads organism name mappings from `gmlst/data/organism_mapping.json` so catalog entries can use consistent organism labels across providers.
 
+### Authentication notes
+
+Pasteur runs the same BIGSdb platform as PubMLST and has adopted the **same data access policy**: since **1 January 2025**, data curated after 31 December 2024 requires authentication. The auth mechanism is identical to PubMLST.
+
+#### How to obtain a Pasteur BIGSdb API key
+
+The process is more involved than PubMLST:
+
+1. Register at [bigsdb.pasteur.fr](https://bigsdb.pasteur.fr)
+2. Register to the specific databases you need access to (follow the procedure on the site)
+3. **Email the Pasteur BIGSdb team** to request an API key — explain:
+   - Why you need the key
+   - How you will use the API (e.g. automated typing pipeline)
+   - Whether this is for academic or commercial use
+4. The team will respond with your API key
+
+Request page: <https://bigsdb.pasteur.fr/requesting-api-key/>
+
+#### How to use the API key in gmlst
+
+```bash
+export GMLST_PASTEUR_API_KEY=YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+```
+
+Or via `gmlst config`:
+
+```bash
+gmlst config set GMLST_PASTEUR_API_KEY YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+source ~/.config/gmlst/env.sh
+```
+
+The key format and header are the same as PubMLST (`Authorization: Bearer <key>`).
+
+#### References
+
+- [Pasteur API key request page](https://bigsdb.pasteur.fr/requesting-api-key/)
+- [Pasteur data access policy](https://bigsdb.pasteur.fr/news/novel-data-access-policy/)
+
 ## Enterobase
 
 ### Summary
@@ -120,22 +194,29 @@ Pasteur provides MLST and some larger schemes. Classification into `mlst`, `cgml
 
 ### Delivery model
 
-Enterobase is not implemented through BIGSdb in this project. Instead, `gmlst/database/providers/enterobase.py` uses direct HTTP downloads from known scheme directories.
+Enterobase is not implemented through BIGSdb in this project. Instead, `gmlst/database/providers/enterobase.py` uses direct HTTP downloads from the Enterobase open scheme directory at `https://enterobase.warwick.ac.uk/schemes/`.
 
-The provider maintains an internal `_SCHEME_MAP` that maps public scheme names such as `ecoli_1` or `senterica_2` to upstream directory names.
+### Scheme discovery
+
+`list_schemes()` dynamically scans the Enterobase `/schemes/` HTTP directory index to discover available scheme directories. This means new schemes added by Enterobase are automatically visible after `gmlst scheme update --force` without requiring a code update. If the network is unavailable, the provider falls back to a static `_SCHEME_MAP` defined in the source file.
+
+Scheme directory names are used directly as `scheme_name` in the catalog (e.g. `Salmonella.Achtman7GeneMLST`). The catalog's `extra.directory` field carries this directory name through to `download_scheme()` and `update_scheme()` so downloads always resolve to the correct remote path.
 
 ### Scheme coverage
 
-The implementation includes well-known Enterobase organisms and schemes such as:
+The Enterobase provider discovers schemes across multiple organisms including:
 
-- *Escherichia coli*
+- *Escherichia coli* / *Shigella*
 - *Salmonella enterica*
 - *Yersinia enterocolitica*
 - *Klebsiella pneumoniae*
 - *Streptococcus pneumoniae*
 - *Vibrio* spp.
+- *Moraxella catarrhalis*
+- *Clostridium botulinum*
+- *Photorhabdus luminescens*
 
-It supports MLST, cgMLST, wgMLST, and some rMLST-style entries depending on the mapped directory.
+It supports MLST, cgMLST, wgMLST, and rMLST scheme types depending on what directories are available on the server.
 
 ### Download format
 
@@ -143,7 +224,23 @@ The provider downloads per-locus `.fasta.gz` files, decompresses them to `.tfa`,
 
 ### Token note
 
-`gmlst/commands/scheme.py` exposes a `--token` option with `ENTEROBASE_TOKEN` as an environment fallback for Enterobase-related commands. The current `gmlst/database/providers/enterobase.py` implementation is primarily direct HTTP download based, so token handling is limited in practice.
+Enterobase uses a **completely different authentication system** from PubMLST/Pasteur BIGSdb. Its REST API has always required authentication.
+
+- **Auth method**: API Token, passed as `Authorization: Basic <token>` header (note: Basic auth, not Bearer — different from BIGSdb)
+- **How to obtain**:
+  1. Register at [enterobase.warwick.ac.uk](https://enterobase.warwick.ac.uk)
+  2. **Email enterobase@warwick.ac.uk** requesting API access for your database of interest
+  3. Token is displayed under "Important information" in the database dashboard
+- **API docs**: [Enterobase API getting started](https://enterobase.readthedocs.io/en/latest/api/api-getting-started.html)
+- **Usage restrictions**:
+  - Add a 1–2 second pause between API requests
+  - Do **not** perform large-scale bulk downloads through the API
+  - rMLST allele data is copyrighted by University of Oxford and **cannot be downloaded**
+  - Commercial use requires explicit licensing from University of Warwick
+
+`gmlst/commands/scheme.py` exposes a `--token` option with `ENTEROBASE_TOKEN` as an environment fallback. The token is passed through the cache layer to the Enterobase provider, which includes it as `Authorization: Basic <token>` in all HTTP requests (directory listings, locus counts, and file downloads).
+
+> **Note**: Some Enterobase scheme directories (e.g. `Vibrio.Lan7Gene`) return HTTP 403 even without authentication requirements — this is a server-side restriction on specific directories. In such cases, use the equivalent scheme from another provider (e.g. PubMLST).
 
 ## cgMLST.org
 
@@ -221,7 +318,7 @@ The private provider still uses `BigSdbProvider` from `gmlst/database/providers/
 
 `gmlst/database/download.py` supports multiple download tools. The provider layer can use:
 
-- `aria2c`
+- `aria2c` (default, with retry: `--max-tries=5 --retry-wait=3`)
 - `curl`
 - `wget`
 - Python `httpx`
@@ -231,31 +328,76 @@ Command-level options can select the tool explicitly, and provider code passes t
 
 ### Parallel downloads
 
-Providers that download many locus files, especially BIGSdb and Enterobase, use batch download helpers from `gmlst/database/providers/base.py` and `gmlst/database/download.py`. The CLI can pass `-x` or `--connections` to control connection count.
+Providers that download many locus files, especially BIGSdb and Enterobase, use batch download helpers from `gmlst/database/providers/base.py` and `gmlst/database/download.py`. The CLI can pass `-x` or `--connections` (default: 4) to control connection count. Per-server connections are capped at 2 to avoid triggering upstream rate limits (HTTP 429).
 
-### Catalog freshness
+### Catalog lifecycle
 
-Provider catalogs are cached. `gmlst scheme update` refreshes those cached catalogs through `DatabaseCache.update_catalog()` in `gmlst/database/cache.py`.
+Catalogs are the central index that connects scheme names to provider data. The full lifecycle is:
+
+1. **Discovery**: Each provider's `list_schemes()` queries its upstream source:
+   - PubMLST/Pasteur: BIGSdb REST API (`GET /db` → schemes → loci)
+   - Enterobase: dynamic HTTP scrape of `/schemes/` directory index
+   - cgMLST.org: static catalog in `gmlst/database/providers/cgmlst_schemes.py`
+2. **Blocking**: Schemes listed in `gmlst/data/blocked_schemes.json` are filtered out during `save_catalog()`, so the cached catalog JSON never contains blocked entries. Blocking matches both `scheme_name` and `extra.directory`.
+3. **Caching**: `DatabaseCache.save_catalog()` writes `_catalog/<provider>.json` with globally unique scheme names (cross-provider suffix de-duplication).
+4. **Display**: `gmlst scheme list` reads from the cached catalog JSON. No network calls during listing.
+5. **Refresh**: `gmlst scheme update --force` re-runs `list_schemes()` for all providers and overwrites the catalog JSON. This is the only way to pick up newly added upstream schemes.
 
 ### Global uniqueness of scheme names
 
-Provider names are not enough by themselves because several providers can host schemes for the same organism. `DatabaseCache.save_catalog()` in `gmlst/database/cache.py` normalizes names within one provider and then bumps suffixes across providers to keep names unique.
+Provider names are not enough by themselves because several providers can host schemes for the same organism. `DatabaseCache.save_catalog()` in `gmlst/database/cache.py` normalizes names within one provider and then bumps suffixes across providers to keep names unique. For Enterobase, the directory name (e.g. `Salmonella.Achtman7GeneMLST`) is used directly as the scheme name, so there is no ambiguity between the catalog and the download path.
 
-### Enterobase and auth
+### Enterobase auth model
 
-The CLI exposes token options for Enterobase-related commands, but the current provider implementation is still centered on direct HTTP download paths. If you rely on a protected Enterobase workflow, verify the remote endpoint requirements in your environment.
+Enterobase has two data access paths:
+
+| Path | URL | Auth | Coverage |
+|---|---|---|---|
+| `/schemes/` directory | `enterobase.warwick.ac.uk/schemes/` | None (open) | 24 scheme directories, daily updated |
+| REST API v2.0 | `enterobase.warwick.ac.uk/api/v2.0/` | Token (Basic auth) | All website databases (M. tuberculosis, Enterococcus, etc.) |
+
+The current implementation uses the `/schemes/` directory exclusively. The `--token` option and `ENTEROBASE_TOKEN` environment variable are wired through to all HTTP requests as `Authorization: Basic <token>` headers. When a token is provided, it is sent with every Enterobase HTTP request (directory listings, locus counts, file downloads).
+
+API-based scheme download (for species not in `/schemes/`) is planned for a future release.
+
+### Enterobase data freshness
+
+The `/schemes/` directory is updated daily by an Enterobase automated script. All allele FASTA and profile files carry the current date, even for species that are not featured on the Enterobase website UI (e.g. Streptococcus, Photorhabdus, Clostridium botulinum). The directory-level modification date shown in the HTTP index is the directory creation date and can be years old; the individual files inside are regenerated daily.
 
 ## Blocked schemes
 
-Blocked schemes are controlled through `gmlst/data/blocked_schemes.json` and loaded by `_load_blocked_schemes()` in `gmlst/commands/common.py`.
+Blocked schemes are controlled through `gmlst/data/blocked_schemes.json` and loaded by `_load_blocked_schemes()` in both `gmlst/commands/common.py` (CLI layer) and `gmlst/database/cache.py` (data layer).
 
-The filter is applied in `gmlst/commands/scheme.py` when listing schemes and when resolving schemes for download or update.
+Filtering is applied at two layers:
 
-This mechanism is used to hide entries that should not be exposed to normal users, for example:
+1. **Catalog write time** (`save_catalog`): Blocked schemes are removed before the catalog JSON is written, so the cached catalog is always clean.
+2. **CLI display time** (`scheme list`, `scheme search`, `scheme download`): A defense-in-depth filter catches any blocked entries that might exist in old cached catalogs from before the write-time filter was added.
 
-- deprecated schemes
-- problematic catalogs
-- entries known to be unsuitable for standard workflows
+Blocking matches both `scheme_name` (e.g. `salmonella_1`) and `extra.directory` (e.g. `clostridium.Griffiths_MLST`), so it works regardless of cross-provider renumbering.
+
+Use cases for blocking:
+
+- Deprecated or abandoned schemes (e.g. `clostridium.Griffiths_MLST` — last curated 2019, empty profiles)
+- Problematic catalogs with known data quality issues
+- Entries known to be unsuitable for standard workflows
+
+## Scheme metadata (.meta.json)
+
+Each downloaded scheme directory contains a `.meta.json` file with download metadata:
+
+```json
+{
+    "scheme": "saureus_1",
+    "provider": "pubmlst",
+    "scheme_type": "mlst",
+    "downloaded_at": "2026-07-10T12:00:00Z",
+    "loci": ["arcC", "aroE", "glpF", "gmk", "pta", "tpi", "yqiL"],
+    "profiles_remote": { "etag": "...", "last_modified": "..." },
+    "locus_remote": { "arcC": { "etag": "...", "last_modified": "..." } }
+}
+```
+
+The metadata records the download/update timestamp and remote file headers (ETag, Last-Modified) for incremental update detection. Allele counts per locus are not currently stored; this is planned for a future release to enable post-download validation.
 
 ## Related documentation
 

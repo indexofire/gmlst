@@ -31,6 +31,15 @@ export GMLST_TMPDIR=/scratch/gmlst-tmp
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 ```
 
+Use `gmlst config` to inspect and manage variables:
+
+```bash
+gmlst config show                    # view all variables with current values
+gmlst config env                     # shell-exportable format
+gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # write to ~/.config/gmlst/env.sh
+source ~/.config/gmlst/env.sh        # apply changes
+```
+
 ### Cache
 
 The cache stores downloaded schemes, catalogs, and backend-specific indexes. Once schemes are downloaded and indexed, routine typing can run without network access. Commands that refresh catalogs or download new scheme data still need network access.
@@ -260,6 +269,23 @@ export GMLST_PUBMLST_BASE_URL="http://bigsdb.local/api/db"
 gmlst scheme list -p pubmlst
 gmlst scheme download -s saureus_1
 ```
+
+### Provider authentication
+
+Since 1 January 2025, PubMLST and Pasteur BIGSdb require authentication for data added after 31 December 2024. Set API keys to access the latest scheme data:
+
+```bash
+# PubMLST (obtain at pubmlst.org → Preferences → API keys)
+gmlst config set GMLST_PUBMLST_API_KEY XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+# Pasteur BIGSdb (request at bigsdb.pasteur.fr/requesting-api-key/)
+gmlst config set GMLST_PASTEUR_API_KEY YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+
+# Apply
+source ~/.config/gmlst/env.sh
+```
+
+After this, `gmlst scheme download` and `gmlst scheme update` will automatically include the `Authorization: Bearer <key>` header when communicating with PubMLST or Pasteur. Pre-2025 data remains accessible without keys.
 
 ### Custom temporary directory
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from gmlst import __version__
+from gmlst.commands.config import config_group
 from gmlst.commands.scheme import scheme_group
 from gmlst.commands.typing import cmd_typing
 from gmlst.commands.utils import utils_group
@@ -33,6 +34,7 @@ def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
 
 
 # Register commands
+main.add_command(config_group, name="config")
 main.add_command(cmd_typing, name="typing")
 main.add_command(scheme_group, name="scheme")
 main.add_command(utils_group, name="utils")

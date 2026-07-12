@@ -21,6 +21,6 @@ def test_generate_scheme_base_name_slash_species_uses_genus_only() -> None:
 
 
 def test_enterobase_legacy_vibriospp_alias_still_resolves() -> None:
-    assert _resolve_enterobase_scheme_name("vibrio_1", "mlst") == "vibrio_1"
-    assert _resolve_enterobase_scheme_name("vibriospp_1", "mlst") == "vibrio_1"
-    assert _resolve_enterobase_scheme_name("vibriospp_2", "cgmlst") == "vibrio_2"
+    assert _resolve_enterobase_scheme_name("vibrio_mlst", "mlst") == "vibrio_mlst"
+    assert _resolve_enterobase_scheme_name("vibrio", "mlst") == "vibrio_mlst"
+    assert _resolve_enterobase_scheme_name("vibrio", "cgmlst") == "vibrio_cgmlst"

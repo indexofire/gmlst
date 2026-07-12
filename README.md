@@ -103,14 +103,21 @@ docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
 ### 1. Browse and download a scheme
 
 ```bash
-# List cached and available schemes
+# List cached and available schemes (downloaded schemes shown in bold)
 gmlst scheme list
+
+# Search across scheme name, organism, description, and provider
+gmlst scheme search saureus
+gmlst scheme search "salmonella" -t cgmlst
 
 # Restrict to one provider
 gmlst scheme list -p pubmlst
 
 # Download a scheme to the local cache
-gmlst scheme download -s saureus_1
+gmlst scheme download saureus_1
+
+# Re-download with low concurrency (avoid 429 from rate-limited servers)
+gmlst scheme download saureus_1 --force -x 2
 ```
 
 ### 2. Type one sample
@@ -185,7 +192,8 @@ Examples:
 gmlst scheme list -p pubmlst
 gmlst scheme list -p enterobase -t cgmlst
 gmlst scheme list -p local
-gmlst scheme show -s saureus_1
+gmlst scheme search saureus
+gmlst scheme show saureus_1
 ```
 
 ## Novel Data Workflow
@@ -203,10 +211,10 @@ gmlst utils extract -i typing_results.json --novel-allele --novel-profile --data
 gmlst scheme create -t mlst -s saureus_1 --data-dir novel_data --desc "Lab collection 2024"
 
 # 4. Add more novel data later
-gmlst scheme update-custom -s custom_1 --data-dir more_novel_data
+gmlst scheme update-custom custom_1 --data-dir more_novel_data
 
 # 5. Export for downstream MST work
-gmlst scheme export -s custom_1 --format grapetree -o custom_1_grapetree.tsv
+gmlst scheme export custom_1 --format grapetree -o custom_1_grapetree.tsv
 ```
 
 TSV fallback is also supported when you only have tabular typing output and the original sample files are available:
@@ -285,6 +293,27 @@ Key environment variables:
 | `GMLST_PRIVATE_BIGSDB_URL` | Register a private BIGSdb instance as an extra provider |
 | `GMLST_PRIVATE_BIGSDB_NAME` | Name shown for the private BIGSdb provider |
 | `GMLST_PRIVATE_BIGSDB_LABEL` | Human-readable label for the private BIGSdb provider |
+| `GMLST_PUBMLST_API_KEY` | PubMLST API key for post-2024 data access (Bearer auth) |
+| `GMLST_PASTEUR_API_KEY` | Pasteur BIGSdb API key for post-2024 data access (Bearer auth) |
+
+Since January 2025, PubMLST and Pasteur require authentication for data added
+after 31 December 2024. Obtain an API key and configure it:
+
+```bash
+# PubMLST: register at pubmlst.org → Preferences → API keys → create key
+gmlst config set GMLST_PUBMLST_API_KEY your-key-here
+source ~/.config/gmlst/env.sh
+```
+
+Use `gmlst config show` to view all 29 configuration variables with current values and defaults:
+
+```bash
+gmlst config show                          # grouped table view
+gmlst config env                           # shell-exportable format
+gmlst config get GMLST_CACHE_DIR           # get a single variable
+gmlst config set GMLST_CACHE_DIR /data     # write to ~/.config/gmlst/env.sh
+source ~/.config/gmlst/env.sh              # apply changes
+```
 
 Example:
 

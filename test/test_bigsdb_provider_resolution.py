@@ -18,7 +18,7 @@ def test_resolve_seqdef_url_uses_provider_mapping(
         label="Institut Pasteur",
     )
 
-    def fake_get_json(url: str):
+    def fake_get_json(url: str, headers=None):
         assert url == "https://bigsdb.pasteur.fr/api/db"
         return [
             {
@@ -50,7 +50,9 @@ def test_resolve_seqdef_url_error_hint_uses_scheme_list(
         label="Institut Pasteur",
     )
 
-    monkeypatch.setattr("gmlst.database.providers.bigsdb._get_json", lambda _: [])
+    monkeypatch.setattr(
+        "gmlst.database.providers.bigsdb._get_json", lambda _u, **_k: []
+    )
 
     with pytest.raises(ValueError, match="gmlst scheme list"):
         provider._resolve_seqdef_url("missing_1")
@@ -125,7 +127,7 @@ def test_download_scheme_uses_batch_download_with_selected_tool(
     monkeypatch.setattr(
         bigsdb,
         "_get_json",
-        lambda url: (
+        lambda url, **_kw: (
             {
                 "loci": [
                     "https://rest.pubmlst.org/db/pubmlst_demo_seqdef/loci/abc",
@@ -146,6 +148,7 @@ def test_download_scheme_uses_batch_download_with_selected_tool(
         provider_name,
         download_tool="auto",
         max_connections=None,
+        headers=None,
     ):
         captured["pairs"] = url_dest_pairs
         captured["max_concurrent"] = max_connections
@@ -168,7 +171,7 @@ def test_download_scheme_uses_batch_download_with_selected_tool(
     provider.download_scheme("demo_1", tmp_path, download_tool="aria2c")
 
     assert captured["tool"] == "aria2c"
-    assert captured["max_concurrent"] == 8
+    assert captured["max_concurrent"] == 4
     assert captured["provider_name"] == "pubmlst"
     assert len(captured["pairs"]) == 2
 
@@ -199,7 +202,7 @@ def test_update_scheme_noop_when_meta_missing_but_local_files_complete(
         ),
     )
 
-    def _fake_get_json(url: str):
+    def _fake_get_json(url: str, headers=None):
         if url.endswith("/schemes/1"):
             return {
                 "loci": [

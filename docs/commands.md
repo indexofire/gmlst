@@ -175,6 +175,7 @@ gmlst scheme [OPTIONS] COMMAND [ARGS]...
 Subcommands:
 
 - `list`
+- `search`
 - `show`
 - `download`
 - `update`
@@ -185,18 +186,54 @@ Subcommands:
 ### scheme download
 
 ```bash
-gmlst scheme download [OPTIONS]
+gmlst scheme download SCHEME [OPTIONS]
 ```
+
+Positional argument:
+
+- `SCHEME` — scheme name (e.g., `saureus_1`)
 
 Options:
 
-- `-s, --scheme TEXT` (required)
+- `-s, --scheme TEXT` (deprecated, use positional argument)
 - `--force`
 - `-q, --quiet`
 - `--download-tool [auto|aria2c|curl|wget|httpx|requests]`
-- `-x, --connections INTEGER`
+- `-x, --connections INTEGER` (default: 4)
 - `--token TEXT`
 - `--cache-dir PATH`
+
+Examples:
+
+```bash
+gmlst scheme download saureus_1
+gmlst scheme download vparahaemolyticus_3 --force -x 2
+```
+
+### scheme search
+
+```bash
+gmlst scheme search PATTERN [OPTIONS]
+```
+
+Search schemes by name, organism, description, or provider.
+
+Positional argument:
+
+- `PATTERN` — case-insensitive substring to search for
+
+Options:
+
+- `-p, --provider [<registered-provider>|local|all]`
+- `-t, --type [mlst|cgmlst|wgmlst|all]`
+- `--cache-dir PATH`
+
+Example:
+
+```bash
+gmlst scheme search saureus
+gmlst scheme search "salmonella" -t cgmlst
+```
 
 ### scheme list
 
@@ -319,24 +356,32 @@ Options:
 ### scheme update-custom
 
 ```bash
-gmlst scheme update-custom [OPTIONS]
+gmlst scheme update-custom SCHEME [OPTIONS]
 ```
+
+Positional argument:
+
+- `SCHEME` — custom scheme name (e.g., `custom_1`)
 
 Options:
 
-- `-s, --scheme TEXT` (required)
+- `-s, --scheme TEXT` (deprecated, use positional argument)
 - `--data-dir, --datadir DIRECTORY` (required; preferred: `--data-dir`)
 - `--cache-dir PATH`
 
 ### scheme export
 
 ```bash
-gmlst scheme export [OPTIONS]
+gmlst scheme export SCHEME [OPTIONS]
 ```
+
+Positional argument:
+
+- `SCHEME` — scheme name (e.g., `custom_1`)
 
 Options:
 
-- `-s, --scheme TEXT` (required)
+- `-s, --scheme TEXT` (deprecated, use positional argument)
 - `--format [grapetree|original]` (required)
 - `-o, --output PATH` (required)
 - `--cache-dir PATH`
@@ -435,6 +480,68 @@ Options:
 - `--cache-dir PATH`
 - `--force-reindex`
 - `-h, --help`
+
+## config
+
+```bash
+gmlst config [OPTIONS] COMMAND [ARGS]...
+```
+
+Inspect and manage gmlst configuration variables.
+
+Subcommands:
+
+- `env` — print all environment variables in shell format (sourceable)
+- `show` — display configuration in a grouped table with current values
+- `get` — get the current value of a single variable
+- `set` — write a variable to the config file
+
+### config env
+
+```bash
+gmlst config env
+```
+
+Prints `export NAME="value"` lines for every variable that is currently set in the environment. Output can be sourced directly:
+
+```bash
+eval "$(gmlst config env)"
+```
+
+### config show
+
+```bash
+gmlst config show
+```
+
+Displays all 29 configuration variables in a grouped table (Cache, Provider, Security, Auth, cgMLST). Shows the current value (or the default if unset) and a description for each.
+
+### config get
+
+```bash
+gmlst config get NAME
+```
+
+Prints the current value of a single variable, or its default if unset.
+
+```bash
+gmlst config get GMLST_CACHE_DIR
+```
+
+### config set
+
+```bash
+gmlst config set NAME VALUE
+```
+
+Writes `export NAME="VALUE"` to `~/.config/gmlst/env.sh`. Source this file in your shell profile to apply the change:
+
+```bash
+gmlst config set GMLST_CACHE_DIR /data/gmlst-cache
+source ~/.config/gmlst/env.sh
+```
+
+**Note**: Provider URL variables (`GMLST_PUBMLST_BASE_URL`, `GMLST_PRIVATE_BIGSDB_URL`, etc.) are read at import time. You must `source` the config file before running gmlst for changes to take effect.
 
 ## visual
 

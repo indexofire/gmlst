@@ -107,22 +107,26 @@ def download_required_files(
     provider_name: str,
     download_tool: DownloadTool = "auto",
     max_connections: int | None = None,
+    headers: dict[str, str] | None = None,
 ) -> None:
     if not url_dest_pairs:
         return
 
     _, fail = download_files_batch(
         url_dest_pairs,
-        max_concurrent=max_connections or 8,
+        max_concurrent=max_connections or 4,
         tool=download_tool,
+        headers=headers,
     )
     if fail > 0:
+        for _url, dest_file in url_dest_pairs:
+            dest_file.unlink(missing_ok=True)
         raise RuntimeError(f"[{provider_name}] Failed to download {fail} files")
 
     for _url, dest_file in url_dest_pairs:
-        if not dest_file.exists():
+        if not dest_file.exists() or dest_file.stat().st_size == 0:
             raise RuntimeError(
-                f"[{provider_name}] Missing downloaded file: {dest_file}"
+                f"[{provider_name}] Missing or empty downloaded file: {dest_file}"
             )
 
 

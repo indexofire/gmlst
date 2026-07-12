@@ -48,7 +48,7 @@ def _cleanup_partial_download(dest: Path, *, backend: str) -> None:
 _DEFAULT_TIMEOUT = 120.0
 _CHUNK_SIZE = 1024 * 1024  # 1 MB
 _MAX_RETRIES = 3
-_RETRY_DELAY = 2.0
+_RETRY_DELAY = 5.0
 
 
 # ---------------------------------------------------------------------------
@@ -62,62 +62,86 @@ def _try_aria2c(
     *,
     silent: bool = True,
     connections: int = 4,
+    headers: dict[str, str] | None = None,
 ) -> bool:
     if not shutil.which("aria2c"):
         return False
+    per_server = min(connections, 2)
+    cmd = [
+        "aria2c",
+        "--continue=true",
+        f"--max-connection-per-server={per_server}",
+        f"--split={per_server}",
+        "--out",
+        dest.name,
+        "--dir",
+        str(dest.parent),
+    ]
+    if headers:
+        for key, value in headers.items():
+            cmd.append(f"--header={key}: {value}")
+    cmd.append(url)
     result = subprocess.run(
-        [
-            "aria2c",
-            "--continue=true",
-            f"--max-connection-per-server={connections}",
-            f"--split={connections}",
-            "--out",
-            dest.name,
-            "--dir",
-            str(dest.parent),
-            url,
-        ],
+        cmd,
         stdout=subprocess.DEVNULL if silent else None,
         stderr=subprocess.DEVNULL if silent else None,
     )
     return result.returncode == 0 and dest.exists()
 
 
-def _try_curl(url: str, dest: Path, *, silent: bool = True) -> bool:
-    """Try curl with resume and progress bar. Returns True on success."""
+def _try_curl(
+    url: str,
+    dest: Path,
+    *,
+    silent: bool = True,
+    headers: dict[str, str] | None = None,
+) -> bool:
     if not shutil.which("curl"):
         return False
+    cmd = [
+        "curl",
+        "--location",
+        "--continue-at",
+        "-",
+        "--progress-bar",
+        "--output",
+        str(dest),
+    ]
+    if headers:
+        for key, value in headers.items():
+            cmd.extend(["-H", f"{key}: {value}"])
+    cmd.append(url)
     result = subprocess.run(
-        [
-            "curl",
-            "--location",
-            "--continue-at",
-            "-",
-            "--progress-bar",
-            "--output",
-            str(dest),
-            url,
-        ],
+        cmd,
         stdout=subprocess.DEVNULL if silent else None,
         stderr=subprocess.DEVNULL if silent else None,
     )
     return result.returncode == 0 and dest.exists()
 
 
-def _try_wget(url: str, dest: Path, *, silent: bool = True) -> bool:
-    """Try wget with resume and progress bar. Returns True on success."""
+def _try_wget(
+    url: str,
+    dest: Path,
+    *,
+    silent: bool = True,
+    headers: dict[str, str] | None = None,
+) -> bool:
     if not shutil.which("wget"):
         return False
+    cmd = [
+        "wget",
+        "--continue",
+        "--show-progress",
+        "--progress=bar:force",
+        "--output-document",
+        str(dest),
+    ]
+    if headers:
+        for key, value in headers.items():
+            cmd.extend(["--header", f"{key}: {value}"])
+    cmd.append(url)
     result = subprocess.run(
-        [
-            "wget",
-            "--continue",
-            "--show-progress",
-            "--progress=bar:force",
-            "--output-document",
-            str(dest),
-            url,
-        ],
+        cmd,
         stdout=subprocess.DEVNULL if silent else None,
         stderr=subprocess.DEVNULL if silent else None,
     )
@@ -186,6 +210,7 @@ def download_file(
     timeout: float = _DEFAULT_TIMEOUT,
     tool: DownloadTool = "auto",
     max_connections: int | None = None,
+    headers: dict[str, str] | None = None,
 ) -> None:
     """Download url to dest using the best available method.
 
@@ -202,19 +227,32 @@ def download_file(
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     connections = max_connections if max_connections is not None else 4
+    req_headers = headers or {}
 
     backends: list[tuple[str, object]] = [
         (
             "aria2c",
-            lambda: _try_aria2c(url, dest, silent=True, connections=connections),
+            lambda: _try_aria2c(
+                url,
+                dest,
+                silent=True,
+                connections=connections,
+                headers=req_headers or None,
+            ),
         ),
-        ("curl", lambda: _try_curl(url, dest)),
-        ("wget", lambda: _try_wget(url, dest)),
+        (
+            "curl",
+            lambda: _try_curl(url, dest, headers=req_headers or None),
+        ),
+        (
+            "wget",
+            lambda: _try_wget(url, dest, headers=req_headers or None),
+        ),
         ("httpx", lambda: asyncio.run(_try_httpx_async(url, dest, timeout))),
     ]
 
     if tool == "requests":
-        download_file_requests(url, dest, timeout=timeout)
+        download_file_requests(url, dest, timeout=timeout, headers=req_headers or None)
         return
 
     if tool != "auto":
@@ -264,6 +302,7 @@ def download_file_requests(
     retries: int = _MAX_RETRIES,
     retry_delay: float = _RETRY_DELAY,
     chunk_size: int = _CHUNK_SIZE,
+    headers: dict[str, str] | None = None,
 ) -> None:
     """Download url to dest using requests with streaming and retry.
 
@@ -276,11 +315,13 @@ def download_file_requests(
 
     assert_public_url(url)
 
+    req_headers = headers or {}
+
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.get(url, timeout=timeout, stream=True)
+            resp = requests.get(url, timeout=timeout, stream=True, headers=req_headers)
             resp.raise_for_status()
             with dest.open("wb") as fh:
                 for chunk in resp.iter_content(chunk_size=chunk_size):
@@ -288,6 +329,7 @@ def download_file_requests(
             return
         except requests.RequestException as exc:
             if attempt == retries:
+                dest.unlink(missing_ok=True)
                 raise RuntimeError(
                     f"Download failed after {retries} attempts: {url}"
                 ) from exc
@@ -304,9 +346,10 @@ def download_file_requests(
 def fetch_json(
     url: str,
     *,
-    timeout: float = 30.0,
+    timeout: float = 60.0,
     retries: int = _MAX_RETRIES,
     retry_delay: float = _RETRY_DELAY,
+    headers: dict[str, str] | None = None,
 ) -> dict | list:
     """GET a JSON endpoint with retry. Returns parsed data.
 
@@ -314,13 +357,13 @@ def fetch_json(
     """
     import requests
 
-    # SSRF guard: validate the URL once before the retry loop. UrlGuardError
-    # must not be caught by the retry logic (it's not a transient error).
     assert_public_url(url)
+
+    req_headers = headers or {}
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.get(url, timeout=timeout)
+            resp = requests.get(url, timeout=timeout, headers=req_headers)
             resp.raise_for_status()
             return resp.json()
         except (requests.RequestException, ValueError) as exc:
@@ -408,6 +451,7 @@ def download_files_batch(
     max_concurrent: int = 16,
     timeout: float = _DEFAULT_TIMEOUT,
     tool: DownloadTool = "auto",
+    headers: dict[str, str] | None = None,
 ) -> tuple[int, int]:
     """Download multiple files in parallel using aria2c batch mode.
 
@@ -426,7 +470,11 @@ def download_files_batch(
         return (0, 0)
 
     # Filter out already downloaded files
-    pending = [(url, dest) for url, dest in url_dest_pairs if not dest.exists()]
+    pending = [
+        (url, dest)
+        for url, dest in url_dest_pairs
+        if not (dest.exists() and dest.stat().st_size > 0)
+    ]
     already_done = len(url_dest_pairs) - len(pending)
 
     if already_done > 0:
@@ -445,6 +493,7 @@ def download_files_batch(
                 timeout=timeout,
                 tool=tool,
                 max_connections=max_concurrent,
+                headers=headers,
             )
             return (already_done + 1, 0)
         except Exception as exc:
@@ -498,22 +547,30 @@ def download_files_batch(
             max_concurrent,
         )
         show_progress = tool == "aria2c"
+        aria_cmd = [
+            "aria2c",
+            "--input-file",
+            input_file,
+            "--dir",
+            str(dest_dir),
+            "--continue=true",
+            "--max-connection-per-server=2",
+            "--split=2",
+            "--max-concurrent-downloads",
+            str(max_concurrent),
+            "--max-tries=5",
+            "--retry-wait=3",
+            "--connect-timeout=30",
+            "--timeout=120",
+            "--auto-file-renaming=false",
+            "--allow-overwrite=true",
+            "--summary-interval=10",
+        ]
+        if headers:
+            for key, value in headers.items():
+                aria_cmd.append(f"--header={key}: {value}")
         result = subprocess.run(
-            [
-                "aria2c",
-                "--input-file",
-                input_file,
-                "--dir",
-                str(dest_dir),
-                "--continue=true",
-                f"--max-connection-per-server={max_concurrent}",
-                f"--split={max_concurrent}",
-                "--max-concurrent-downloads",
-                str(max_concurrent),
-                "--auto-file-renaming=false",
-                "--allow-overwrite=true",
-                "--summary-interval=10",
-            ],
+            aria_cmd,
             stdout=None if show_progress else subprocess.DEVNULL,
             stderr=None if show_progress else subprocess.DEVNULL,
         )

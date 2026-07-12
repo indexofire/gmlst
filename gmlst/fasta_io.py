@@ -45,6 +45,27 @@ def write_wrapped_fasta(
     write_wrapped_sequence(handle, sequence, width=width)
 
 
+def is_valid_fasta(path: Path) -> bool:
+    """Check that *path* is a non-empty file containing at least one FASTA record."""
+    if not path.exists() or path.stat().st_size == 0:
+        return False
+    has_header = False
+    has_sequence = False
+    try:
+        with _open_text(path) as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line:
+                    continue
+                if line.startswith(">"):
+                    has_header = True
+                    continue
+                has_sequence = True
+    except OSError:
+        return False
+    return has_header and has_sequence
+
+
 def write_wrapped_sequence(
     handle: TextIO,
     sequence: str,

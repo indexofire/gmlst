@@ -22,6 +22,7 @@ from __future__ import annotations
 import concurrent.futures
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -82,6 +83,13 @@ class BigSdbProvider:
         self._base_url = base_url.rstrip("/")
         self._label = label
 
+    def _auth_headers(self) -> dict[str, str]:
+        env_var = f"GMLST_{self._name.upper()}_API_KEY"
+        key = os.getenv(env_var, "")
+        if key:
+            return {"X-API-Key": key}
+        return {}
+
     # ------------------------------------------------------------------
     # Provider Protocol
     # ------------------------------------------------------------------
@@ -96,7 +104,7 @@ class BigSdbProvider:
 
     def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
         """Return all schemes of *scheme_type* available on this BIGSdb host."""
-        orgs: list[dict] = _get_json(self._base_url)  # type: ignore[assignment]
+        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]
 
         # First pass: collect all schemes with their base names
         raw_schemes: list[dict] = []
@@ -143,7 +151,7 @@ class BigSdbProvider:
                     n_loci = scheme_entry.get("locus_count", 0)
                     if not n_loci and s_url:
                         try:
-                            detail = _get_json(s_url)
+                            detail = _get_json(s_url, headers=self._auth_headers())
                             if isinstance(detail, dict):
                                 n_loci = detail.get(
                                     "locus_count", len(detail.get("loci", []))
@@ -200,6 +208,7 @@ class BigSdbProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> None:
         """Download allele FASTAs + ST profile for *scheme_name*."""
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -211,7 +220,7 @@ class BigSdbProvider:
         scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
         logger.info("[%s] Using scheme: %s", self._name, scheme_url)
 
-        scheme_detail = _get_json(scheme_url)
+        scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
         if not isinstance(scheme_detail, dict):
             raise ValueError(f"Unexpected scheme response for '{scheme_name}'")
         loci_urls: list[str] = scheme_detail.get("loci", [])
@@ -264,7 +273,8 @@ class BigSdbProvider:
                 url_dest_pairs,
                 provider_name=self._name,
                 download_tool=download_tool,
-                max_connections=max_connections or 8,
+                max_connections=max_connections or 4,
+                headers=self._auth_headers(),
             )
         if profile_future is not None:
             try:
@@ -309,6 +319,7 @@ class BigSdbProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> bool:
         dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -319,7 +330,7 @@ class BigSdbProvider:
 
         seqdef_url, _ = self._resolve_seqdef_url(scheme_name)
         scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
-        scheme_detail = _get_json(scheme_url)
+        scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
         if not isinstance(scheme_detail, dict):
             raise ValueError(f"Unexpected scheme response for '{scheme_name}'")
 
@@ -336,7 +347,9 @@ class BigSdbProvider:
 
         for locus_url in loci_urls:
             locus_name = locus_url.rstrip("/").split("/")[-1]
-            allele_info = _get_json(f"{locus_url}/alleles")
+            allele_info = _get_json(
+                f"{locus_url}/alleles", headers=self._auth_headers()
+            )
             if not isinstance(allele_info, dict):
                 raise ValueError(f"Unexpected locus response for '{locus_name}'")
             records = int(allele_info.get("records", 0))
@@ -376,7 +389,8 @@ class BigSdbProvider:
                 url_dest_pairs,
                 provider_name=self._name,
                 download_tool=download_tool,
-                max_connections=max_connections or 8,
+                max_connections=max_connections or 4,
+                headers=self._auth_headers(),
             )
 
             for _, tmp_file in url_dest_pairs:
@@ -421,6 +435,7 @@ class BigSdbProvider:
                 tmp_profile,
                 tool=download_tool,
                 max_connections=max_connections,
+                headers=self._auth_headers(),
             )
             tmp_profile.replace(profile_dest)
 
@@ -460,7 +475,7 @@ class BigSdbProvider:
 
         Handles suffixed scheme names (e.g., 'bcc_1' -> 'bcc').
         """
-        orgs: list[dict] = _get_json(self._base_url)  # type: ignore[assignment]
+        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]
 
         # Remove suffix (_1, _2, etc.) if present
         base_scheme_name = scheme_name
@@ -624,14 +639,31 @@ def _fetch_schemes(seqdef_url: str) -> list[dict]:
     return data.get("schemes", [])  # type: ignore[union-attr]
 
 
+_NON_TYPING_KEYWORDS = [
+    "pgmlst",
+    "agmlst",
+    "vmlst",
+    "pmlst",
+    "virulence",
+    "resistance",
+    "antimicrobial",
+    "antibiotic",
+    "pathogenicity",
+    "plasmid mlst",
+    "genoser",
+]
+
+
 def _classify_scheme_type(description: str) -> str:
     """Map a scheme description string to a canonical scheme_type.
 
-    More specific types (cgmlst, wgmlst) are checked before the generic mlst
-    to avoid false matches (cgMLST descriptions also contain the word 'MLST').
+    Non-typing schemes (virulence, resistance, plasmid, pathogenicity) are
+    filtered to 'other' first. Then specific typing subtypes (cgmlst, wgmlst)
+    are checked before the generic mlst fallback.
     """
     desc_lower = description.lower()
-    # Check specific subtypes first, then generic mlst
+    if any(kw in desc_lower for kw in _NON_TYPING_KEYWORDS):
+        return "other"
     for stype in ("wgmlst", "cgmlst", "mlst"):
         if any(kw in desc_lower for kw in _TYPE_KEYWORDS[stype]):
             return stype
@@ -676,9 +708,9 @@ def _count_profile_rows(path: Path) -> int:
     return max(count - 1, 0)
 
 
-def _get_json(url: str) -> dict | list:
+def _get_json(url: str, headers: dict[str, str] | None = None) -> dict | list:
     """Fetch a JSON API endpoint with retry (delegates to download.fetch_json)."""
-    return fetch_json(url)
+    return fetch_json(url, headers=headers)
 
 
 def _download_file(
@@ -687,6 +719,13 @@ def _download_file(
     *,
     tool: DownloadTool = "auto",
     max_connections: int | None = None,
+    headers: dict[str, str] | None = None,
 ) -> None:
     """Download a file with streaming and retry."""
-    download_file(url, dest, tool=tool, max_connections=max_connections)
+    download_file(
+        url,
+        dest,
+        tool=tool,
+        max_connections=max_connections,
+        headers=headers,
+    )
