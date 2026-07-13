@@ -9,7 +9,7 @@ FASTA input (assembled genome):
 
 FASTQ input:
     Not supported — BLASTN cannot handle raw reads.
-    Use minimap2 or kma backends instead.
+    Use kma backend instead.
 
 Output format
 -------------
@@ -143,8 +143,7 @@ class BlastnAligner:
         """
         if input_type == "fastq":
             raise ValueError(
-                "BlastnAligner does not support FASTQ input. "
-                "Use minimap2 or kma backend."
+                "BlastnAligner does not support FASTQ input. Use kma backend."
             )
 
         sample_id = sample.stem.split(".")[0]

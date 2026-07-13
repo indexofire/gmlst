@@ -18,8 +18,19 @@ def normalize_cgmlst_fastq_runtime(
     console,
     err_console,
 ) -> tuple[str, str, int]:
-    contains_fastq_samples = contains_fastq_samples_fn(prepared_samples)
-    if mode != "cgmlst" or not contains_fastq_samples:
+    contains_fastq = contains_fastq_samples_fn(prepared_samples)
+
+    if contains_fastq and backend.lower() in ("blastn", "nucmer", "minimap2"):
+        auto_backend = "kma"
+        console.print(
+            f"[yellow]Auto-switch:[/yellow] FASTQ input detected, "
+            f"backend '{backend}' does not support reads. "
+            f"Using [cyan]{auto_backend}[/cyan] "
+            f"(consensus-based, higher accuracy than minimap2 for FASTQ)."
+        )
+        backend = auto_backend
+
+    if mode != "cgmlst" or not contains_fastq:
         return backend, cgmlst_mode, threads
 
     if normalized_policy == "chewbbaca":
@@ -27,13 +38,6 @@ def normalize_cgmlst_fastq_runtime(
             "[red]Error:[/red] --call-policy chewbbaca requires FASTA assemblies."
         )
         sys.exit(1)
-    if backend.lower() == "minimap2":
-        console.print(
-            "[yellow]Warning:[/yellow] FASTQ cgMLST with minimap2 is much slower "
-            "and mode optimizations are FASTA-oriented. "
-            "Switching backend to [cyan]kma[/cyan]."
-        )
-        backend = "kma"
     if cgmlst_mode != "standard":
         console.print(
             "[yellow]Warning:[/yellow] FASTQ cgMLST currently treats "

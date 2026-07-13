@@ -54,8 +54,6 @@ def _finalize_sample_result(
             runtime_seconds=aln.runtime_seconds,
         )
     effective_min_depth = ctx.min_depth
-    if backend == "minimap2" and sample.input_type == "fastq":
-        effective_min_depth = 0.0
     locus_calls = core_mod.call_all_loci(
         aln,
         scheme.loci,
@@ -137,8 +135,7 @@ def _resolve_sample_source(
 ) -> Path | tuple[Path, Path]:
     if not aligner.supports_fastq and sample.input_type == "fastq":
         raise ValueError(
-            f"Backend '{backend}' does not support FASTQ input. "
-            "Use 'minimap2' or 'kma'."
+            f"Backend '{backend}' does not support FASTQ input. Use 'kma'."
         )
     if sample.mate_path is not None:
         return (sample.path, sample.mate_path)

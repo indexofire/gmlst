@@ -156,14 +156,13 @@ Additional tuning:
 Notes:
 
 - JSON output includes per-locus `novel_sequence` data for downstream extraction.
-- `--count-same-copy` currently applies to blastn same-allele multicopy counting.
+- `--count-same-copy` expands same-allele multicopy (`23*`) into comma notation (`23,23`) for downstream tools. By default, same-allele multicopy is shown with `*` suffix (e.g. `23*`) and does not affect ST assignment.
 - In `mlst/cgmlst` modes, FASTQ paired-end files are auto-detected and passed as paired input (no pre-merge) when naming matches common pairs:
   - `_R1` / `_R2`
   - `_1` / `_2`
   - `.1` / `.2`
   - Supports `.fastq`, `.fq`, and `.gz` variants.
 - `minimap2` FASTQ mode uses a candidate pass plus targeted validation on uncertain loci.
-- `GMLST_MINIMAP2_KMER_ENGINE` controls minimap2 k-mer support scoring (`python`, `kmc`, `auto`).
 - `GMLST_TMPDIR` can be set to control where temporary files are created.
 
 ## scheme

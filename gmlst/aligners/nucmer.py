@@ -96,8 +96,7 @@ class NucmerAligner:
     ) -> AlignmentResult:
         if input_type == "fastq":
             raise ValueError(
-                "NucmerAligner does not support FASTQ input. "
-                "Use minimap2 or kma backend."
+                "NucmerAligner does not support FASTQ input. Use kma backend."
             )
 
         sample_id = sample.stem.split(".")[0]

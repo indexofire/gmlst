@@ -74,7 +74,6 @@ No BLASTN-specific environment variables are currently implemented. Control BLAS
 
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
-| `GMLST_MINIMAP2_KMER_ENGINE` | `python` | K-mer support scoring engine for minimap2 FASTQ typing. Valid values: `python`, `kmc`, `auto`. | minimap2 FASTQ |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | `default` | FASTA speed tuning for minimap2. Valid values: `default`, `fast`, `ultrafast`. | minimap2 FASTA, cgMLST FASTA workflows |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | `1` | Emits FASTA CIGAR output during minimap2 assembly alignment. Set `0` to reduce work in speed-oriented paths. | minimap2 FASTA |
 | `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | Enables hash-first candidate reduction before minimap2 main alignment. | cgMLST FASTA, minimap2 prefilter path |

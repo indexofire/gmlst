@@ -2,7 +2,7 @@
 
 `gmlst` supports multiple alignment backends because MLST and cgMLST workloads are not all the same. Some runs need maximum confidence on assembled genomes, some need direct FASTQ support, and some need the fastest possible throughput on very large schemes. The best backend depends on your input type, scheme size, and whether you are optimizing for sensitivity, speed, or read mapping behavior.
 
-In short, use `blastn` when you want the classic reference path on FASTA assemblies, `kma` when you are typing FASTQ reads and want a strong routine backend, `minimap2` when you need very fast cgMLST on large datasets, and `nucmer` when you are working with more divergent organisms or unusually distant allele matches.
+In short, use `blastn` for classic MLST on assemblies, `kma` for FASTQ typing, `minimap2` for very fast FASTA cgMLST, and `nucmer` for divergent organisms.
 
 ## Backend Comparison Table
 
@@ -10,7 +10,7 @@ In short, use `blastn` when you want the classic reference path on FASTA assembl
 | --- | --- | --- | --- | --- | --- |
 | `blastn` | FASTA | Moderate | Highest | Reference MLST, validation, assembled genomes | `blastn`, `makeblastdb` |
 | `kma` | FASTA, FASTQ | Fast | High | FASTQ typing, routine MLST, cgMLST with reads | `kma` |
-| `minimap2` | FASTA, FASTQ | Very fast | High | Large cgMLST schemes, high throughput typing, fast FASTA pipelines | `minimap2` (plus `samtools` for some FASTQ temp outputs when available) |
+| `minimap2` | FASTA | Very fast | High | Large cgMLST schemes, high throughput FASTA typing | `minimap2` |
 | `nucmer` | FASTA | Moderate | Very high on divergent matches | Distant organisms, sensitive cross-species matching | `nucmer`, `show-coords` |
 
 ## How to Choose
@@ -157,7 +157,6 @@ The FASTQ path has two stages.
 
 Related knobs:
 
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto` chooses the k-mer support scoring engine.
 - `auto` prefers KMC when available and otherwise falls back to the built-in Python scorer.
 - When `samtools` is installed, targeted validation can write BAM temp files.
 - `GMLST_TMPDIR` controls where temporary files are created.
@@ -262,7 +261,6 @@ gmlst typing mlst -s saureus_1 -b kma reads/sample_R1.fastq.gz reads/sample_R2.f
 
 ### k-mer support scoring
 
-For minimap2 FASTQ typing, `GMLST_MINIMAP2_KMER_ENGINE` controls the scoring engine:
 
 - `python`, built-in scorer
 - `kmc`, KMC/KMC tools

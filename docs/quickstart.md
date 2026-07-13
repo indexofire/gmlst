@@ -240,67 +240,60 @@ Columns mean:
 
 `gmlst` uses compact markers in the allele columns:
 
-| Marker | Meaning |
-|---|---|
-| `23` | exact match to allele 23 |
-| `~19` | closest known allele, or a novel call represented against the nearest allele ID |
-| `15?` | partial call, allele 15 found with incomplete coverage |
-| `-` | missing locus |
+| Marker | Meaning | ST assigned? |
+|---|---|---|
+| `23` | exact match to allele 23, single copy | ✅ |
+| `23*` | exact match, same-allele multicopy (gene duplicated on multiple chromosomes) | ✅ (uses `23`) |
+| `~19` | closest known allele, or a novel call represented against the nearest allele ID | ❌ |
+| `15?` | partial call, allele 15 found with incomplete coverage | ❌ |
+| `1,2` | conflicting multicopy — different alleles detected at different copies | ❌ |
+| `1,1` | same-allele copy expanded (with `--count-same-copy` flag) | ✅ |
+| `-` | missing locus | ❌ |
 
 Practical interpretation:
 
 - no prefix or suffix means an exact call
+- `*` suffix means the same allele was found in multiple copies (e.g. *Vibrio* housekeeping genes on Chr1 + Chr2)
 - `~` means the locus is not a clean exact match
 - `?` means coverage is incomplete
+- comma-separated different numbers (`1,2`) means conflicting multicopy
 - `-` means the locus was not found
 
-If any locus is non-exact or unresolved, `ST` may be reported as `-`.
+If any locus is non-exact or has conflicting multicopy, `ST` may be reported as `-`.
 
 ### Multicopy loci
 
-Some organisms can show multicopy housekeeping gene signals. In those cases you may see comma-separated allele notation.
+Some organisms show multicopy housekeeping gene signals, particularly species with multiple chromosomes (e.g. *Vibrio*, *Brucella*). gmlst distinguishes two cases:
 
-### `1,2`
+**Same-allele multicopy** (`23*`): the same allele is detected at each copy. This is biologically normal — the gene is duplicated but both copies are identical. ST is assigned normally using allele `23`.
 
-This means the same locus has conflicting high-confidence hits to multiple alleles.
+**Conflicting multicopy** (`1,2`): different alleles are detected at different copies (possible paralogs or mixed infection). ST is reported as `-` because a confident assignment cannot be made.
 
-### `1,1`
+### Explicit copy counting
 
-This means the same allele appears to be present in multiple copies. This notation is only reported when same-copy counting is enabled.
-
-### Enable same-copy counting
+To expand `23*` into `23,23` notation (for downstream tools that expect it):
 
 ```bash
 gmlst typing mlst -s vparahaemolyticus_1 -b blastn --count-same-copy sample.fna
 ```
 
-Current behavior:
-
-- `1,2` conflicting multicopy calls can appear without extra flags
-- `1,1` same-allele copy counting currently applies to `blastn`
-- conflicting multicopy loci force `ST` to `-` to avoid overconfident typing
-
 ### Recommended workflow for multicopy-prone organisms
 
 For organisms or schemes where multicopy signals are common, a two-pass workflow is safer.
 
-### Pass 1: routine typing
-
-Use a fast default run without same-copy counting:
+**Pass 1: routine typing**
 
 ```bash
 gmlst typing mlst -s vparahaemolyticus_1 -b minimap2 samples/*.fna -o pass1.tsv
 ```
 
-### Pass 2: targeted review of flagged samples
+**Pass 2: targeted review of flagged samples**
 
-Re-run only the problematic samples with `blastn` and explicit copy counting:
+Re-run only the problematic samples (those with `1,2` conflicting multicopy or `~` novel markers) with `blastn` and explicit copy counting:
 
 ```bash
 gmlst typing mlst -s vparahaemolyticus_1 -b blastn --count-same-copy flagged_sample.fna
 ```
-
-This keeps the routine batch fast while still letting you inspect ambiguous loci carefully.
 
 ## Next steps
 

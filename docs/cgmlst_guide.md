@@ -359,7 +359,6 @@ These variables affect cgMLST-specific behavior.
 
 - `GMLST_CACHE_DIR=/path/to/cache`
 - `GMLST_TMPDIR=/path/to/tmp`
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto`
 
 ### Evidence fallback
 

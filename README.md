@@ -165,16 +165,17 @@ Use `--format pretty` for human-readable terminal output and `--format json` for
 | Backend | CLI selectable | FASTA | FASTQ | Best fit | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `blastn` | Yes | Yes | No | Classical MLST on assemblies | Strong baseline for exact allele calls and targeted review |
-| `kma` | Yes | Yes | Yes | FASTQ typing and cgMLST FASTQ routes | Good fit for mapping-based allele calling on reads |
-| `minimap2` | Yes | Yes | Yes | Fast assembly typing and flexible read workflows | Used heavily in cgMLST optimization paths |
+| `kma` | Yes | Yes | Yes | **FASTQ typing (all modes)** | Consensus-based allele calling from raw reads |
+| `minimap2` | Yes | Yes | No | Fast assembly typing | FASTA assemblies only; use kma for FASTQ |
 | `nucmer` | Yes | Yes | No | Sensitive assembly comparison | Useful for distant matches and alternate evidence |
 
 ### Backend notes
 
 - `typing mlst` and `typing cgmlst` auto-detect common paired FASTQ naming patterns such as `_R1/_R2`, `_1/_2`, and `.1/.2`.
 - `typing cgmlst` uses `minimap2` by default for FASTA assemblies.
-- For FASTQ cgMLST, the CLI follows a KMA-first policy and treats chew-style cgMLST modes as FASTA-oriented compatibility options.
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto` controls the minimap2 k-mer support scorer.
+- For FASTQ cgMLST, the CLI follows a KMA-first policy. Use `gmlst typing cgmlst` with KMA for raw reads.
+- FASTQ input auto-switches to KMA for both `mlst` and `cgmlst` modes.
+- `--max-depth` — Subsample FASTQ to a maximum read depth (default 100x, FASTQ only)
 
 ## Data Providers
 
@@ -287,7 +288,7 @@ Key environment variables:
 | --- | --- |
 | `GMLST_CACHE_DIR` | Override the cache root (auto-detected: `$CONDA_PREFIX/share/gmlst` in conda, `$VIRTUAL_ENV/.cache/gmlst` in venv, or `~/.cache/gmlst` by default) |
 | `GMLST_TMPDIR` | Override temporary working directory used during typing and refinement |
-| `GMLST_MINIMAP2_KMER_ENGINE` | Choose minimap2 k-mer support engine: `python`, `kmc`, or `auto` |
+| `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | Emit CIGAR in minimap2 FASTA alignments (1/0) |
 | `GMLST_PUBMLST_BASE_URL` | Override PubMLST API base URL |
 | `GMLST_PASTEUR_BASE_URL` | Override Pasteur BIGSdb API base URL |
 | `GMLST_PRIVATE_BIGSDB_URL` | Register a private BIGSdb instance as an extra provider |
@@ -320,7 +321,6 @@ Example:
 ```bash
 export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 export GMLST_TMPDIR="$PWD/.tmp/gmlst"
-export GMLST_MINIMAP2_KMER_ENGINE=auto
 export GMLST_PUBMLST_BASE_URL="https://rest.pubmlst.org/db"
 export GMLST_PASTEUR_BASE_URL="https://bigsdb.pasteur.fr/api/db"
 ```
@@ -338,20 +338,23 @@ gmlst scheme list -p labdb
 
 The default TSV format uses compact markers per locus.
 
-| Marker | Meaning |
-| --- | --- |
-| `23` | Exact allele call |
-| `~23` | Non-exact but high-coverage call, used for closest hits and novel-like loci |
-| `15?` | Partial call, coverage below the confident threshold |
-| `-` | Missing locus |
+| Marker | Meaning | ST assigned? |
+| --- | --- | --- |
+| `23` | Exact allele call, single copy | ✅ Yes |
+| `23*` | Exact allele call, **same-allele multicopy** (e.g. gene duplicated on two chromosomes) | ✅ Yes (uses `23`) |
+| `~23` | Non-exact but high-coverage call, closest match or novel allele | ❌ Novel |
+| `15?` | Partial call, coverage below the confident threshold | ❌ Incomplete |
+| `1,2` | **Conflicting** multicopy — different alleles detected at different loci copies | ❌ Ambiguous |
+| `1,1` | Same-allele copy expanded (with `--count-same-copy` flag) | ✅ Yes |
+| `-` | Missing locus | ❌ Incomplete |
 
 JSON output is the best choice when you want structured fields such as per-locus call metadata and `novel_sequence` extraction data.
 
 ## Multicopy Loci Notes
 
-- Conflicting multicopy calls are reported with comma notation such as `1,2`.
-- When conflicting multicopy loci are present, ST is reported as `-` to avoid overconfident profile assignment.
-- Same-allele copy counting such as `1,1` is optional and currently exposed through `--count-same-copy` for `blastn` workflows.
+- **Same-allele multicopy** (`23*`): the same allele is detected at multiple genomic copies (e.g. housekeeping genes duplicated across two chromosomes in *Vibrio*). This is biologically normal and does **not** prevent ST assignment. The `*` suffix marks it for transparency; ST lookup uses the allele number without the `*`.
+- **Conflicting multicopy** (`1,2`): different alleles are detected at different copies of the same locus (possible paralogs or mixed infection). ST is reported as `-` because a confident profile cannot be assigned.
+- **Explicit copy counting** (`1,1`): use `--count-same-copy` to expand same-allele multicopy into comma notation for downstream tools that expect it.
 
 Recommended review pattern:
 
@@ -359,7 +362,7 @@ Recommended review pattern:
 # Fast first pass
 gmlst typing mlst -s vparahaemolyticus_1 *.fna -o pass1.tsv
 
-# Targeted second pass on flagged samples
+# Targeted second pass on flagged samples (those with conflicting multicopy or ~ markers)
 gmlst typing mlst -s vparahaemolyticus_1 -b blastn --count-same-copy flagged_sample.fna
 ```
 

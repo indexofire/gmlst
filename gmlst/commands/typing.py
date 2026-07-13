@@ -430,6 +430,14 @@ def cmd_typing_legacy(ctx: click.Context, samples: tuple[Path, ...]) -> None:
         "and show notation like 1,1."
     ),
 )
+@click.option(
+    "--max-depth",
+    "max_fastq_depth",
+    default=100,
+    show_default=True,
+    type=click.FloatRange(min=0),
+    help="Subsample FASTQ to this depth (0=disabled, FASTQ only).",
+)
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
 @click.option(
     "--novel-allele",
@@ -463,6 +471,7 @@ def cmd_typing_mlst(
     threads: int,
     max_workers: int,
     count_same_copy: bool,
+    max_fastq_depth: float,
     quiet: bool,
     novel_allele: bool,
     novel_profile: bool,
@@ -892,6 +901,7 @@ def _run_mlst_like_typing(
     cds_coordinates_out: Path | None = None,
     call_policy: str = "default",
     chew_cds_gate: bool = True,
+    max_fastq_depth: float = 100,
 ) -> None:
     cache = DatabaseCache(cache_dir)
 
@@ -920,6 +930,10 @@ def _run_mlst_like_typing(
         sys.exit(1)
 
     prepared_samples = _prepare_sample_paths_for_pairing(samples)
+    if max_fastq_depth > 0:
+        prepared_samples = _maybe_subsample_fastq(
+            prepared_samples, max_fastq_depth, console
+        )
     backend, cgmlst_mode, threads = normalize_cgmlst_fastq_runtime(
         mode=mode,
         prepared_samples=prepared_samples,
@@ -1334,3 +1348,87 @@ def _stage_exit_code(stage: str) -> int:
         "unknown": 5,
     }
     return mapping.get(stage, 5)
+
+
+_DEFAULT_GENOME_SIZE = 5_000_000
+_FASTQ_BYTES_PER_READ = 250
+
+
+def _maybe_subsample_fastq(
+    samples: list[Path | SampleInput],
+    max_depth: float,
+    console: object,
+) -> list[Path | SampleInput]:
+    """Subsample FASTQ files when estimated depth exceeds max_depth."""
+
+    result: list[Path | SampleInput] = []
+    for sample in samples:
+        is_fastq = False
+        paths: list[Path] = []
+        if isinstance(sample, SampleInput):
+            if sample.input_type == "fastq":
+                is_fastq = True
+                paths = [sample.path]
+                if sample.mate_path:
+                    paths.append(sample.mate_path)
+        elif Path(str(sample)).suffix in (".fastq", ".fq", ".fastq.gz", ".fq.gz"):
+            is_fastq = True
+            paths = [Path(str(sample))]
+
+        if not is_fastq:
+            result.append(sample)
+            continue
+
+        total_reads = sum(
+            max(p.stat().st_size // _FASTQ_BYTES_PER_READ, 1) for p in paths
+        )
+        est_depth = total_reads * 150 / _DEFAULT_GENOME_SIZE
+        if est_depth <= max_depth:
+            result.append(sample)
+            continue
+
+        target_reads = int(max_depth * _DEFAULT_GENOME_SIZE / 150)
+        console.print(
+            f"[yellow]Subsample:[/yellow] "
+            f"{sample if isinstance(sample, Path) else sample.sample_id} "
+            f"~{est_depth:.0f}x depth → {max_depth:.0f}x "
+            f"(target {target_reads} reads)"
+        )
+
+        from gmlst.utils import temp_dir
+
+        with temp_dir("gmlst_sub_") as tmp:
+            new_paths: list[Path] = []
+            for i, p in enumerate(paths):
+                out = tmp / f"sub_{i}.fastq.gz"
+                _subsample_fastq_file(p, out, target_reads)
+                new_paths.append(out)
+
+            if isinstance(sample, SampleInput):
+                result.append(
+                    SampleInput(
+                        path=new_paths[0],
+                        mate_path=new_paths[1] if len(new_paths) > 1 else None,
+                        sample_id=sample.sample_id,
+                    )
+                )
+            else:
+                result.append(new_paths[0])
+
+    return result
+
+
+def _subsample_fastq_file(
+    input_path: Path, output_path: Path, target_reads: int
+) -> None:
+    """Subsample FASTQ to first *target_reads* reads."""
+    import gzip as _gzip
+
+    opener = _gzip.open if input_path.suffix == ".gz" else open
+    lines_needed = target_reads * 4
+    with opener(input_path, "rb") as fin, _gzip.open(output_path, "wb") as fout:
+        for _ in range(lines_needed):
+            line = fin.readline()
+            if not line:
+                break
+            fout.write(line)

@@ -372,7 +372,6 @@ Common ones are:
 
 - `GMLST_CACHE_DIR`, override cache root (auto-detected from conda/venv by default)
 - `GMLST_TMPDIR`, override temporary working directory
-- `GMLST_MINIMAP2_KMER_ENGINE`, choose `python`, `kmc`, or `auto`
 - provider URL overrides, such as `GMLST_PUBMLST_BASE_URL`
 
 Example:
@@ -380,7 +379,6 @@ Example:
 ```bash
 export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 export GMLST_TMPDIR="$PWD/.tmp/gmlst"
-export GMLST_MINIMAP2_KMER_ENGINE=auto
 ```
 
 ### Where are temporary files written?
