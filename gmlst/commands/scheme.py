@@ -1018,6 +1018,10 @@ def cmd_update(
                 console.print(f"[green]Updated.[/green] Cached at [dim]{dest}[/dim]")
             else:
                 console.print(f"[green]Up to date.[/green] Cached at [dim]{dest}[/dim]")
+        except FileNotFoundError as exc:
+            err_console.print(f"[red]Error:[/red] {exc}")
+            err_console.print(f"Run [bold]gmlst scheme download {scheme}[/bold] first.")
+            sys.exit(1)
         except Exception as exc:
             err_console.print(f"[red]Error:[/red] {exc}")
             sys.exit(1)
