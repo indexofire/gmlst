@@ -409,12 +409,64 @@ Each downloaded scheme directory contains a `.meta.json` file with download meta
     "scheme_type": "mlst",
     "downloaded_at": "2026-07-10T12:00:00Z",
     "loci": ["arcC", "aroE", "glpF", "gmk", "pta", "tpi", "yqiL"],
-    "profiles_remote": { "etag": "...", "last_modified": "..." },
-    "locus_remote": { "arcC": { "etag": "...", "last_modified": "..." } }
+    "locus_meta": {
+        "arcC": { "records": 458, "last_updated": "2026-07-01" }
+    },
+    "profile_meta": {
+        "records": 5000, "last_updated": "2026-07-01", "last_added": "2026-07-01"
+    }
 }
 ```
 
-The metadata records the download/update timestamp and remote file headers (ETag, Last-Modified) for incremental update detection. Allele counts per locus are not currently stored; this is planned for a future release to enable post-download validation.
+The metadata records the download/update timestamp, per-locus allele counts, profile counts, and remote update timestamps for incremental update detection.
+
+## Update mechanism (incremental)
+
+`gmlst scheme update` uses **incremental updates** — only changed data is re-downloaded, not the entire scheme. The mechanism differs by provider:
+
+### PubMLST / Pasteur (BIGSdb)
+
+BIGSdb provides per-locus metadata via its REST API, enabling precise change detection:
+
+1. **Query locus metadata**: For each locus, fetch `GET /loci/{locus}/alleles` → returns `records` (allele count) and `last_updated` (timestamp).
+2. **Compare with local `.meta.json`**: A locus is marked for re-download if:
+   - Local `.tfa` file does not exist
+   - Local allele count < server allele count
+   - Stored `records` value differs from server
+   - Stored `last_updated` timestamp differs from server
+3. **Download only changed loci**: Only loci with detected changes are fetched via `alleles_fasta`. Unchanged loci are skipped entirely.
+4. **Profile check**: The ST profile is re-downloaded only if `records`, `last_updated`, or `last_added` have changed.
+
+Example: A cgMLST scheme with 2000 loci where 50 loci have new alleles → only 50 files are downloaded (2.5% of total).
+
+**Limitation**: Each changed locus is downloaded as a **full allele FASTA replacement** (not appended). This is because BIGSdb's API only provides `alleles_fasta` (all alleles in one file), not a "new alleles only" endpoint.
+
+### Enterobase
+
+Enterobase uses HTTP headers (ETag, Last-Modified) for file-level change detection:
+
+1. **HEAD request**: For each remote file (`{locus}.fasta.gz`, `profiles.list.gz`), send a `HEAD` request and compare `ETag` / `Last-Modified` / `Content-Length` with locally stored values.
+2. **Download changed files**: Only files whose headers have changed are re-downloaded.
+3. **Decompress and replace**: Downloaded `.fasta.gz` files are decompressed to `.tfa` and atomically replace the old files.
+
+### cgMLST.org
+
+cgMLST.org provides a single bulk ZIP for each scheme. The update downloads the entire ZIP again if the schema version or locus count has changed. There is no per-locus incremental API.
+
+### Update workflow
+
+```bash
+# Update a single scheme (incremental)
+gmlst scheme update saureus_1
+
+# Update all cached schemes
+gmlst scheme update --all
+
+# Force refresh catalogs from all providers, then update cached schemes
+gmlst scheme update --force --all
+```
+
+The `--force` flag refreshes the catalog (scheme list) from all providers before updating. Without `--force`, only cached scheme data is checked for updates.
 
 ## Related documentation
 

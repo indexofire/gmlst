@@ -500,6 +500,7 @@ def cmd_typing_mlst(
         novel_allele=novel_allele,
         novel_profile=novel_profile,
         output_dir=output_dir,
+        quiet=quiet,
     )
 
 
@@ -902,6 +903,7 @@ def _run_mlst_like_typing(
     call_policy: str = "default",
     chew_cds_gate: bool = True,
     max_fastq_depth: float = 100,
+    quiet: bool = False,
 ) -> None:
     cache = DatabaseCache(cache_dir)
 
@@ -1096,6 +1098,7 @@ def _run_mlst_like_typing(
                     max_workers=max_workers,
                     on_result=_on_result,
                     console=console,
+                    quiet=quiet,
                 )
         except Exception as exc:
             err_console.print(f"[red]Error during typing:[/red] {exc}")

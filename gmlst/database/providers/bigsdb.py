@@ -146,6 +146,8 @@ class BigSdbProvider:
 
                     if scheme_type != "all" and s_type != scheme_type:
                         continue
+                    if scheme_type == "all" and s_type == "other":
+                        continue
 
                     # Fetch locus count
                     n_loci = scheme_entry.get("locus_count", 0)

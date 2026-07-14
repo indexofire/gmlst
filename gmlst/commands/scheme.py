@@ -16,6 +16,16 @@ from typing import TextIO
 
 import click
 from rich import box
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 from gmlst.commands.common import (
@@ -190,7 +200,10 @@ def scheme_group() -> None:
     "scheme_type",
     default="all",
     show_default=True,
-    type=click.Choice(["mlst", "cgmlst", "wgmlst", "all"], case_sensitive=False),
+    type=click.Choice(
+        ["mlst", "cgmlst", "wgmlst", "rmlst", "other", "all"],
+        case_sensitive=False,
+    ),
     help="Scheme type filter.",
 )
 @click.option(
@@ -214,6 +227,11 @@ def scheme_group() -> None:
     help="Only show schemes that are already downloaded/cached.",
 )
 @click.option(
+    "--pager",
+    is_flag=True,
+    help="Send output through a pager (less).",
+)
+@click.option(
     "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
 )
 def cmd_list(
@@ -222,6 +240,7 @@ def cmd_list(
     name: str | None,
     output_format: str,
     available: bool,
+    pager: bool,
     cache_dir: Path | None,
 ) -> None:
     """List available schemes from providers."""
@@ -330,12 +349,35 @@ def cmd_list(
 
     table = _build_scheme_list_table(all_schemes, cache, title, console.size.width)
 
+    def _print_table() -> None:
+        if pager:
+            import io
+            import subprocess
+
+            buf = io.StringIO()
+            pager_console = Console(
+                file=buf,
+                force_terminal=True,
+                width=console.width,
+            )
+            pager_console.print(table)
+            pager_console.print(
+                "\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]"
+            )
+            try:
+                proc = subprocess.Popen(["less", "-RFX"], stdin=subprocess.PIPE)
+                proc.communicate(buf.getvalue().encode())
+                return
+            except (OSError, FileNotFoundError):
+                pass
+        console.print(table)
+        console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
+
     emit_output_table(
         output=None,
         render_text=lambda: _render_scheme_list_text(payload),
-        print_table=lambda: console.print(table),
+        print_table=_print_table,
     )
-    console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
 
 
 @scheme_group.command("search", context_settings=HELP_SETTINGS)
@@ -434,15 +476,17 @@ def _build_scheme_list_table(
 ) -> Table:
     table = Table(
         title=title,
-        box=box.MINIMAL_HEAVY_HEAD,
+        box=box.SQUARE,
+        show_header=True,
+        header_style="bold cyan",
         expand=True,
         show_lines=False,
         padding=(0, 1),
     )
-    table.add_column("Status", justify="center", style="green", no_wrap=True, width=3)
+    table.add_column("Status", justify="center", no_wrap=True, width=3)
     table.add_column("Scheme", style="cyan", overflow="fold", ratio=3, min_width=10)
     if terminal_width >= 100:
-        table.add_column("Organism", style="green", overflow="fold", ratio=3)
+        table.add_column("Organism", overflow="fold", ratio=3)
     table.add_column("Type", style="dim", no_wrap=True, width=7)
     table.add_column("Loci", justify="right", style="dim", no_wrap=True, width=6)
     table.add_column("Provider", style="blue", no_wrap=True, width=10)
@@ -456,10 +500,10 @@ def _build_scheme_list_table(
             else ""
         )
         is_dl = cache.is_downloaded(scheme.scheme_name, scheme.provider)
-        status = "[green]✓[/green]" if is_dl else "[dim]-[/dim]"
+        status = "[bold green]✓[/bold green]" if is_dl else "[dim]-[/dim]"
         row = [
             status,
-            scheme.scheme_name,
+            scheme.scheme_name if not is_dl else f"[bold]{scheme.scheme_name}[/bold]",
         ]
         if terminal_width >= 100:
             row.append(scheme.organism)
@@ -472,7 +516,10 @@ def _build_scheme_list_table(
         )
         if terminal_width >= 80:
             row.append(scheme.display_name + auth_note)
-        table.add_row(*row, style="bold" if is_dl else None)
+        table.add_row(
+            *row,
+            style="on rgb(40,40,40)" if is_dl else None,
+        )
     return table
 
 
@@ -855,15 +902,16 @@ def cmd_download(
         f"from [bold]{detected_provider}[/bold] ..."
     )
     try:
-        cache.ensure_scheme(
-            scheme,
-            provider=detected_provider,
-            scheme_type=detected_type,
-            force=force,
-            token=token,
-            download_tool=_download_tool_choice(download_tool),
-            max_connections=connections,
-        )
+        with console.status(f"[bold green]Downloading {scheme}...", spinner="dots"):
+            cache.ensure_scheme(
+                scheme,
+                provider=detected_provider,
+                scheme_type=detected_type,
+                force=force,
+                token=token,
+                download_tool=_download_tool_choice(download_tool),
+                max_connections=connections,
+            )
         dest = cache.scheme_dir(scheme, detected_provider)
         console.print(f"[green]Done.[/green] Cached at [dim]{dest}[/dim]")
     except Exception as exc:
@@ -956,14 +1004,15 @@ def cmd_update(
             f"from [bold]{provider}[/bold] ..."
         )
         try:
-            _, changed = cache.update_scheme(
-                scheme,
-                provider=provider,
-                scheme_type=scheme_type,
-                token=token,
-                download_tool=selected_download_tool,
-                max_connections=connections,
-            )
+            with console.status(f"[bold green]Updating {scheme}...", spinner="dots"):
+                _, changed = cache.update_scheme(
+                    scheme,
+                    provider=provider,
+                    scheme_type=scheme_type,
+                    token=token,
+                    download_tool=selected_download_tool,
+                    max_connections=connections,
+                )
             dest = cache.scheme_dir(scheme, provider)
             if changed:
                 console.print(f"[green]Updated.[/green] Cached at [dim]{dest}[/dim]")
@@ -994,32 +1043,44 @@ def cmd_update(
         console.print(f"Updating {len(cached_schemes)} cached scheme database(s) ...")
         changed_count = 0
         failed_count = 0
-        for item in cached_schemes:
-            scheme_name = str(item["scheme"])
-            provider = str(item["provider"])
-            scheme_type = str(item.get("scheme_type", "mlst"))
-            console.print(
-                f"Checking updates for [cyan]{scheme_name}[/cyan] "
-                f"from [bold]{provider}[/bold] ..."
-            )
-            try:
-                _, changed = cache.update_scheme(
-                    scheme_name,
-                    provider=provider,
-                    scheme_type=scheme_type,
-                    token=token,
-                    download_tool=selected_download_tool,
-                    max_connections=connections,
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TaskProgressColumn(),
+            TimeElapsedColumn(),
+            transient=False,
+        )
+        with progress:
+            task = progress.add_task("Updating schemes", total=len(cached_schemes))
+            for item in cached_schemes:
+                scheme_name = str(item["scheme"])
+                provider = str(item["provider"])
+                scheme_type = str(item.get("scheme_type", "mlst"))
+                progress.update(
+                    task,
+                    description=f"Updating {scheme_name}",
                 )
-            except Exception as exc:
-                failed_count += 1
-                err_console.print(f"  [red]{scheme_name} ({provider}):[/red] {exc}")
-                continue
-            if changed:
-                changed_count += 1
-                console.print("  [green]Updated.[/green]")
-            else:
-                console.print("  [green]Up to date.[/green]")
+                try:
+                    _, changed = cache.update_scheme(
+                        scheme_name,
+                        provider=provider,
+                        scheme_type=scheme_type,
+                        token=token,
+                        download_tool=selected_download_tool,
+                        max_connections=connections,
+                    )
+                except Exception as exc:
+                    failed_count += 1
+                    progress.console.print(
+                        f"  [red]{scheme_name} ({provider}):[/red] {exc}"
+                    )
+                    progress.advance(task)
+                    continue
+                if changed:
+                    changed_count += 1
+                progress.advance(task)
         console.print(
             f"[green]Done.[/green] Updated: {changed_count}; "
             f"unchanged: {len(cached_schemes) - changed_count - failed_count}; "
@@ -1034,13 +1095,28 @@ def cmd_update(
         else:
             console.print("Updating all catalogs ...")
         total = 0
-        for prov in AVAILABLE_PROVIDERS:
-            try:
-                schemes = cache.update_catalog(prov, scheme_type="all", token=token)
-                console.print(f"  [green]{prov}:[/green] {len(schemes)} schemes")
-                total += len(schemes)
-            except Exception as exc:
-                err_console.print(f"  [red]{prov}:[/red] {exc}")
+        providers_list = list(AVAILABLE_PROVIDERS)
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TaskProgressColumn(),
+            transient=False,
+        )
+        with progress:
+            task = progress.add_task("Refreshing catalogs", total=len(providers_list))
+            for prov in providers_list:
+                progress.update(task, description=f"Fetching {prov}")
+                try:
+                    schemes = cache.update_catalog(prov, scheme_type="all", token=token)
+                    total += len(schemes)
+                    progress.console.print(
+                        f"  [green]{prov}:[/green] {len(schemes)} schemes"
+                    )
+                except Exception as exc:
+                    progress.console.print(f"  [red]{prov}:[/red] {exc}")
+                progress.advance(task)
         console.print(f"[green]Done.[/green] Total: {total} schemes")
 
 
