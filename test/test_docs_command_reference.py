@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def test_commands_doc_matches_typing_option_surface() -> None:
-    doc = Path("docs/commands.md").read_text()
+    doc = Path("docs/en/commands.md").read_text()
     marker = "`mlst` and `cgmlst` common options:"
     assert marker in doc
     typing_options = doc.split(marker, maxsplit=1)[1].split(

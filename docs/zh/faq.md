@@ -1,6 +1,6 @@
 # 常见问题与故障排查
 
-这份文档整理了 `gmlst` 的常见问题和实用排查方法。安装和首次运行流程请先看 [installation.md](installation.md) 和 [quickstart.md](quickstart.md)。命令语法请参考 [../commands.md](../commands.md)。
+这份文档整理了 `gmlst` 的常见问题和实用排查方法。安装和首次运行流程请先看 [installation.md](installation.md) 和 [quickstart.md](quickstart.md)。命令语法请参考 [commands.md](commands.md)。
 
 ## 一般问题
 
@@ -304,7 +304,7 @@ gmlst typing mlst -s saureus_1 -b kma sample_R1.fastq.gz sample_R2.fastq.gz
 
 这是预期设计。对于 FASTQ 输入，CLI 会执行 KMA-first 策略。如果你在 cgMLST FASTQ 场景里请求 `-b minimap2`，`gmlst` 会自动切到 `kma`，并把 `--cgmlst-mode` 当成兼容参数处理，也就是等效为 `standard`。
 
-这个行为在 [../architecture.md](../architecture.md) 和 [../commands.md](../commands.md) 里都有说明。
+这个行为在 [../en/architecture.md](../en/architecture.md) 和 [commands.md](commands.md) 里都有说明。
 
 ### cgMLST 模式应该怎么选？
 

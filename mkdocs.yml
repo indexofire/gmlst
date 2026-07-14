@@ -38,41 +38,46 @@ extra:
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Installation: installation.md
-    - Quick Start: quickstart.md
-    - Configuration: configuration.md
-  - User Guide:
-    - Command Reference: commands.md
-    - Typing: commands/typing.md
-    - Scheme: commands/scheme.md
-    - Utils: commands/utils.md
-    - Visual: commands/visual.md
-    - Alignment Backends: backends.md
-    - Data Providers: providers.md
-    - cgMLST Guide: cgmlst_guide.md
-    - Novel Workflow: novel_workflow.md
-    - Visualization: visual_guide.md
-  - FAQ: faq.md
-  - Development:
-    - Architecture: architecture.md
-    - Contributing: contributing.md
-  - 中文文档:
-    - 安装: zh/installation.md
-    - 快速入门: zh/quickstart.md
-    - Typing 命令: zh/commands/typing.md
-    - Scheme 命令: zh/commands/scheme.md
-    - Utils 命令: zh/commands/utils.md
-    - Visual 命令: zh/commands/visual.md
-    - 后端: zh/backends.md
-    - 配置: zh/configuration.md
-    - 数据源: zh/providers.md
-    - cgMLST 指南: zh/cgmlst_guide.md
-    - Novel 工作流: zh/novel_workflow.md
-    - 可视化: zh/visual_guide.md
-    - 架构: zh/architecture.md
-    - 贡献: zh/contributing.md
+  - English:
+    - Getting Started:
+      - Installation: en/installation.md
+      - Quick Start: en/quickstart.md
+      - Configuration: en/configuration.md
+    - User Guide:
+      - Command Reference: en/commands.md
+      - Typing: en/commands/typing.md
+      - Scheme: en/commands/scheme.md
+      - Utils: en/commands/utils.md
+      - Visual: en/commands/visual.md
+      - Alignment Backends: en/backends.md
+      - Data Providers: en/providers.md
+      - cgMLST Guide: en/cgmlst_guide.md
+      - Novel Workflow: en/novel_workflow.md
+      - Visualization: en/visual_guide.md
+    - FAQ: en/faq.md
+    - Development:
+      - Architecture: en/architecture.md
+      - Contributing: en/contributing.md
+  - 简体中文:
+    - 快速入门:
+      - 安装: zh/installation.md
+      - 快速开始: zh/quickstart.md
+      - 配置参考: zh/configuration.md
+    - 用户指南:
+      - 命令参考: zh/commands.md
+      - Typing 命令: zh/commands/typing.md
+      - Scheme 命令: zh/commands/scheme.md
+      - Utils 命令: zh/commands/utils.md
+      - Visual 命令: zh/commands/visual.md
+      - 比对后端: zh/backends.md
+      - 数据源: zh/providers.md
+      - cgMLST 指南: zh/cgmlst_guide.md
+      - Novel 工作流: zh/novel_workflow.md
+      - 可视化: zh/visual_guide.md
     - FAQ: zh/faq.md
+    - 开发:
+      - 架构: zh/architecture.md
+      - 贡献: zh/contributing.md
 
 markdown_extensions:
   - admonition

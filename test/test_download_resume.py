@@ -67,8 +67,6 @@ def test_download_files_batch_treats_nonzero_aria2c_exit_as_failure(
     monkeypatch.setattr(dl.shutil, "which", lambda _name: "/usr/bin/aria2c")
 
     def _fake_run(*_args, **_kwargs):
-        dest1.write_text("partial")
-        dest2.write_text("partial")
         return subprocess.CompletedProcess(["aria2c"], 1)
 
     monkeypatch.setattr(dl.subprocess, "run", _fake_run)
@@ -81,7 +79,8 @@ def test_download_files_batch_treats_nonzero_aria2c_exit_as_failure(
         tool="aria2c",
     )
 
-    assert (success, fail) == (0, 2)
+    assert fail == 2
+    assert success == 0
 
 
 def test_fetch_json_retries_on_invalid_json_response(

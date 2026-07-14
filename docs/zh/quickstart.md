@@ -304,6 +304,6 @@ gmlst typing mlst -s vparahaemolyticus_1 -b blastn --count-same-copy flagged_sam
 
 ## 下一步
 
-- 阅读完整的[命令参考](../commands.md)
+- 阅读完整的[命令参考](commands.md)
 - 如果还需要配置后端工具，请回到[安装指南](installation.md)
 - 了解项目整体情况，请见[仓库首页](https://github.com/indexofire/gmlst#readme)

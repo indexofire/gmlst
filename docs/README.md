@@ -2,42 +2,33 @@
 
 This directory collects user guides, developer notes, internal references, and project-level documentation for `gmlst`.
 
-## User Documentation
+## English Documentation (docs/en/)
 
-- [installation.md](installation.md) - Installation and environment setup
-- [quickstart.md](quickstart.md) - First-run workflow and result interpretation
-- [commands.md](commands.md) - Command-line reference for `typing`, `scheme`, `utils`, and `visual`
-- [backends.md](backends.md) - Alignment backend comparison and selection guide
-- [configuration.md](configuration.md) - Environment variables and configuration reference
-- [providers.md](providers.md) - Data provider documentation (PubMLST, Pasteur, Enterobase, etc.)
-- [novel_workflow.md](novel_workflow.md) - Novel allele detection and custom scheme workflow
-- [cgmlst_guide.md](cgmlst_guide.md) - cgMLST/wgMLST typing modes and optimization
-- [visual_guide.md](visual_guide.md) - Local MST visualization guide
-- [faq.md](faq.md) - FAQ and troubleshooting
-
-## Developer Documentation
-
-- [architecture.md](architecture.md) - System architecture, module boundaries, and data flow
-- [contributing.md](contributing.md) - Development workflow and contribution conventions
+- [en/installation.md](en/installation.md) - Installation and environment setup
+- [en/quickstart.md](en/quickstart.md) - First-run workflow and result interpretation
+- [en/commands.md](en/commands.md) - Command-line reference
+- [en/backends.md](en/backends.md) - Alignment backend comparison and selection guide
+- [en/configuration.md](en/configuration.md) - Environment variables and configuration reference
+- [en/providers.md](en/providers.md) - Data provider documentation (PubMLST, Pasteur, Enterobase, etc.)
+- [en/novel_workflow.md](en/novel_workflow.md) - Novel allele detection and custom scheme workflow
+- [en/cgmlst_guide.md](en/cgmlst_guide.md) - cgMLST/wgMLST typing modes and optimization
+- [en/visual_guide.md](en/visual_guide.md) - Local MST visualization guide
+- [en/faq.md](en/faq.md) - FAQ and troubleshooting
+- [en/architecture.md](en/architecture.md) - System architecture
+- [en/contributing.md](en/contributing.md) - Development workflow and contribution conventions
 
 ## Chinese Documentation (docs/zh/)
 
-- [../README_ZH.md](../README_ZH.md) - Chinese root guide
-- [zh/installation.md](zh/installation.md) - Installation guide
-- [zh/quickstart.md](zh/quickstart.md) - Quick start guide
-- [zh/backends.md](zh/backends.md) - Backend comparison guide
-- [zh/configuration.md](zh/configuration.md) - Configuration reference
-- [zh/providers.md](zh/providers.md) - Data provider documentation
-- [zh/novel_workflow.md](zh/novel_workflow.md) - Novel allele workflow
-- [zh/cgmlst_guide.md](zh/cgmlst_guide.md) - cgMLST guide
-- [zh/visual_guide.md](zh/visual_guide.md) - Visualization guide
-- [zh/architecture.md](zh/architecture.md) - Architecture documentation
-- [zh/contributing.md](zh/contributing.md) - Contributing guide
-- [zh/faq.md](zh/faq.md) - FAQ and troubleshooting
-
-## Internal Documentation
-
-- [internal/README.md](internal/README.md) - Internal design notes, stable reports, and archived research artifacts
+- [zh/installation.md](zh/installation.md) - 安装指南
+- [zh/quickstart.md](zh/quickstart.md) - 快速入门
+- [zh/backends.md](zh/backends.md) - 后端比较
+- [zh/configuration.md](zh/configuration.md) - 配置参考
+- [zh/providers.md](zh/providers.md) - 数据源文档
+- [zh/novel_workflow.md](zh/novel_workflow.md) - Novel 工作流
+- [zh/cgmlst_guide.md](zh/cgmlst_guide.md) - cgMLST 指南
+- [zh/visual_guide.md](zh/visual_guide.md) - 可视化指南
+- [zh/architecture.md](zh/architecture.md) - 架构文档
+- [zh/contributing.md](zh/contributing.md) - 贡献指南
 
 ## Project References
 

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from gmlst.database.download import DownloadTool, download_files_batch
+
+logger = logging.getLogger("gmlst.database.providers.base")
 
 
 @dataclass
@@ -112,19 +115,41 @@ def download_required_files(
     if not url_dest_pairs:
         return
 
-    _, fail = download_files_batch(
+    total = len(url_dest_pairs)
+    success, fail = download_files_batch(
         url_dest_pairs,
         max_concurrent=max_connections or 4,
         tool=download_tool,
         headers=headers,
     )
+
     if fail > 0:
-        for _url, dest_file in url_dest_pairs:
-            dest_file.unlink(missing_ok=True)
-        raise RuntimeError(f"[{provider_name}] Failed to download {fail} files")
+        failed_files = [
+            dest
+            for _url, dest in url_dest_pairs
+            if not dest.exists() or dest.stat().st_size == 0
+        ]
+        for f in failed_files:
+            f.unlink(missing_ok=True)
+        successfully_downloaded = total - fail
+        if successfully_downloaded > 0:
+            logger.warning(
+                "[%s] %d/%d files downloaded, %d failed. "
+                "Successful downloads are preserved.",
+                provider_name,
+                successfully_downloaded,
+                total,
+                fail,
+            )
+        raise RuntimeError(
+            f"[{provider_name}] Failed to download {fail}/{total} files. "
+            "Re-run the command to retry failed downloads "
+            "(successfully downloaded files will be skipped)."
+        )
 
     for _url, dest_file in url_dest_pairs:
         if not dest_file.exists() or dest_file.stat().st_size == 0:
+            dest_file.unlink(missing_ok=True)
             raise RuntimeError(
                 f"[{provider_name}] Missing or empty downloaded file: {dest_file}"
             )

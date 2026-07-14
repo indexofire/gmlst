@@ -2,7 +2,7 @@
 
 `gmlst` 是一个面向细菌基因组分型的 Python 3.12 命令行工具，支持 MLST、cgMLST、wgMLST，以及 scheme-free 工作流。欢迎提交代码、测试、文档、数据提供方集成、后端集成和问题修复。
 
-这份指南会说明仓库结构、开发环境搭建方式，以及如何在不破坏现有架构的前提下扩展项目。命令行为以 [commands.md](../commands.md) 为准，执行路径和模块边界请参考 [architecture.md](../architecture.md)。
+这份指南会说明仓库结构、开发环境搭建方式，以及如何在不破坏现有架构的前提下扩展项目。命令行为以 [commands.md](commands.md) 为准，执行路径和模块边界请参考 [architecture.md](../en/architecture.md)。
 
 ## 欢迎
 

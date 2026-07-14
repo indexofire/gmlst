@@ -17,7 +17,7 @@ def test_download_required_files_raises_on_reported_failures(
         lambda *_args, **_kwargs: (0, 1),
     )
 
-    with pytest.raises(RuntimeError, match="Failed to download 1 files"):
+    with pytest.raises(RuntimeError, match="Failed to download 1/1 files"):
         download_required_files(
             [("https://example.com/a", dest)],
             provider_name="demo",

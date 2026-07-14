@@ -1,6 +1,6 @@
 # 新等位基因工作流指南
 
-本文介绍 `gmlst` 中的私有 MLST 工作流：从分型时检测新等位基因，到构建可重复使用的本地自定义 scheme。命令总览请参见 [../commands.md](../commands.md)，快速示例请参见 [../quickstart.md](../quickstart.md)。
+本文介绍 `gmlst` 中的私有 MLST 工作流：从分型时检测新等位基因，到构建可重复使用的本地自定义 scheme。命令总览请参见 [commands.md](commands.md)，快速示例请参见 [../en/quickstart.md](../en/quickstart.md)。
 
 ## 概述
 

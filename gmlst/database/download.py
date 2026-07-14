@@ -483,6 +483,51 @@ def download_files_batch(
     if not pending:
         return (already_done, 0)
 
+    # For large batches (>500 files), download in chunks to avoid
+    # overwhelming upstream servers (HTTP 429 Too Many Requests)
+    _BATCH_SIZE = 500
+    if len(pending) > _BATCH_SIZE:
+        total_fail = 0
+        for i in range(0, len(pending), _BATCH_SIZE):
+            chunk = pending[i : i + _BATCH_SIZE]
+            batch_num = i // _BATCH_SIZE + 1
+            total_batches = (len(pending) + _BATCH_SIZE - 1) // _BATCH_SIZE
+            logger.info(
+                "Downloading batch %d/%d (%d files) ...",
+                batch_num,
+                total_batches,
+                len(chunk),
+            )
+            s, f = _download_single_batch(
+                chunk,
+                max_concurrent,
+                timeout,
+                tool,
+                headers,
+            )
+            total_fail += f
+            if f > 0:
+                logger.warning(
+                    "Batch %d had %d failures, continuing to next batch",
+                    batch_num,
+                    f,
+                )
+        total_success = already_done + (len(pending) - total_fail)
+        return (total_success, total_fail)
+
+    return _download_single_batch(pending, max_concurrent, timeout, tool, headers)
+
+
+def _download_single_batch(
+    pending: list[tuple[str, Path]],
+    max_concurrent: int,
+    timeout: float,
+    tool: DownloadTool,
+    headers: dict[str, str] | None,
+) -> tuple[int, int]:
+    if not pending:
+        return (0, 0)
+
     # Single file: use regular download
     if len(pending) == 1:
         url, dest = pending[0]
@@ -495,16 +540,16 @@ def download_files_batch(
                 max_connections=max_concurrent,
                 headers=headers,
             )
-            return (already_done + 1, 0)
+            return (1, 0)
         except Exception as exc:
             logger.warning("Single-file download failed for %s: %s", url, exc)
-            return (already_done, 1)
+            return (0, 1)
 
     if tool != "auto" and tool != "aria2c":
         logger.info("Batch mode using selected tool '%s' via ThreadPoolExecutor", tool)
         return _download_batch_threadpool(
             pending,
-            already_done,
+            0,
             max_concurrent,
             timeout,
             tool,
@@ -517,7 +562,7 @@ def download_files_batch(
         logger.warning("aria2c not found, using ThreadPoolExecutor")
         return _download_batch_threadpool(
             pending,
-            already_done,
+            0,
             max_concurrent,
             timeout,
             tool,
@@ -579,10 +624,10 @@ def download_files_batch(
             logger.warning(
                 "aria2c batch download failed with exit code %d", result.returncode
             )
-            return (already_done, len(pending))
+            success = sum(1 for _, d in pending if d.exists())
+            return (success, len(pending) - success)
 
-        # Check results
-        success, fail = already_done, 0
+        success, fail = 0, 0
         for url, dest in pending:
             if dest.exists():
                 success += 1

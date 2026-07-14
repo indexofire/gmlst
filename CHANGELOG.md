@@ -24,6 +24,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
+## [0.1.3] - 2026-07-12
+
+### Added
+
+#### Novel Allele Detection & Custom Schemes
+- **`gmlst typing --novel-allele`**: Detect and save novel allele sequences to `{locus}_novel.fasta` files
+- **`gmlst typing --novel-profile`**: Generate novel ST profiles and save to `profiles_novel.txt`
+- **`gmlst scheme create`**: Create custom schemes by merging public databases with novel data
+  - Auto-numbering: custom_0, custom_2, ...
+  - Based on existing schemes (e.g., saureus_0 → custom_1)
+  - Stores metadata in `.meta.json`
+- **`gmlst scheme update`**: Add more novel data to existing custom schemes
+  - Continues numbering from where it left off (n2, n4... N3, N4...)
+- **`gmlst scheme export --format grapetree`**: Export profiles for GrapeTree MST visualization
+
+#### Custom Database Workflow
+Complete pipeline for private/laboratory MLST databases:
+```bash
+# 0. Type samples and keep JSON output
+gmlst typing -s saureus_0 --format json sample.fasta -o typing_results.json
+
+# 1. Extract novel alleles/profiles from typing JSON
+gmlst utils extract -i typing_results.json --novel-allele --novel-profile --data-dir novel_data/
+
+# 2. Create custom scheme from novel data
+gmlst scheme create -t mlst -s saureus_0 --data-dir novel_data/ --desc "Lab collection"
+
+# 3. Update custom scheme with more data
+gmlst scheme update-custom -s custom_0 --data-dir more_novel_data/
+
+# 4. Export for GrapeTree analysis
+gmlst scheme export -s custom_0 --format grapetree -o mst.tsv
+```
+
+#### Novel Sequence Extraction
+- BLASTN aligner now extracts actual sequences from alignments
+- Novel alleles (good coverage but low identity) capture sample sequence
+- Sequences are saved in FASTA format: `>{locus}_n0 sample=isolate_001`
+
+#### Local Provider Support
+- Custom schemes use `provider: local`
+- Listed in `gmlst scheme list -p local`
+- Stored in `~/.cache/gmlst/local/custom_*/`
+
+### Technical Details
+
+#### Data Formats
+- **Novel alleles**: `{locus}_n{number}` format (e.g., `dnaN_n0`)
+- **Novel profiles**: `N{number}` ST format (e.g., `N0`, `N2`)
+- **GrapeTree export**: TSV with `#Strain` header, compatible with MST visualization
+
+#### File Structure
+```
+~/.cache/gmlst/local/custom_0/
+├── {locus}.tfa          # Merged: original + novel alleles
+├── custom_0.txt         # Merged: original + novel profiles
+└── .meta.json           # Metadata: based_on, description, novel counts
+```
+
 ## [0.1.2] - 2026-07-08
 
 ### Fixed
@@ -124,68 +183,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **nucmer**: MUMmer4 backend for sensitive distant matches
 - **kmerhash**: Pure Python backend with no external dependencies (removed in later release)
 
+[0.1.3]: https://github.com/indexofire/gmlst/releases/tag/v0.1.3
 [0.1.2]: https://github.com/indexofire/gmlst/releases/tag/v0.1.2
 [0.1.1]: https://github.com/indexofire/gmlst/releases/tag/v0.1.1
 [0.1.0]: https://github.com/indexofire/gmlst/releases/tag/v0.1.0
-
-
-## [0.1.4] - 2026-03-18
-
-### Added
-
-#### Novel Allele Detection & Custom Schemes
-- **`gmlst typing --novel-allele`**: Detect and save novel allele sequences to `{locus}_novel.fasta` files
-- **`gmlst typing --novel-profile`**: Generate novel ST profiles and save to `profiles_novel.txt`
-- **`gmlst scheme create`**: Create custom schemes by merging public databases with novel data
-  - Auto-numbering: custom_1, custom_2, ...
-  - Based on existing schemes (e.g., saureus_1 → custom_1)
-  - Stores metadata in `.meta.json`
-- **`gmlst scheme update`**: Add more novel data to existing custom schemes
-  - Continues numbering from where it left off (n3, n4... N3, N4...)
-- **`gmlst scheme export --format grapetree`**: Export profiles for GrapeTree MST visualization
-
-#### Custom Database Workflow
-Complete pipeline for private/laboratory MLST databases:
-```bash
-# 1. Type samples and keep JSON output
-gmlst typing -s saureus_1 --format json sample.fasta -o typing_results.json
-
-# 2. Extract novel alleles/profiles from typing JSON
-gmlst utils extract -i typing_results.json --novel-allele --novel-profile --data-dir novel_data/
-
-# 3. Create custom scheme from novel data
-gmlst scheme create -t mlst -s saureus_1 --data-dir novel_data/ --desc "Lab collection"
-
-# 4. Update custom scheme with more data
-gmlst scheme update-custom -s custom_1 --data-dir more_novel_data/
-
-# 5. Export for GrapeTree analysis
-gmlst scheme export -s custom_1 --format grapetree -o mst.tsv
-```
-
-#### Novel Sequence Extraction
-- BLASTN aligner now extracts actual sequences from alignments
-- Novel alleles (good coverage but low identity) capture sample sequence
-- Sequences are saved in FASTA format: `>{locus}_n1 sample=isolate_001`
-
-#### Local Provider Support
-- Custom schemes use `provider: local`
-- Listed in `gmlst scheme list -p local`
-- Stored in `~/.cache/gmlst/local/custom_*/`
-
-### Technical Details
-
-#### Data Formats
-- **Novel alleles**: `{locus}_n{number}` format (e.g., `dnaN_n1`)
-- **Novel profiles**: `N{number}` ST format (e.g., `N1`, `N2`)
-- **GrapeTree export**: TSV with `#Strain` header, compatible with MST visualization
-
-#### File Structure
-```
-~/.cache/gmlst/local/custom_1/
-├── {locus}.tfa          # Merged: original + novel alleles
-├── custom_1.txt         # Merged: original + novel profiles
-└── .meta.json           # Metadata: based_on, description, novel counts
-```
-
-[0.1.4]: https://github.com/yourusername/gmlst/releases/tag/v0.1.4

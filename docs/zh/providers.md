@@ -260,5 +260,5 @@ blocked scheme 由 `gmlst/data/blocked_schemes.json` 控制，并通过 `gmlst/c
 ## 相关文档
 
 - [`docs/architecture.md`](./architecture.md)，系统设计与分层
-- [`docs/commands.md`](../commands.md)，命令语法与选项
+- [`docs/commands.md`](commands.md)，命令语法与选项
 - [`docs/quickstart.md`](../quickstart.md)，基础上手流程

@@ -1,6 +1,6 @@
 # 可视化指南
 
-本文介绍 `gmlst` 的本地可视化工作流，包括 Web 服务器启动、输入格式、MST 构建、布局切换、元数据着色以及前端构建方式。若要先从 CLI 导出适合可视化的 profile 表，请结合 [novel_workflow.md](novel_workflow.md) 和 [../commands.md](../commands.md) 一起阅读。
+本文介绍 `gmlst` 的本地可视化工作流，包括 Web 服务器启动、输入格式、MST 构建、布局切换、元数据着色以及前端构建方式。若要先从 CLI 导出适合可视化的 profile 表，请结合 [novel_workflow.md](novel_workflow.md) 和 [commands.md](commands.md) 一起阅读。
 
 ## 概述
 

@@ -1,4 +1,4 @@
-[← 命令参考](../../commands.md)
+[← 命令参考](../commands.md)
 
 # gmlst typing
 
