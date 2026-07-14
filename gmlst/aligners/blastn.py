@@ -254,7 +254,12 @@ def _parse_blast_output(
                 pident > existing.identity
                 or (pident == existing.identity and coverage > existing.coverage)
             ):
-                # Extract subject sequence if available (for novel alleles)
+                sseqid = parts[1]
+                sstart = int(parts[7])
+                send = int(parts[8])
+                strand = "-" if sstart > send else "+"
+                seq_start = min(sstart, send)
+                seq_end = max(sstart, send)
                 sequence = parts[11] if len(parts) > 11 else None
 
                 best[key] = AlleleMatch(
@@ -263,8 +268,12 @@ def _parse_blast_output(
                     identity=pident,
                     coverage=coverage,
                     alignment_length=aln_len,
-                    score=float(parts[10]),  # bitscore
+                    score=float(parts[10]),
                     sequence=sequence,
+                    strand=strand,
+                    query_contig=sseqid,
+                    query_start=seq_start,
+                    query_end=seq_end,
                 )
 
     if count_same_copy:

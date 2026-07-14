@@ -18,6 +18,22 @@ def _sort_allele_ids(allele_ids: list[str]) -> list[str]:
     )
 
 
+def _with_detail(base: str, call: LocusCall, detail: bool) -> str:
+    """Append position info to allele call string.
+
+    Format: allele_id;contig:start-end:strand
+    Example: 19;contig1:3153925-3154481:+
+    """
+    if not detail or call.best_match is None:
+        return base
+    m = call.best_match
+    contig = m.query_contig or "?"
+    start = m.query_start if m.query_start is not None else "?"
+    end = m.query_end if m.query_end is not None else "?"
+    strand = m.strand or "?"
+    return f"{base};{contig}:{start}-{end}:{strand}"
+
+
 @dataclass
 class STResult:
     """Final MLST typing result for one sample."""
@@ -67,6 +83,7 @@ class STResult:
         include_scheme: bool = True,
         count_same_copy: bool = False,
         call_policy: str = "default",
+        detail: bool = False,
     ) -> str:
         st_str = (
             "-"
@@ -87,19 +104,38 @@ class STResult:
             if call is None or call.allele_id is None:
                 allele_parts.append("-")
             elif call.multiple_hits and call.allele_ids:
-                allele_parts.append(",".join(_sort_allele_ids(call.allele_ids)))
+                base = ",".join(_sort_allele_ids(call.allele_ids))
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             elif count_same_copy and call.call_type == "exact" and call.copy_count > 1:
-                allele_parts.append(",".join([call.allele_id] * call.copy_count))
+                base = ",".join([call.allele_id] * call.copy_count)
+                allele_parts.append(base)
             elif call.call_type == "exact" and call.copy_count > 1:
-                allele_parts.append(f"{call.allele_id}*")
+                base = f"{call.allele_id}*"
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             elif call.call_type == "exact":
-                allele_parts.append(call.allele_id)
+                base = call.allele_id
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             elif call.call_type == "closest":
-                allele_parts.append(f"~{call.allele_id}")
+                base = f"~{call.allele_id}"
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             elif call.call_type == "partial":
-                allele_parts.append(f"{call.allele_id}?")
+                base = f"{call.allele_id}?"
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             elif call.call_type == "novel":
-                allele_parts.append(f"~{call.allele_id}")
+                base = f"~{call.allele_id}"
+                allele_parts.append(
+                    _with_detail(base, call, detail) if detail else base
+                )
             else:
                 allele_parts.append("-")
 

@@ -38,6 +38,7 @@ def emit_streamed_result(
     format_st_for_tsv_fn,
     format_tsv_row_fn,
     stream_file: TextIO | None,
+    detail: bool = False,
 ) -> None:
     if fmt == "pretty":
         stream_write(
@@ -52,6 +53,7 @@ def emit_streamed_result(
                 loci,
                 count_same_copy,
                 call_policy=call_policy,
+                detail=detail,
             ),
             stream_file=stream_file,
         )

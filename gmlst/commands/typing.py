@@ -440,6 +440,11 @@ def cmd_typing_legacy(ctx: click.Context, samples: tuple[Path, ...]) -> None:
 )
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
 @click.option(
+    "--detail",
+    is_flag=True,
+    help="Show contig position info in TSV output (FASTA only).",
+)
+@click.option(
     "--novel-allele",
     is_flag=True,
     help="Save novel allele sequences to {locus}_novel.fasta files.",
@@ -473,6 +478,7 @@ def cmd_typing_mlst(
     count_same_copy: bool,
     max_fastq_depth: float,
     quiet: bool,
+    detail: bool,
     novel_allele: bool,
     novel_profile: bool,
     output_dir: Path | None,
@@ -501,6 +507,7 @@ def cmd_typing_mlst(
         novel_profile=novel_profile,
         output_dir=output_dir,
         quiet=quiet,
+        detail=detail,
     )
 
 
@@ -904,6 +911,7 @@ def _run_mlst_like_typing(
     chew_cds_gate: bool = True,
     max_fastq_depth: float = 100,
     quiet: bool = False,
+    detail: bool = False,
 ) -> None:
     cache = DatabaseCache(cache_dir)
 
@@ -1054,6 +1062,7 @@ def _run_mlst_like_typing(
             format_st_for_tsv_fn=_format_st_for_tsv,
             format_tsv_row_fn=_format_tsv_row,
             stream_file=stream_file,
+            detail=detail,
         )
 
     if mode == "cgmlst" and backend.lower() == "kma" and threads == 1:
@@ -1322,12 +1331,14 @@ def _format_tsv_row(
     count_same_copy: bool,
     *,
     call_policy: str,
+    detail: bool = False,
 ) -> str:
     return result.format_tsv_row(
         loci,
         include_scheme=True,
         count_same_copy=count_same_copy,
         call_policy=call_policy,
+        detail=detail,
     )
 
 
