@@ -74,14 +74,6 @@ class NucmerAligner:
                     with fasta.open("rb") as f:
                         shutil.copyfileobj(f, out)
         return merged
-        """Merge allele FASTAs into one file.  Returns the merged FASTA path."""
-        index_dir.mkdir(parents=True, exist_ok=True)
-        merged = index_dir / "alleles.fasta"
-        if not merged.exists():
-            with merged.open("w") as out:
-                for fasta in sorted(allele_fastas):
-                    out.write(fasta.read_text())
-        return merged
 
     # ------------------------------------------------------------------
     # Alignment

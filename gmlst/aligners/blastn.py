@@ -74,14 +74,6 @@ class BlastnAligner:
         require_tool("makeblastdb")
         index_dir.mkdir(parents=True, exist_ok=True)
 
-        # Merged FASTA path
-        merged = index_dir / "alleles.fasta"
-        with merged.open("wb") as out:
-            for fasta in sorted(allele_fastas):
-                with fasta.open("rb") as f:
-                    import shutil
-
-                    shutil.copyfileobj(f, out)
         merged = index_dir / "alleles.fasta"
         with merged.open("w") as out:
             for fasta in sorted(allele_fastas):
