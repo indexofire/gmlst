@@ -62,8 +62,8 @@ def _load_mapping_json(filename: str) -> dict[str, Any]:
                 data = json.load(f)
                 if isinstance(data, dict):
                     return {k: v for k, v in data.items() if not k.startswith("_")}
-    except Exception as e:
-        logger.debug("Could not load %s: %s", filename, e)
+    except (OSError, json.JSONDecodeError, ValueError) as e:
+        logger.warning("Could not load %s: %s", filename, e)
     return {}
 
 
@@ -134,8 +134,10 @@ class BigSdbProvider:
 
                 try:
                     schemes = _fetch_schemes(seqdef_url)
-                except Exception as exc:
-                    logger.debug("Could not fetch schemes for %s: %s", seqdef_url, exc)
+                except (RuntimeError, OSError) as exc:
+                    logger.warning(
+                        "Could not fetch schemes for %s: %s", seqdef_url, exc
+                    )
                     continue
 
                 for scheme_entry in schemes:

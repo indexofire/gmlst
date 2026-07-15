@@ -107,8 +107,8 @@ class EnterobaseProvider:
             resp.raise_for_status()
             dirs = re.findall(r'href="([^"]+)/"', resp.text)
             return [d for d in dirs if d not in ("../", "..")]
-        except Exception as exc:
-            logger.debug("Failed to discover Enterobase directories: %s", exc)
+        except (requests.RequestException, ValueError) as exc:
+            logger.warning("Failed to discover Enterobase directories: %s", exc)
             return []
 
     @staticmethod
@@ -152,6 +152,7 @@ class EnterobaseProvider:
             organism = self._derive_organism(dir_name)
 
             n_loci = None
+            # count_loci may fail on restricted/inaccessible dirs — leave n_loci as None
             with contextlib.suppress(OSError, ValueError):
                 n_loci = self._count_loci(dir_name)
 

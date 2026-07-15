@@ -219,6 +219,7 @@ def cmd_list(
                 proc.communicate(buf.getvalue().encode())
                 return
             except (OSError, FileNotFoundError):
+                # less not installed — fall through to console.print
                 pass
         console.print(table)
         console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
@@ -376,6 +377,7 @@ def cmd_show(
             if loaded.profile_file is not None and loaded.profile_file.exists():
                 n_profiles = count_profile_rows(loaded.profile_file)
         except FileNotFoundError:
+            # scheme not downloaded yet — n_profiles stays None
             pass
     payload = {
         "scheme_name": scheme_info.scheme_name,
@@ -413,6 +415,7 @@ def cmd_show(
                         }
                     )
         except (FileNotFoundError, OSError):
+            # scheme not fully downloaded — skip locus stats
             pass
         payload["locus_stats"] = locus_stats
 

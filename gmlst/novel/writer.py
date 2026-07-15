@@ -155,6 +155,7 @@ class NovelProfileWriter:
             for row in reader:
                 st = str(row.get("ST", "")).strip()
                 if st.startswith("N"):
+                    # non-numeric novel ST suffix (e.g. "N-") — skip silently
                     with suppress(ValueError):
                         self._st_counter = max(self._st_counter, int(st[1:]))
                 profile_key: list[str] = []

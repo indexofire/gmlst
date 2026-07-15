@@ -42,6 +42,7 @@ def purge_backend_index_impl(*, index_dir: Path, backend: str) -> None:
         for path in index_dir.glob(pattern):
             if path.is_file():
                 with suppress(FileNotFoundError):
+                    # race: file may be deleted between glob and unlink
                     path.unlink()
 
 

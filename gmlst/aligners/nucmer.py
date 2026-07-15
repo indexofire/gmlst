@@ -178,6 +178,7 @@ def _parse_coords(path: Path, loci: list[str]) -> list[AlleleMatch]:
                 allele_name = cols[12]  # TAGQ = allele name
                 aln_len = int(cols[4])  # LEN1 = alignment length on ref
             except (ValueError, IndexError):
+                logger.debug("Skipping malformed nucmer coords line: %s", line.rstrip())
                 continue
 
             locus, allele_id = split_allele_id(allele_name)

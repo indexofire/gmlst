@@ -52,6 +52,7 @@ def _load_blocked_schemes() -> dict[str, set[str]]:
                     if not k.startswith("_") and isinstance(v, list)
                 }
     except (OSError, json.JSONDecodeError):
+        # blocked_schemes.json is optional; treat missing/corrupt as empty
         pass
     return {}
 
@@ -592,8 +593,8 @@ class DatabaseCache:
                 self.save_catalog(provider, schemes)
                 logger.info("Copied and processed default catalog: %s", provider)
                 return True
-        except Exception as e:
-            logger.debug("Failed to copy default catalog: %s", e)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Failed to copy default catalog: %s", e)
         return False
 
     def save_catalog(self, provider: str, schemes: list[dict]) -> None:

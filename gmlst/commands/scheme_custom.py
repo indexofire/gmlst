@@ -356,6 +356,7 @@ def cmd_update_custom(
             num = int(st_str.replace("N", ""))
             current_st_num = max(current_st_num, num)
         except ValueError:
+            # non-numeric ST suffix (e.g. "N-old") — skip
             pass
 
     console.print(f"Updating [cyan]{scheme}[/cyan]...")

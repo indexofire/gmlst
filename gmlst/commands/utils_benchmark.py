@@ -128,6 +128,7 @@ def run_benchmark(
             ru = resource.getrusage(resource.RUSAGE_SELF)
             metrics.peak_memory_mb = ru.ru_maxrss / 1024
         except AttributeError:
+            # resource.getrusage not available on Windows
             pass
 
         result.metrics[backend_name] = metrics
