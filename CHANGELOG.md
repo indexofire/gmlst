@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3] - 2026-07-12
 
+### Fixed
+
+- duplicated codes clean.
+
 ### Added
 
 #### Novel Allele Detection & Custom Schemes

@@ -68,6 +68,8 @@ def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
 
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
+
+logger = logging.getLogger("gmlst.commands.scheme")
 DOWNLOAD_TOOL_CHOICES: tuple[DownloadTool, ...] = (
     "auto",
     "aria2c",
@@ -124,8 +126,9 @@ def _find_catalog_scheme_matches(
     for prov in _catalog_providers(include_local=include_local):
         try:
             scheme_dicts = cache.load_catalog(prov)
-        except Exception:
+        except (OSError, json.JSONDecodeError) as exc:
             if ignore_catalog_errors:
+                logger.debug("Skipping catalog for provider '%s': %s", prov, exc)
                 continue
             raise
         if not scheme_dicts:

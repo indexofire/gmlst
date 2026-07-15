@@ -257,8 +257,8 @@ class DatabaseCache:
                     if entry.get("scheme_name") == name:
                         extra = entry.get("extra", {})
                         break
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.debug("Failed to load catalog for update: %s", exc)
 
         changed = False
         updater = getattr(p, "update_scheme", None)
@@ -415,8 +415,8 @@ class DatabaseCache:
                     if entry.get("scheme_name") == name:
                         extra = entry.get("extra", {})
                         break
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.debug("Failed to load catalog for download: %s", exc)
 
         dest = self.scheme_dir(name, provider)
         p.download_scheme(

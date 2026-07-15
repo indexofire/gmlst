@@ -282,7 +282,7 @@ class BigSdbProvider:
             try:
                 profile_future.result()
                 profile_tmp.replace(profile_dest)
-            except Exception:
+            except (OSError, RuntimeError, ValueError):
                 profile_tmp.unlink(missing_ok=True)
                 raise
             finally:
