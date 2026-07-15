@@ -288,10 +288,8 @@ def download_file(
             logger.warning("%s error: %s, trying next ...", name, exc)
         _cleanup_partial_download(dest, backend=name)
 
-    raise RuntimeError(
-        f"All download methods failed for: {url}\n"
-        "Install aria2c, curl, or wget, or: pip install httpx"
-    )
+    logger.info("Falling back to requests (with retry) ...")
+    download_file_requests(url, dest, timeout=timeout, headers=req_headers or None)
 
 
 def download_file_requests(

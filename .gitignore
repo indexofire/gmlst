@@ -17,6 +17,7 @@ __pycache__/
 *~
 .opencode/
 .sisyphus/
+.omo
 
 # OS
 .DS_Store
