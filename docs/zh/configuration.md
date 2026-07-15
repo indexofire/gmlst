@@ -31,6 +31,16 @@ export GMLST_TMPDIR=/scratch/gmlst-tmp
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 ```
 
+使用 `gmlst config` 管理环境变量：
+
+```bash
+gmlst config show                    # 查看所有变量及当前值
+gmlst config env                     # 输出 shell 可 source 的格式
+gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # 写入 ~/.config/gmlst/env.sh
+gmlst config init                    # 在 shell rc 文件中添加 source 行（只需运行一次）
+source ~/.config/gmlst/env.sh        # 在当前 shell 中立即生效
+```
+
 ### 缓存
 
 缓存中会保存已下载的方案、目录缓存以及后端索引。只要方案和索引已经准备好，常规分型流程就可以在离线状态下重复运行。只有刷新目录、下载新方案这类操作仍然需要联网。
@@ -256,6 +266,26 @@ export GMLST_PUBMLST_BASE_URL="http://bigsdb.local/api/db"
 gmlst scheme list -p pubmlst
 gmlst scheme download -s saureus_1
 ```
+
+### 提供方认证
+
+自 2025 年 1 月起，PubMLST 和 Pasteur BIGSdb 要求对 2024 年 12 月 31 日之后新增的数据进行认证。设置 API key 即可访问最新方案数据：
+
+```bash
+# PubMLST（在 pubmlst.org → Preferences → API keys 获取）
+gmlst config set GMLST_PUBMLST_API_KEY XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+# Pasteur BIGSdb（在 bigsdb.pasteur.fr/requesting-api-key/ 申请）
+gmlst config set GMLST_PASTEUR_API_KEY YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
+
+# 让每个新 shell 自动加载（只需运行一次，可重复运行）
+gmlst config init
+
+# 在当前 shell 中立即生效
+source ~/.config/gmlst/env.sh
+```
+
+设置后，`gmlst scheme download` 和 `gmlst scheme update` 会在与 PubMLST 或 Pasteur 通信时自动携带 `Authorization: Bearer <key>` 头。2025 年之前的数据无需 key 即可访问。
 
 ### 自定义临时目录
 

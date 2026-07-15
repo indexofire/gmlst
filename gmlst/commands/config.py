@@ -185,6 +185,14 @@ _ENV_FILE_CANDIDATES = [
     Path.home() / ".gmlst" / "env.sh",
 ]
 
+_INIT_MARKER = "# gmlst config"
+
+_SHELL_RC_MAP: dict[str, str] = {
+    "bash": ".bashrc",
+    "zsh": ".zshrc",
+    "fish": ".config/fish/config.fish",
+}
+
 
 def _current_value(name: str) -> str:
     return os.environ.get(name, "")
@@ -304,4 +312,73 @@ def cmd_set(name: str, value: str) -> None:
 
     console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
     console.print(f"Written to: [bold]{env_file}[/bold]")
-    console.print(f"\nApply with: [bold]source {env_file}[/bold]")
+    console.print(f"\nApply now with: [bold]source {env_file}[/bold]")
+    console.print(
+        "Or run [bold]gmlst config init[/bold] to auto-load in every new shell."
+    )
+
+
+# ---------------------------------------------------------------------------
+# config init — inject source line into shell rc file
+# ---------------------------------------------------------------------------
+
+
+def _detect_shell_rc() -> tuple[str, Path | None]:
+    """Return *(shell_name, rc_path)* for the current user's shell.
+
+    Falls back to bash when *$SHELL* is unset.  Returns *(name, None)* when
+    the shell has no known rc file.
+    """
+    shell_path = os.environ.get("SHELL", "")
+    shell_name = Path(shell_path).name if shell_path else "bash"
+
+    rc_relative = _SHELL_RC_MAP.get(shell_name)
+    if rc_relative is None:
+        return shell_name, None
+    return shell_name, Path.home() / rc_relative
+
+
+def _build_source_line(shell_name: str) -> str:
+    env_path = '"$HOME/.config/gmlst/env.sh"'
+    if shell_name == "fish":
+        return f"test -f {env_path}; and source {env_path}"
+    return f"[ -f {env_path} ] && source {env_path}"
+
+
+@config_group.command("init", context_settings=HELP_SETTINGS)
+def cmd_init() -> None:
+    """Add a source line to your shell rc file.
+
+    This makes gmlst environment variables available in every new shell
+    session automatically.  Safe to run multiple times — it will not
+    duplicate the source line.
+    """
+    shell_name, rc_path = _detect_shell_rc()
+
+    if rc_path is None:
+        err_console.print(
+            f"[yellow]Could not detect a rc file for shell '{shell_name}'.[/yellow]"
+        )
+        err_console.print("Add this line to your shell profile manually:\n")
+        err_console.print('  [bold]source "$HOME/.config/gmlst/env.sh"[/bold]')
+        sys.exit(1)
+
+    if rc_path.exists() and _INIT_MARKER in rc_path.read_text():
+        console.print(f"[green]✓ Already configured in [bold]{rc_path}[/bold].[/green]")
+        console.print("Variables will be loaded automatically in every new shell.")
+        return
+
+    source_line = _build_source_line(shell_name)
+
+    rc_path.parent.mkdir(parents=True, exist_ok=True)
+    with rc_path.open("a") as fh:
+        fh.write(f"\n{_INIT_MARKER} >>>\n")
+        fh.write(f"{source_line}\n")
+        fh.write("# <<< gmlst config <<<\n")
+
+    console.print(f"[green]✓ Added source line to [bold]{rc_path}[/bold].[/green]")
+    console.print(
+        "Variables from [bold]~/.config/gmlst/env.sh[/bold]"
+        " will load in every new shell session."
+    )
+    console.print(f"\nRestart your shell or run: [bold]source {rc_path}[/bold]")

@@ -37,7 +37,8 @@ Use `gmlst config` to inspect and manage variables:
 gmlst config show                    # view all variables with current values
 gmlst config env                     # shell-exportable format
 gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # write to ~/.config/gmlst/env.sh
-source ~/.config/gmlst/env.sh        # apply changes
+gmlst config init                    # add source line to shell rc (run once)
+source ~/.config/gmlst/env.sh        # apply now in current shell
 ```
 
 ### Cache
@@ -280,7 +281,10 @@ gmlst config set GMLST_PUBMLST_API_KEY XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 # Pasteur BIGSdb (request at bigsdb.pasteur.fr/requesting-api-key/)
 gmlst config set GMLST_PASTEUR_API_KEY YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY
 
-# Apply
+# Auto-load in every new shell (run once, safe to repeat)
+gmlst config init
+
+# Apply now in current shell
 source ~/.config/gmlst/env.sh
 ```
 

@@ -303,7 +303,8 @@ after 31 December 2024. Obtain an API key and configure it:
 ```bash
 # PubMLST: register at pubmlst.org → Preferences → API keys → create key
 gmlst config set GMLST_PUBMLST_API_KEY your-key-here
-source ~/.config/gmlst/env.sh
+gmlst config init     # auto-load in every new shell (run once)
+source ~/.config/gmlst/env.sh   # apply now in current shell
 ```
 
 Use `gmlst config show` to view all 29 configuration variables with current values and defaults:
@@ -313,7 +314,7 @@ gmlst config show                          # grouped table view
 gmlst config env                           # shell-exportable format
 gmlst config get GMLST_CACHE_DIR           # get a single variable
 gmlst config set GMLST_CACHE_DIR /data     # write to ~/.config/gmlst/env.sh
-source ~/.config/gmlst/env.sh              # apply changes
+gmlst config init                          # add source line to shell rc (run once)
 ```
 
 Example:
