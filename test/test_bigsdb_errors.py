@@ -1,99 +1,132 @@
 #!/usr/bin/env python3
-"""
-TDD Test: bigsdb.py duplicate method
-Tests that _resolve_seqdef_url is not defined twice
+"""Behavior tests for bigsdb provider error handling and correctness.
+
+Replaces the previous inspect.getsource() string-matching tests with real
+behavior tests that exercise _resolve_seqdef_url suffix handling and
+_get_json retry behavior.
 """
 
-import sys
-from pathlib import Path
+from __future__ import annotations
+
+from unittest.mock import MagicMock
 
 import pytest
+import requests
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import gmlst.database.providers.bigsdb as bigsdb
+from gmlst.database.providers.bigsdb import BigSdbProvider
+
+# ---------------------------------------------------------------------------
+# _resolve_seqdef_url — suffix handling and error paths
+# ---------------------------------------------------------------------------
 
 
-class TestBigsdbDuplicateMethod:
-    """Test for duplicate method definition in bigsdb.py"""
+class TestResolveSeqdefUrl:
+    """Verify _resolve_seqdef_url behavior through actual method calls."""
 
-    def test_no_duplicate_resolve_seqdef_url(self):
-        """Test that _resolve_seqdef_url is defined only once"""
-        import inspect
-
-        from gmlst.database.providers import bigsdb
-
-        # Get source of the module
-        source = inspect.getsource(bigsdb)
-
-        # Count definitions of _resolve_seqdef_url
-        lines = source.split("\n")
-        definition_lines = []
-
-        for i, line in enumerate(lines, 1):
-            if "def _resolve_seqdef_url" in line:
-                definition_lines.append(i)
-
-        # Should be exactly 1 definition
-        if len(definition_lines) > 1:
-            pytest.fail(
-                "CRITICAL BUG: _resolve_seqdef_url is defined "
-                f"{len(definition_lines)} times "
-                f"at lines {definition_lines}.\n"
-                "The second definition overwrites the first, breaking suffix "
-                "handling logic.\n"
-                "Fix: Remove the duplicate definition (the second one starting "
-                "around line 305)"
-            )
-        elif len(definition_lines) == 0:
-            pytest.fail("Method _resolve_seqdef_url not found!")
-
-    def test_first_resolve_seqdef_url_has_suffix_handling(self):
-        """Test that the kept version has suffix handling logic"""
-        import inspect
-
-        from gmlst.database.providers import bigsdb
-
-        source = inspect.getsource(bigsdb.BigSdbProvider._resolve_seqdef_url)
-
-        # The first version (lines 261-304) has this important logic:
-        # Remove suffix (_1, _2, etc.) if present
-        has_suffix_handling = (
-            ('"_" in scheme_name' in source or "'_' in scheme_name" in source)
-            and "rsplit" in source
-            and "isdigit" in source
+    def test_strips_numeric_suffix_and_resolves(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Suffixed scheme name (e.g. 'testorg_1') resolves via base name."""
+        provider = BigSdbProvider(
+            name="pubmlst",
+            base_url="https://rest.pubmlst.org/db",
+            label="PubMLST",
         )
 
-        if not has_suffix_handling:
-            pytest.fail(
-                "The kept _resolve_seqdef_url method is missing suffix handling "
-                "logic.\n"
-                "This breaks scheme name resolution for suffixed names like 'bcc_1'.\n"
-                "Fix: Ensure the version with suffix handling (lines 261-304) is kept"
-            )
+        def fake_get_json(url: str, headers: dict[str, str] | None = None):
+            return [
+                {
+                    "name": "testorg",
+                    "description": "Test Organism REST API",
+                    "databases": [
+                        {
+                            "name": "pubmlst_testorg_seqdef",
+                            "href": "https://rest.pubmlst.org/db/pubmlst_testorg_seqdef",
+                        }
+                    ],
+                }
+            ]
 
+        monkeypatch.setattr("gmlst.database.providers.bigsdb._get_json", fake_get_json)
 
-class TestBigsdbErrorHandling:
-    """Test for error handling in bigsdb provider"""
+        # The '_1' suffix should be stripped so 'testorg' matches the database.
+        href, db_name = provider._resolve_seqdef_url("testorg_1")
+        assert db_name == "pubmlst_testorg_seqdef"
+        assert href == "https://rest.pubmlst.org/db/pubmlst_testorg_seqdef"
 
-    def test_get_json_has_retry(self):
-        """Test that _get_json has retry logic"""
-        import inspect
-
-        from gmlst.database.providers import bigsdb
-
-        source = inspect.getsource(bigsdb._get_json)
-
-        # Should have retry logic
-        has_retry = (
-            "for attempt" in source or "while" in source or "retry" in source.lower()
+    def test_raises_value_error_with_helpful_hint_when_not_found(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Unresolvable scheme raises ValueError pointing to 'gmlst scheme list'."""
+        provider = BigSdbProvider(
+            name="pubmlst",
+            base_url="https://rest.pubmlst.org/db",
+            label="PubMLST",
         )
 
-        if not has_retry:
-            pytest.fail(
-                "_get_json lacks retry logic.\n"
-                "Network failures will crash immediately.\n"
-                "Fix: Add retry loop with exponential backoff"
-            )
+        monkeypatch.setattr(
+            "gmlst.database.providers.bigsdb._get_json", lambda _u, **_k: []
+        )
+
+        with pytest.raises(ValueError, match="gmlst scheme list"):
+            provider._resolve_seqdef_url("nonexistent_1")
+
+
+# ---------------------------------------------------------------------------
+# _get_json — retry behavior via fetch_json delegation
+# ---------------------------------------------------------------------------
+
+
+class TestGetJsonRetry:
+    """Verify _get_json retries transient network failures."""
+
+    def test_retries_and_succeeds_on_transient_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_get_json delegates to fetch_json which retries on ConnectionError."""
+        # Bypass DNS resolution check inside fetch_json.
+        monkeypatch.setattr(
+            "gmlst.database.download.assert_public_url", lambda _url: None
+        )
+        # Skip real sleeps between retries.
+        monkeypatch.setattr("gmlst.database.download.time.sleep", lambda _s: None)
+
+        call_count = 0
+
+        def flaky_get(url: str, **kwargs: object) -> object:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise requests.ConnectionError("simulated transient failure")
+            mock_resp = MagicMock()
+            mock_resp.raise_for_status = MagicMock()
+            mock_resp.json = lambda: {"databases": []}
+            return mock_resp
+
+        monkeypatch.setattr("requests.get", flaky_get)
+
+        result = bigsdb._get_json("https://rest.pubmlst.org/db")
+
+        assert result == {"databases": []}
+        assert call_count == 3  # 2 failures + 1 success
+
+    def test_raises_runtime_error_after_exhausting_retries(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """_get_json raises RuntimeError when all retries are exhausted."""
+        monkeypatch.setattr(
+            "gmlst.database.download.assert_public_url", lambda _url: None
+        )
+        monkeypatch.setattr("gmlst.database.download.time.sleep", lambda _s: None)
+
+        def always_fail(url: str, **kwargs: object) -> object:
+            raise requests.ConnectionError("persistent network failure")
+
+        monkeypatch.setattr("requests.get", always_fail)
+
+        with pytest.raises(RuntimeError, match="JSON fetch failed"):
+            bigsdb._get_json("https://rest.pubmlst.org/db")
 
 
 if __name__ == "__main__":
