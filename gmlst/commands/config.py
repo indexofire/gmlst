@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -298,7 +299,7 @@ def cmd_set(name: str, value: str) -> None:
         if lines and lines[-1].strip():
             lines.append("")
 
-    lines.append(f'export {entry.name}="{value}"')
+    lines.append(f"export {entry.name}={shlex.quote(value)}")
     env_file.write_text("\n".join(lines) + "\n")
 
     console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
