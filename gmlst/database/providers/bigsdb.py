@@ -38,6 +38,7 @@ from gmlst.database.providers.base import (
     download_required_files,
     generate_scheme_base_name,
 )
+from gmlst.fasta_io import count_fasta_records, count_profile_rows
 
 logger = logging.getLogger("gmlst.database.providers.bigsdb")
 
@@ -300,13 +301,13 @@ class BigSdbProvider:
             "loci": [u.rstrip("/").split("/")[-1] for u in loci_urls],
             "locus_meta": {
                 path.stem: {
-                    "records": _count_fasta_records(path),
+                    "records": count_fasta_records(path),
                     "last_updated": "",
                 }
                 for path in sorted(dest_dir.glob("*.tfa"))
             },
             "profile_meta": {
-                "records": _count_profile_rows(profile_dest),
+                "records": count_profile_rows(profile_dest),
                 "last_updated": str(scheme_detail.get("last_updated", "")),
                 "last_added": str(scheme_detail.get("last_added", "")),
             },
@@ -367,7 +368,7 @@ class BigSdbProvider:
             old_last_updated = str(old.get("last_updated", ""))
             if (
                 not local_file.exists()
-                or _count_fasta_records(local_file) < records
+                or count_fasta_records(local_file) < records
                 or (old_records is not None and int(old_records) != records)
                 or (old_last_updated and old_last_updated != last_updated)
             ):
@@ -398,7 +399,7 @@ class BigSdbProvider:
             for _, tmp_file in url_dest_pairs:
                 locus_name = tmp_file.name.removesuffix(".tfa.tmp")
                 expected = int(new_locus_meta[locus_name]["records"])
-                actual = _count_fasta_records(tmp_file)
+                actual = count_fasta_records(tmp_file)
                 if actual < expected:
                     raise RuntimeError(
                         f"[{self._name}] Incomplete locus download for {locus_name}: "
@@ -414,7 +415,7 @@ class BigSdbProvider:
             "last_added": str(scheme_detail.get("last_added", "")),
         }
         profile_dest = dest_dir / f"{scheme_name}.txt"
-        local_profile_records = _count_profile_rows(profile_dest)
+        local_profile_records = count_profile_rows(profile_dest)
         old_profile_records = old_profile_meta.get("records", None)
         old_profile_updated = str(old_profile_meta.get("last_updated", ""))
         profile_changed = (
@@ -686,28 +687,6 @@ def _derive_scheme_name(seqdef_url: str, org_name: str) -> str:
         if db_name.endswith(suffix):
             db_name = db_name[: -len(suffix)]
     return db_name if db_name else org_name
-
-
-def _count_fasta_records(path: Path) -> int:
-    if not path.exists():
-        return 0
-    count = 0
-    with path.open() as handle:
-        for line in handle:
-            if line.startswith(">"):
-                count += 1
-    return count
-
-
-def _count_profile_rows(path: Path) -> int:
-    if not path.exists():
-        return 0
-    count = 0
-    with path.open() as handle:
-        for line in handle:
-            if line.strip():
-                count += 1
-    return max(count - 1, 0)
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None) -> dict | list:

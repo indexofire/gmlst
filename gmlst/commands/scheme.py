@@ -9,7 +9,6 @@ import json
 import logging
 import re
 import sys
-import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TextIO
@@ -43,7 +42,11 @@ from gmlst.commands.common import (
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.download import DownloadTool
 from gmlst.database.providers import AVAILABLE_PROVIDERS
-from gmlst.fasta_io import write_wrapped_sequence
+from gmlst.fasta_io import (
+    count_profile_rows,
+    utc_now_iso,
+    write_wrapped_sequence,
+)
 from gmlst.novel.service import (
     build_custom_scheme_metadata,
     merge_custom_scheme_update_metadata,
@@ -162,10 +165,6 @@ def _exit_validation_errors(errors: list[str]) -> None:
     for error in errors:
         err_console.print(f"  - {error}")
     sys.exit(1)
-
-
-def _utc_now_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def _last_allele_numbers(
@@ -551,15 +550,6 @@ _SCHEME_SHOW_COLUMNS = [
 ]
 
 
-def _count_profile_rows(path: Path) -> int:
-    count = 0
-    with path.open() as handle:
-        for line in handle:
-            if line.strip():
-                count += 1
-    return max(count - 1, 0)
-
-
 def _render_scheme_list_text(payload: list[dict[str, object]]) -> str:
     if not payload:
         return "No schemes found."
@@ -695,7 +685,7 @@ def cmd_show(
         try:
             loaded = cache.load_scheme(scheme, scheme_info.provider)
             if loaded.profile_file is not None and loaded.profile_file.exists():
-                n_profiles = _count_profile_rows(loaded.profile_file)
+                n_profiles = count_profile_rows(loaded.profile_file)
         except FileNotFoundError:
             pass
     payload = {
@@ -1274,7 +1264,7 @@ def cmd_create(
             source=source,
             source_provider=source_provider,
             description=desc,
-            created_at=_utc_now_iso(),
+            created_at=utc_now_iso(),
             loci=source_scheme.loci,
             novel_alleles=novel_alleles,
             novel_profiles=novel_profiles,
@@ -1364,7 +1354,7 @@ def _update_local_catalog(
     payload = {
         "provider": "local",
         "scheme_type": "mlst",
-        "updated_at": _utc_now_iso(),
+        "updated_at": utc_now_iso(),
         "count": len(schemes),
         "schemes": schemes,
     }
@@ -1516,7 +1506,7 @@ def cmd_update_custom(
         last_allele_numbers=last_allele_nums,
         current_st_num=current_st_num,
         novel_alleles=novel_alleles,
-        updated_at=_utc_now_iso(),
+        updated_at=utc_now_iso(),
     )
     emit_output_json(meta, meta_file)
 

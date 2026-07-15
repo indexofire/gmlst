@@ -22,6 +22,7 @@ import requests
 from gmlst.database.atomic import atomic_write_bytes, atomic_write_text
 from gmlst.database.download import DownloadTool, download_file
 from gmlst.database.providers.base import SchemeInfo, download_required_files
+from gmlst.fasta_io import count_fasta_records, count_profile_rows, is_valid_fasta
 
 logger = logging.getLogger("gmlst.database.providers.enterobase")
 
@@ -256,12 +257,6 @@ class EnterobaseProvider:
         )
         profiles_headers = _head_remote_file(f"{_BASE_URL}/{dir_name}/profiles.list.gz")
 
-        def _count_fasta(path: Path) -> int:
-            if not path.exists():
-                return 0
-            with path.open() as fh:
-                return sum(1 for line in fh if line.startswith(">"))
-
         meta = {
             "scheme": scheme_name,
             "provider": self.name,
@@ -270,11 +265,11 @@ class EnterobaseProvider:
             "downloaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "loci": loci,
             "locus_meta": {
-                locus: {"records": _count_fasta(dest_dir / f"{locus}.tfa")}
+                locus: {"records": count_fasta_records(dest_dir / f"{locus}.tfa")}
                 for locus in loci
             },
             "profile_meta": {
-                "records": _count_profile_rows_local(dest_dir, scheme_name),
+                "records": count_profile_rows(dest_dir / f"{scheme_name}.txt"),
             },
             "profiles_remote": profiles_headers,
             "locus_remote": new_locus_meta,
@@ -330,7 +325,7 @@ class EnterobaseProvider:
                 if (
                     _headers_changed(old_locus_meta.get(locus, {}), headers)
                     or not local_tfa.exists()
-                    or not _is_valid_fasta_file(local_tfa)
+                    or not is_valid_fasta(local_tfa)
                 ):
                     changed_loci.append(locus)
 
@@ -359,7 +354,7 @@ class EnterobaseProvider:
                 tfa_path = dest_dir / f"{locus}.tfa"
                 atomic_write_bytes(tfa_path, gzip.decompress(gz_path.read_bytes()))
                 gz_path.unlink(missing_ok=True)
-                if not _is_valid_fasta_file(tfa_path):
+                if not is_valid_fasta(tfa_path):
                     raise RuntimeError(
                         f"[enterobase] Invalid FASTA content after update: {locus}"
                     )
@@ -376,12 +371,6 @@ class EnterobaseProvider:
 
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-        def _count_fasta(path: Path) -> int:
-            if not path.exists():
-                return 0
-            with path.open() as fh:
-                return sum(1 for line in fh if line.startswith(">"))
-
         meta = {
             "scheme": scheme_name,
             "provider": self.name,
@@ -391,11 +380,11 @@ class EnterobaseProvider:
             "updated_at": now,
             "loci": loci,
             "locus_meta": {
-                locus: {"records": _count_fasta(dest_dir / f"{locus}.tfa")}
+                locus: {"records": count_fasta_records(dest_dir / f"{locus}.tfa")}
                 for locus in loci
             },
             "profile_meta": {
-                "records": _count_profile_rows_local(dest_dir, scheme_name),
+                "records": count_profile_rows(dest_dir / f"{scheme_name}.txt"),
             },
             "profiles_remote": profiles_headers,
             "locus_remote": new_locus_meta,
@@ -517,35 +506,6 @@ def _headers_changed(old: dict, new: dict[str, str]) -> bool:
         or str(old.get("last_modified", "")) != new.get("last_modified", "")
         or str(old.get("content_length", "")) != new.get("content_length", "")
     )
-
-
-def _count_profile_rows_local(dest_dir: Path, scheme_name: str) -> int:
-    profile_file = dest_dir / f"{scheme_name}.txt"
-    if not profile_file.exists():
-        return 0
-    count = 0
-    with profile_file.open() as fh:
-        for line in fh:
-            if line.strip():
-                count += 1
-    return max(count - 1, 0)
-
-
-def _is_valid_fasta_file(path: Path) -> bool:
-    if not path.exists() or path.stat().st_size == 0:
-        return False
-    has_header = False
-    has_sequence = False
-    with path.open() as handle:
-        for raw in handle:
-            line = raw.strip()
-            if not line:
-                continue
-            if line.startswith(">"):
-                has_header = True
-                continue
-            has_sequence = True
-    return has_header and has_sequence
 
 
 def _resolve_enterobase_scheme_name(scheme_name: str, scheme_type: str) -> str:

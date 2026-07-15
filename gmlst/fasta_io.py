@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gzip
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TextIO
@@ -8,6 +9,34 @@ from typing import TextIO
 
 def _open_text(path: Path):
     return gzip.open(path, "rt") if path.suffix == ".gz" else path.open()
+
+
+def count_fasta_records(path: Path) -> int:
+    """Count the number of FASTA records (> headers) in *path*."""
+    if not path.exists():
+        return 0
+    try:
+        with _open_text(path) as handle:
+            return sum(1 for line in handle if line.startswith(">"))
+    except OSError:
+        return 0
+
+
+def count_profile_rows(path: Path) -> int:
+    """Count non-empty data rows in a profile TSV (excludes header)."""
+    if not path.exists():
+        return 0
+    count = 0
+    with path.open() as handle:
+        for line in handle:
+            if line.strip():
+                count += 1
+    return max(count - 1, 0)
+
+
+def utc_now_iso() -> str:
+    """Return current UTC time as ISO 8601 string."""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def iter_fasta_records(path: Path) -> Iterator[tuple[str, str]]:

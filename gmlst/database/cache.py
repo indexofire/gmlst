@@ -23,7 +23,6 @@ import logging
 import os
 import re
 import shutil
-import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -31,6 +30,7 @@ from typing import Any
 from gmlst.database.atomic import atomic_write_text
 from gmlst.database.download import DownloadTool
 from gmlst.database.schema import Scheme
+from gmlst.fasta_io import utc_now_iso
 
 logger = logging.getLogger("gmlst.database_cache")
 
@@ -71,10 +71,6 @@ def _resolve_cache_root() -> Path:
         return Path(venv) / ".cache" / "gmlst"
 
     return Path.home() / ".cache" / "gmlst"
-
-
-def _utc_now_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 # Strict whitelist for path-component identifiers (scheme names, providers,
@@ -460,7 +456,7 @@ class DatabaseCache:
         if not metadata:
             return
         if not metadata.get("downloaded_at"):
-            metadata["downloaded_at"] = _utc_now_iso()
+            metadata["downloaded_at"] = utc_now_iso()
             self._write_scheme_metadata(name, provider, metadata)
 
     def _record_update_metadata(
@@ -473,7 +469,7 @@ class DatabaseCache:
         metadata = self._read_scheme_metadata(name, provider)
         if not metadata:
             return
-        now = _utc_now_iso()
+        now = utc_now_iso()
         if original_downloaded_at:
             metadata["downloaded_at"] = original_downloaded_at
         elif not metadata.get("downloaded_at"):
@@ -607,7 +603,6 @@ class DatabaseCache:
         existing catalogs and adjusting suffixes as needed. Blocked schemes
         are filtered out before saving.
         """
-        import time
 
         blocked = _load_blocked_schemes().get(provider, set())
         if blocked:
@@ -682,7 +677,7 @@ class DatabaseCache:
         payload = {
             "provider": provider,
             "scheme_type": scheme_type,
-            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "updated_at": utc_now_iso(),
             "count": len(schemes),
             "schemes": schemes,
         }
