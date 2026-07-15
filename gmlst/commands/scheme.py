@@ -73,6 +73,20 @@ def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 logger = logging.getLogger("gmlst.commands.scheme")
+
+
+def _reject_if_blocked(scheme: str, match_info: dict, provider: str) -> None:
+    """Exit with error if scheme is blocked."""
+    blocked = _load_blocked_schemes()
+    provider_blocked = blocked.get(provider, set())
+    scheme_dir = match_info.get("extra", {}).get("directory", "")
+    if scheme in provider_blocked or scheme_dir in provider_blocked:
+        err_console.print(
+            f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider '{provider}'."
+        )
+        sys.exit(1)
+
+
 DOWNLOAD_TOOL_CHOICES: tuple[DownloadTool, ...] = (
     "auto",
     "aria2c",
@@ -665,15 +679,7 @@ def cmd_show(
         _exit_scheme_not_found(scheme)
     _, scheme_info = matches[0]
 
-    blocked_schemes = _load_blocked_schemes()
-    provider_blocked = blocked_schemes.get(str(scheme_info.get("provider", "")), set())
-    scheme_dir = scheme_info.get("extra", {}).get("directory", "")
-    if scheme in provider_blocked or scheme_dir in provider_blocked:
-        err_console.print(
-            f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
-            f"'{scheme_info.provider}'."
-        )
-        sys.exit(1)
+    _reject_if_blocked(scheme, scheme_info, str(scheme_info.get("provider", "")))
 
     is_downloaded = cache.is_downloaded(scheme, scheme_info.provider)
     scheme_dir = (
@@ -872,15 +878,7 @@ def cmd_download(
     detected_provider, match_info = matches[0]
     detected_type = str(match_info.get("scheme_type", "mlst"))
 
-    blocked_schemes = _load_blocked_schemes()
-    provider_blocked = blocked_schemes.get(detected_provider, set())
-    scheme_dir = match_info.get("extra", {}).get("directory", "")
-    if scheme in provider_blocked or scheme_dir in provider_blocked:
-        err_console.print(
-            f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
-            f"'{detected_provider}'."
-        )
-        sys.exit(1)
+    _reject_if_blocked(scheme, match_info, detected_provider)
 
     if cache.is_downloaded(scheme, detected_provider) and not force:
         console.print(
@@ -982,15 +980,7 @@ def cmd_update(
         provider, match_info = matches[0]
         scheme_type = str(match_info.get("scheme_type", "mlst"))
 
-        blocked_schemes = _load_blocked_schemes()
-        provider_blocked = blocked_schemes.get(provider, set())
-        scheme_dir = match_info.get("extra", {}).get("directory", "")
-        if scheme in provider_blocked or scheme_dir in provider_blocked:
-            err_console.print(
-                f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider "
-                f"'{provider}'."
-            )
-            sys.exit(1)
+        _reject_if_blocked(scheme, match_info, provider)
 
         console.print(
             f"Checking updates for [cyan]{scheme}[/cyan] "

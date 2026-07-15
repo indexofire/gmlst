@@ -414,30 +414,6 @@ class EnterobaseProvider:
                     loci.append(locus_name)
         return sorted(loci)
 
-    def _download_locus(
-        self,
-        dir_name: str,
-        locus: str,
-        dest_dir: Path,
-        *,
-        download_tool: DownloadTool = "auto",
-    ) -> None:
-        """Download a single locus .fasta.gz and decompress to .tfa."""
-        dest_file = dest_dir / f"{locus}.tfa"
-        if dest_file.exists():
-            logger.debug("Skipping %s (already exists)", locus)
-            return
-
-        gz_path = dest_dir / f"{locus}.fasta.gz"
-        url = f"{_BASE_URL}/{dir_name}/{locus}.fasta.gz"
-        logger.info("  Downloading %s …", locus)
-
-        try:
-            download_file(url, gz_path, tool=download_tool)
-            atomic_write_bytes(dest_file, gzip.decompress(gz_path.read_bytes()))
-        finally:
-            gz_path.unlink(missing_ok=True)
-
     def _download_profiles(
         self,
         dir_name: str,

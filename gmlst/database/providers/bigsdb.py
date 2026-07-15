@@ -42,8 +42,6 @@ from gmlst.fasta_io import count_fasta_records, count_profile_rows
 
 logger = logging.getLogger("gmlst.database.providers.bigsdb")
 
-_RETRY_DELAY = 2.0  # kept for any callers
-_MAX_RETRIES = 3  # kept for any callers
 
 # How to classify schemes by description keyword
 _TYPE_KEYWORDS: dict[str, list[str]] = {
@@ -574,14 +572,6 @@ def _resolve_scheme_url(
 # ---------------------------------------------------------------------------
 
 
-def _find_seqdef_url(org: dict) -> str | None:
-    """Return the seqdef database href from an organism entry, or None."""
-    for db in org.get("databases", []):
-        if "seqdef" in db.get("name", ""):
-            return db.get("href")
-    return None
-
-
 def _find_seqdef_databases(org: dict) -> list[dict]:
     """Return all seqdef databases from an organism entry.
 
@@ -671,22 +661,6 @@ def _classify_scheme_type(description: str) -> str:
         if any(kw in desc_lower for kw in _TYPE_KEYWORDS[stype]):
             return stype
     return "other"
-
-
-def _derive_scheme_name(seqdef_url: str, org_name: str) -> str:
-    """Derive the short scheme_name from the seqdef URL or org name.
-
-    ``https://rest.pubmlst.org/db/pubmlst_saureus_seqdef`` → ``"saureus"``
-    """
-    db_name = seqdef_url.rstrip("/").split("/")[-1]
-    # Strip pubmlst_ prefix and _seqdef suffix
-    for prefix in ("pubmlst_",):
-        if db_name.startswith(prefix):
-            db_name = db_name[len(prefix) :]
-    for suffix in ("_seqdef",):
-        if db_name.endswith(suffix):
-            db_name = db_name[: -len(suffix)]
-    return db_name if db_name else org_name
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None) -> dict | list:

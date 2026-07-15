@@ -123,15 +123,6 @@ def require_tool(tool: str) -> Path:
     return Path(path)
 
 
-def tool_version(tool: str, version_flag: str = "--version") -> str:
-    """Return the first line of *tool --version* output, or ``"unknown"``."""
-    try:
-        result = run_cmd([tool, version_flag], capture=True, check=False)
-        return (result.stdout or result.stderr).strip().splitlines()[0]
-    except (OSError, IndexError):
-        return "unknown"
-
-
 # ---------------------------------------------------------------------------
 # Temporary directory context manager
 # ---------------------------------------------------------------------------
