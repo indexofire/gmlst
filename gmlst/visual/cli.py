@@ -7,10 +7,14 @@ from typing import Any
 
 import click
 
-from gmlst.commands.common import (
-    emit_output_json,
-    emit_output_text,
-    render_delimited_rows,
+from gmlst.visual._cli_export import emit_export_payload
+from gmlst.visual._cli_helpers import (
+    emit_json_payload,
+    emit_rows_by_format,
+    heatmap_rows,
+    matrix_rows,
+    maybe_validate_tsv_scale,
+    read_input_text,
 )
 from gmlst.visual.app import create_visual_app
 from gmlst.visual.mst import (
@@ -21,7 +25,6 @@ from gmlst.visual.mst import (
     build_mst_from_tsv,
     build_result_comparison_from_tsv,
 )
-from gmlst.visual.mst_shared import validate_tsv_scale
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TABULAR_FORMATS = click.Choice(["json", "tsv", "table"], case_sensitive=False)
@@ -44,315 +47,6 @@ def visual_group(ctx: click.Context, force_large: bool) -> None:
     """Launch interactive visualization tools for MST/profile exploration."""
     ctx.ensure_object(dict)
     _ = force_large
-
-
-def _maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
-    if ctx.parent is not None and ctx.parent.params.get("force_large"):
-        click.echo(
-            "Warning: bypassing TSV scale limits because --force-large is active.",
-            err=True,
-        )
-        return
-    try:
-        validate_tsv_scale(tsv_text)
-    except ValueError as exc:
-        raise click.UsageError(str(exc)) from exc
-
-
-def _read_input_text(path: Path, *, label: str) -> str:
-    try:
-        return path.read_text()
-    except OSError as exc:
-        raise click.UsageError(f"Failed to read {label} file: {path}") from exc
-
-
-def _emit_json_payload(payload: dict[str, Any], *, output: Path | None) -> None:
-    try:
-        wrote_file = emit_output_json(payload, output)
-    except OSError as exc:
-        raise click.UsageError(f"Failed to write output file: {output}") from exc
-    if wrote_file and output is not None:
-        click.echo(f"Results written to {output}")
-
-
-def _render_simple_table(rows: list[dict[str, Any]], columns: list[str]) -> str:
-    if not rows:
-        return "(no rows)"
-    widths = {column: len(column) for column in columns}
-    for row in rows:
-        for column in columns:
-            widths[column] = max(widths[column], len(str(row.get(column, ""))))
-
-    def _line(values: list[str]) -> str:
-        return " | ".join(
-            value.ljust(widths[column])
-            for value, column in zip(values, columns, strict=True)
-        )
-
-    header = _line(columns)
-    sep = "-+-".join("-" * widths[column] for column in columns)
-    body = [_line([str(row.get(column, "")) for column in columns]) for row in rows]
-    return "\n".join([header, sep, *body])
-
-
-def _emit_rows_by_format(
-    *,
-    rows: list[dict[str, Any]],
-    columns: list[str],
-    output: Path | None,
-    output_format: str,
-    summary_lines: list[str] | None = None,
-) -> None:
-    normalized_format = output_format.lower()
-    if normalized_format == "json":
-        payload: dict[str, Any] = {"rows": rows}
-        if summary_lines:
-            payload["summary"] = summary_lines
-        _emit_json_payload(payload, output=output)
-        return
-
-    if normalized_format == "tsv":
-        tsv_payload = render_delimited_rows(rows, columns, "\t")
-        try:
-            wrote_file = emit_output_text(tsv_payload, output)
-        except OSError as exc:
-            raise click.UsageError(f"Failed to write output file: {output}") from exc
-        if wrote_file and output is not None:
-            click.echo(f"Results written to {output}")
-        return
-
-    table_text = _render_simple_table(rows, columns)
-    if summary_lines:
-        table_text = "\n".join([*summary_lines, "", table_text])
-    try:
-        wrote_file = emit_output_text(table_text, output)
-    except OSError as exc:
-        raise click.UsageError(f"Failed to write output file: {output}") from exc
-    if wrote_file and output is not None:
-        click.echo(f"Results written to {output}")
-
-
-def _matrix_rows(labels: list[str], matrix: list[list[int]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "sample_id": row_label,
-            **{label: value for label, value in zip(labels, row, strict=True)},
-        }
-        for row_label, row in zip(labels, matrix, strict=True)
-    ]
-
-
-def _heatmap_rows(
-    labels: list[str],
-    loci: list[str],
-    cells: list[list[dict[str, str]]],
-) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for label, row_cells in zip(labels, cells, strict=True):
-        row = {"sample_id": label}
-        for cell_index, cell in enumerate(row_cells):
-            row[str(loci[cell_index])] = str(cell["value"])
-        rows.append(row)
-    return rows
-
-
-def _emit_export_payload(
-    *,
-    kind: str,
-    payload: dict[str, Any],
-    output: Path | None,
-    output_format: str,
-    schema_version: str,
-    include_meta: bool,
-    columns_spec: str | None,
-) -> None:
-    def _selected_columns(rows: list[dict[str, Any]], defaults: list[str]) -> list[str]:
-        if not columns_spec:
-            return defaults
-        selected = [part.strip() for part in columns_spec.split(",") if part.strip()]
-        if not selected:
-            raise click.UsageError("--columns must include at least one column name")
-        available = set(defaults)
-        for row in rows:
-            available.update(str(key) for key in row)
-        missing = [column for column in selected if column not in available]
-        if missing:
-            raise click.UsageError(
-                f"Unknown column(s) in --columns: {', '.join(missing)}"
-            )
-        return selected
-
-    def _meta_map() -> tuple[dict[str, dict[str, Any]], list[str]]:
-        if not include_meta:
-            return {}, []
-        metadata_fields = [str(name) for name in payload.get("metadata_fields", [])]
-        node_meta = {
-            str(node["label"]): dict(node.get("meta", {}))
-            for node in payload.get("nodes", [])
-        }
-        return node_meta, metadata_fields
-
-    normalized_format = output_format.lower()
-    if normalized_format == "json":
-        envelope = {
-            "schema_version": schema_version,
-            "kind": kind,
-            "payload": payload,
-        }
-        _emit_json_payload(envelope, output=output)
-        return
-
-    if kind == "mst":
-        node_meta, metadata_fields = _meta_map()
-        rows = [
-            {
-                "source_label": edge["source_label"],
-                "target_label": edge["target_label"],
-                "weight": edge["weight"],
-                "asymmetric_weight": edge["asymmetric_weight"],
-                **{
-                    f"source_{field}": node_meta.get(str(edge["source_label"]), {}).get(
-                        field,
-                        "",
-                    )
-                    for field in metadata_fields
-                },
-                **{
-                    f"target_{field}": node_meta.get(str(edge["target_label"]), {}).get(
-                        field,
-                        "",
-                    )
-                    for field in metadata_fields
-                },
-            }
-            for edge in payload["edges"]
-        ]
-        columns = ["source_label", "target_label", "weight", "asymmetric_weight"]
-        if include_meta:
-            columns.extend([f"source_{field}" for field in metadata_fields])
-            columns.extend([f"target_{field}" for field in metadata_fields])
-        _emit_rows_by_format(
-            rows=rows,
-            columns=_selected_columns(rows, columns),
-            output=output,
-            output_format=output_format,
-            summary_lines=[
-                f"schema_version: {schema_version}",
-                f"kind: {kind}",
-                f"nodes: {len(payload['nodes'])}",
-                f"edges: {len(payload['edges'])}",
-                f"aggregate_profiles: {payload['aggregate_profiles']}",
-            ],
-        )
-        return
-
-    if kind == "matrix":
-        labels = payload["labels"]
-        rows = _matrix_rows(labels, payload["matrix"])
-        node_meta, metadata_fields = _meta_map()
-        if include_meta:
-            for row in rows:
-                sample_id = str(row["sample_id"])
-                row.update(
-                    {
-                        field: node_meta.get(sample_id, {}).get(field, "")
-                        for field in metadata_fields
-                    }
-                )
-        columns = ["sample_id", *labels]
-        if include_meta:
-            columns.extend(metadata_fields)
-        _emit_rows_by_format(
-            rows=rows,
-            columns=_selected_columns(rows, columns),
-            output=output,
-            output_format=output_format,
-            summary_lines=[
-                f"schema_version: {schema_version}",
-                f"kind: {kind}",
-                f"samples: {len(labels)}",
-                f"aggregate_profiles: {payload['aggregate_profiles']}",
-            ],
-        )
-        return
-
-    if kind == "heatmap":
-        labels = payload["labels"]
-        loci = payload["loci"]
-        rows = _heatmap_rows(labels, loci, payload["cells"])
-        node_meta, metadata_fields = _meta_map()
-        if include_meta:
-            for row in rows:
-                sample_id = str(row["sample_id"])
-                row.update(
-                    {
-                        field: node_meta.get(sample_id, {}).get(field, "")
-                        for field in metadata_fields
-                    }
-                )
-        columns = ["sample_id", *loci]
-        if include_meta:
-            columns.extend(metadata_fields)
-        _emit_rows_by_format(
-            rows=rows,
-            columns=_selected_columns(rows, columns),
-            output=output,
-            output_format=output_format,
-            summary_lines=[
-                f"schema_version: {schema_version}",
-                f"kind: {kind}",
-                f"samples: {len(labels)}",
-                f"loci: {len(loci)}",
-                f"aggregate_profiles: {payload['aggregate_profiles']}",
-            ],
-        )
-        return
-
-    if kind == "compare":
-        summary = payload["summary"]
-        rows = payload["rows"]
-        columns = [
-            "sample_id",
-            "left_st",
-            "right_st",
-            "status",
-            "differing_loci_count",
-        ]
-        _emit_rows_by_format(
-            rows=rows,
-            columns=_selected_columns(rows, columns),
-            output=output,
-            output_format=output_format,
-            summary_lines=[
-                f"schema_version: {schema_version}",
-                f"kind: {kind}",
-                f"matched_samples: {summary['matched_samples']}",
-                f"same_st: {summary['same_st']}",
-                f"different_st: {summary['different_st']}",
-                (
-                    "samples_with_locus_differences: "
-                    f"{summary['samples_with_locus_differences']}"
-                ),
-                f"left_only: {summary['left_only']}",
-                f"right_only: {summary['right_only']}",
-            ],
-        )
-        return
-
-    rows = payload["differences"]
-    _emit_rows_by_format(
-        rows=rows,
-        columns=_selected_columns(rows, ["locus", "left", "right", "type"]),
-        output=output,
-        output_format=output_format,
-        summary_lines=[
-            f"schema_version: {schema_version}",
-            f"kind: {kind}",
-            f"left_label: {payload['left_label']}",
-            f"right_label: {payload['right_label']}",
-            f"distance: {payload['distance']}",
-        ],
-    )
 
 
 @visual_group.command(
@@ -434,10 +128,10 @@ def cmd_visual_mst(
     method: str,
 ) -> None:
     """Generate MST node/edge payload without starting the web server."""
-    tsv_text = _read_input_text(input_path, label="input")
-    _maybe_validate_tsv_scale(ctx, tsv_text)
+    tsv_text = read_input_text(input_path, label="input")
+    maybe_validate_tsv_scale(ctx, tsv_text)
     metadata_text = (
-        _read_input_text(metadata, label="metadata") if metadata is not None else None
+        read_input_text(metadata, label="metadata") if metadata is not None else None
     )
     nodes, edges, metadata_fields = build_mst_from_tsv(
         tsv_text,
@@ -447,7 +141,7 @@ def cmd_visual_mst(
         method=method,
     )
     if output_format.lower() == "json":
-        _emit_json_payload(
+        emit_json_payload(
             {
                 "nodes": nodes,
                 "edges": edges,
@@ -467,7 +161,7 @@ def cmd_visual_mst(
         }
         for edge in edges
     ]
-    _emit_rows_by_format(
+    emit_rows_by_format(
         rows=rows,
         columns=["source_label", "target_label", "weight", "asymmetric_weight"],
         output=output_path,
@@ -534,10 +228,10 @@ def cmd_visual_matrix(
     aggregate_profiles: bool,
 ) -> None:
     """Generate a full pairwise allele distance matrix payload."""
-    tsv_text = _read_input_text(input_path, label="input")
-    _maybe_validate_tsv_scale(ctx, tsv_text)
+    tsv_text = read_input_text(input_path, label="input")
+    maybe_validate_tsv_scale(ctx, tsv_text)
     metadata_text = (
-        _read_input_text(metadata, label="metadata") if metadata is not None else None
+        read_input_text(metadata, label="metadata") if metadata is not None else None
     )
     labels, matrix, nodes, metadata_fields = build_distance_matrix_from_tsv(
         tsv_text,
@@ -546,7 +240,7 @@ def cmd_visual_matrix(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        _emit_json_payload(
+        emit_json_payload(
             {
                 "labels": labels,
                 "matrix": matrix,
@@ -558,8 +252,8 @@ def cmd_visual_matrix(
         )
         return
 
-    rows = _matrix_rows(labels, matrix)
-    _emit_rows_by_format(
+    rows = matrix_rows(labels, matrix)
+    emit_rows_by_format(
         rows=rows,
         columns=["sample_id", *labels],
         output=output_path,
@@ -618,10 +312,10 @@ def cmd_visual_heatmap(
     aggregate_profiles: bool,
 ) -> None:
     """Generate allele heatmap rows/cells without web startup."""
-    tsv_text = _read_input_text(input_path, label="input")
-    _maybe_validate_tsv_scale(ctx, tsv_text)
+    tsv_text = read_input_text(input_path, label="input")
+    maybe_validate_tsv_scale(ctx, tsv_text)
     metadata_text = (
-        _read_input_text(metadata, label="metadata") if metadata is not None else None
+        read_input_text(metadata, label="metadata") if metadata is not None else None
     )
     labels, loci, cells, nodes, metadata_fields = build_allele_heatmap_from_tsv(
         tsv_text,
@@ -629,7 +323,7 @@ def cmd_visual_heatmap(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        _emit_json_payload(
+        emit_json_payload(
             {
                 "labels": labels,
                 "loci": loci,
@@ -642,8 +336,8 @@ def cmd_visual_heatmap(
         )
         return
 
-    rows = _heatmap_rows(labels, loci, cells)
-    _emit_rows_by_format(
+    rows = heatmap_rows(labels, loci, cells)
+    emit_rows_by_format(
         rows=rows,
         columns=["sample_id", *loci],
         output=output_path,
@@ -698,13 +392,13 @@ def cmd_visual_compare(
     output_format: str,
 ) -> None:
     """Compare ST and locus-level differences between two result sets."""
-    left_tsv = _read_input_text(left_path, label="left")
-    right_tsv = _read_input_text(right_path, label="right")
-    _maybe_validate_tsv_scale(ctx, left_tsv)
-    _maybe_validate_tsv_scale(ctx, right_tsv)
+    left_tsv = read_input_text(left_path, label="left")
+    right_tsv = read_input_text(right_path, label="right")
+    maybe_validate_tsv_scale(ctx, left_tsv)
+    maybe_validate_tsv_scale(ctx, right_tsv)
     comparison = build_result_comparison_from_tsv(left_tsv, right_tsv)
     if output_format.lower() == "json":
-        _emit_json_payload(comparison, output=output_path)
+        emit_json_payload(comparison, output=output_path)
         return
 
     summary = comparison["summary"]
@@ -716,7 +410,7 @@ def cmd_visual_compare(
         f"left_only: {summary['left_only']}",
         f"right_only: {summary['right_only']}",
     ]
-    _emit_rows_by_format(
+    emit_rows_by_format(
         rows=comparison["rows"],
         columns=["sample_id", "left_st", "right_st", "status", "differing_loci_count"],
         output=output_path,
@@ -776,10 +470,10 @@ def cmd_visual_locus_diff(
     include_missing: bool,
 ) -> None:
     """Generate pairwise locus diff payload for two sample labels."""
-    tsv_text = _read_input_text(input_path, label="input")
-    _maybe_validate_tsv_scale(ctx, tsv_text)
+    tsv_text = read_input_text(input_path, label="input")
+    maybe_validate_tsv_scale(ctx, tsv_text)
     metadata_text = (
-        _read_input_text(metadata, label="metadata") if metadata is not None else None
+        read_input_text(metadata, label="metadata") if metadata is not None else None
     )
     diff = build_locus_diff_from_tsv(
         tsv_text,
@@ -789,10 +483,10 @@ def cmd_visual_locus_diff(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        _emit_json_payload(diff, output=output_path)
+        emit_json_payload(diff, output=output_path)
         return
 
-    _emit_rows_by_format(
+    emit_rows_by_format(
         rows=diff["differences"],
         columns=["locus", "left", "right", "type"],
         output=output_path,
@@ -912,23 +606,23 @@ def cmd_visual_export(
 ) -> None:
     """Export visual payload without choosing a specific generation subcommand."""
     metadata_text = (
-        _read_input_text(metadata, label="metadata") if metadata is not None else None
+        read_input_text(metadata, label="metadata") if metadata is not None else None
     )
     payload: dict[str, Any]
 
     if kind == "compare":
         if left_path is None or right_path is None:
             raise click.UsageError("--left and --right are required for kind=compare")
-        left_tsv = _read_input_text(left_path, label="left")
-        right_tsv = _read_input_text(right_path, label="right")
-        _maybe_validate_tsv_scale(ctx, left_tsv)
-        _maybe_validate_tsv_scale(ctx, right_tsv)
+        left_tsv = read_input_text(left_path, label="left")
+        right_tsv = read_input_text(right_path, label="right")
+        maybe_validate_tsv_scale(ctx, left_tsv)
+        maybe_validate_tsv_scale(ctx, right_tsv)
         payload = build_result_comparison_from_tsv(left_tsv, right_tsv)
     else:
         if input_path is None:
             raise click.UsageError("--input is required for this export kind")
-        tsv_text = _read_input_text(input_path, label="input")
-        _maybe_validate_tsv_scale(ctx, tsv_text)
+        tsv_text = read_input_text(input_path, label="input")
+        maybe_validate_tsv_scale(ctx, tsv_text)
         if kind == "mst":
             nodes, edges, metadata_fields = build_mst_from_tsv(
                 tsv_text,
@@ -984,7 +678,7 @@ def cmd_visual_export(
                 metadata_text=metadata_text,
             )
 
-    _emit_export_payload(
+    emit_export_payload(
         kind=kind,
         payload=payload,
         output=output_path,
