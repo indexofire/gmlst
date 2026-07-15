@@ -196,7 +196,6 @@ class Minimap2Aligner:
             return _parse_paf(
                 paf,
                 loci,
-                query_is_allele=True,
             )
 
 
@@ -208,8 +207,6 @@ class Minimap2Aligner:
 def _parse_paf(
     path: Path,
     loci: list[str],
-    *,
-    query_is_allele: bool,
 ) -> list[AlleleMatch]:
     """Parse PAF for FASTA mode where the query is the allele sequence."""
     loci_set = set(loci)
@@ -224,30 +221,17 @@ def _parse_paf(
             if len(cols) < 12:
                 continue
 
-            if query_is_allele:
-                allele_name = cols[0]  # query = allele
-                qlen = int(cols[1])
-                qstart = int(cols[2])
-                qend = int(cols[3])
-                strand = cols[4]
-                contig_name = cols[5]
-                contig_len = int(cols[6])
-                contig_start = int(cols[7])
-                contig_end = int(cols[8])
-                nmatch = int(cols[9])
-                blen = int(cols[10])
-            else:
-                allele_name = cols[5]  # target = allele
-                qlen = int(cols[6])
-                qstart = int(cols[7])
-                qend = int(cols[8])
-                strand = cols[4]
-                contig_name = cols[0]
-                contig_len = int(cols[1])
-                contig_start = int(cols[2])
-                contig_end = int(cols[3])
-                nmatch = int(cols[9])
-                blen = int(cols[10])
+            allele_name = cols[0]  # query = allele
+            qlen = int(cols[1])
+            qstart = int(cols[2])
+            qend = int(cols[3])
+            strand = cols[4]
+            contig_name = cols[5]
+            contig_len = int(cols[6])
+            contig_start = int(cols[7])
+            contig_end = int(cols[8])
+            nmatch = int(cols[9])
+            blen = int(cols[10])
 
             locus, allele_id = split_allele_id(allele_name)
             if locus not in loci_set:

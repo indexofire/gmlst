@@ -202,6 +202,31 @@ class BigSdbProvider:
 
         return results
 
+    def _fetch_scheme_detail(
+        self, scheme_name: str, scheme_type: str
+    ) -> tuple[str, str, dict]:
+        """Resolve seqdef/scheme URLs and fetch validated scheme detail.
+
+        Returns ``(seqdef_url, scheme_url, scheme_detail)`` where
+        *scheme_detail* is guaranteed to be a dict with a non-empty ``loci``
+        list.
+        """
+        seqdef_url, matched_db = self._resolve_seqdef_url(scheme_name)
+        logger.info("[%s] Resolved seqdef: %s (%s)", self._name, matched_db, seqdef_url)
+
+        scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
+        logger.info("[%s] Using scheme: %s", self._name, scheme_url)
+
+        scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
+        if not isinstance(scheme_detail, dict):
+            raise ValueError(f"Unexpected scheme response for '{scheme_name}'")
+        loci_urls: list[str] = scheme_detail.get("loci", [])
+        if not loci_urls:
+            raise ValueError(
+                f"No loci found in scheme '{scheme_url}' for '{scheme_name}'"
+            )
+        return seqdef_url, scheme_url, scheme_detail
+
     def download_scheme(
         self,
         scheme_name: str,
@@ -214,21 +239,10 @@ class BigSdbProvider:
         """Download allele FASTAs + ST profile for *scheme_name*."""
         dest_dir.mkdir(parents=True, exist_ok=True)
 
-        seqdef_url, matched_db = self._resolve_seqdef_url(scheme_name)
-        logger.info("[%s] Resolved seqdef: %s (%s)", self._name, matched_db, seqdef_url)
-
-        # Find the target scheme entry
-        scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
-        logger.info("[%s] Using scheme: %s", self._name, scheme_url)
-
-        scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
-        if not isinstance(scheme_detail, dict):
-            raise ValueError(f"Unexpected scheme response for '{scheme_name}'")
+        seqdef_url, scheme_url, scheme_detail = self._fetch_scheme_detail(
+            scheme_name, scheme_type
+        )
         loci_urls: list[str] = scheme_detail.get("loci", [])
-        if not loci_urls:
-            raise ValueError(
-                f"No loci found in scheme '{scheme_url}' for '{scheme_name}'"
-            )
 
         profiles_csv_url = scheme_detail.get("profiles_csv")
         profile_dest = dest_dir / f"{scheme_name}.txt"
@@ -329,17 +343,10 @@ class BigSdbProvider:
         if meta_file.exists():
             local_meta = json.loads(meta_file.read_text())
 
-        seqdef_url, _ = self._resolve_seqdef_url(scheme_name)
-        scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
-        scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
-        if not isinstance(scheme_detail, dict):
-            raise ValueError(f"Unexpected scheme response for '{scheme_name}'")
-
+        seqdef_url, scheme_url, scheme_detail = self._fetch_scheme_detail(
+            scheme_name, scheme_type
+        )
         loci_urls: list[str] = scheme_detail.get("loci", [])
-        if not loci_urls:
-            raise ValueError(
-                f"No loci found in scheme '{scheme_url}' for '{scheme_name}'"
-            )
 
         old_locus_meta = local_meta.get("locus_meta", {})
         new_locus_meta: dict[str, dict[str, str | int]] = {}

@@ -18,8 +18,8 @@ def classify_chew_style_calls(
     enforce_cds_gate: bool = True,
 ) -> dict[str, str]:
     stats = _load_locus_length_stats(allele_files)
-    allele_hashes = _load_allele_hashes(allele_files)
-    allele_sequences = _load_allele_sequences(allele_files)
+    allele_hashes = _load_allele_data(allele_files, as_hash=True)
+    allele_sequences = _load_allele_data(allele_files)
     classified: dict[str, str] = {}
     for locus, call in locus_calls.items():
         classified[locus] = _classify_locus(
@@ -196,51 +196,32 @@ def _load_locus_length_stats(
     return stats
 
 
-def _load_allele_hashes(allele_files: dict[str, Path]) -> dict[tuple[str, str], str]:
-    hashes: dict[tuple[str, str], str] = {}
-    for locus, allele_file in allele_files.items():
-        for header, sequence in iter_fasta_records(allele_file):
-            _store_allele_hash(hashes, locus, header, sequence)
-    return hashes
+def _resolve_allele_id(locus: str, header: str) -> str:
+    """Strip the locus prefix from a FASTA header if present."""
+    if "_" in header:
+        maybe_locus, maybe_id = header.rsplit("_", 1)
+        if maybe_locus == locus:
+            return maybe_id
+    return header
 
 
-def _load_allele_sequences(
+def _load_allele_data(
     allele_files: dict[str, Path],
+    *,
+    as_hash: bool = False,
 ) -> dict[tuple[str, str], str]:
-    sequences: dict[tuple[str, str], str] = {}
+    """Load allele sequences or hashes from FASTA files."""
+    result: dict[tuple[str, str], str] = {}
     for locus, allele_file in allele_files.items():
         for header, sequence in iter_fasta_records(allele_file):
-            _store_allele_sequence(sequences, locus, header, sequence)
-    return sequences
-
-
-def _store_allele_hash(
-    hashes: dict[tuple[str, str], str],
-    locus: str,
-    header: str,
-    sequence: str,
-) -> None:
-    allele_id = header
-    if "_" in header:
-        maybe_locus, maybe_id = header.rsplit("_", 1)
-        if maybe_locus == locus:
-            allele_id = maybe_id
-    digest = hashlib.sha256(sequence.upper().encode("ascii")).hexdigest()
-    hashes[(locus, allele_id)] = digest
-
-
-def _store_allele_sequence(
-    sequences: dict[tuple[str, str], str],
-    locus: str,
-    header: str,
-    sequence: str,
-) -> None:
-    allele_id = header
-    if "_" in header:
-        maybe_locus, maybe_id = header.rsplit("_", 1)
-        if maybe_locus == locus:
-            allele_id = maybe_id
-    sequences[(locus, allele_id)] = sequence.upper()
+            allele_id = _resolve_allele_id(locus, header)
+            if as_hash:
+                result[(locus, allele_id)] = hashlib.sha256(
+                    sequence.upper().encode("ascii")
+                ).hexdigest()
+            else:
+                result[(locus, allele_id)] = sequence.upper()
+    return result
 
 
 def _passes_cds_gate(

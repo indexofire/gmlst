@@ -191,6 +191,41 @@ def _write_wrapped_sequence(handle: TextIO, sequence: str, *, width: int = 60) -
     write_wrapped_sequence(handle, sequence, width=width)
 
 
+def _load_schemes(
+    cache: DatabaseCache,
+    provider: str,
+    scheme_type: str,
+) -> list[_DictSchemeInfo]:
+    """Load schemes from cache, filtered by provider, type, and blocked list."""
+    providers_to_check = AVAILABLE_PROVIDERS if provider == "all" else [provider]
+    all_schemes: list[_DictSchemeInfo] = []
+    for prov in providers_to_check:
+        scheme_dicts = cache.load_catalog(prov)
+        if scheme_dicts:
+            all_schemes.extend(_DictSchemeInfo(d) for d in scheme_dicts)
+
+    if scheme_type != "all":
+        target_type = scheme_type.lower()
+        all_schemes = [s for s in all_schemes if s.scheme_type.lower() == target_type]
+    else:
+        all_schemes = [
+            s
+            for s in all_schemes
+            if s.scheme_type.lower() in ("mlst", "cgmlst", "wgmlst", "rmlst")
+        ]
+
+    blocked_schemes = _load_blocked_schemes()
+    if blocked_schemes:
+        all_schemes = [
+            s
+            for s in all_schemes
+            if s.scheme_name not in blocked_schemes.get(s.provider, [])
+            and s.extra.get("directory", "") not in blocked_schemes.get(s.provider, [])
+        ]
+
+    return all_schemes
+
+
 @click.group(
     "scheme",
     context_settings=HELP_SETTINGS,
@@ -262,26 +297,7 @@ def cmd_list(
     """List available schemes from providers."""
     cache = DatabaseCache(cache_dir)
 
-    providers_to_check = AVAILABLE_PROVIDERS if provider == "all" else [provider]
-
-    all_schemes = []
-
-    for prov in providers_to_check:
-        scheme_dicts = cache.load_catalog(prov)
-        if scheme_dicts:
-            schemes = [_DictSchemeInfo(d) for d in scheme_dicts]
-            all_schemes.extend(schemes)
-
-    # Filter by type if specified
-    if scheme_type != "all":
-        target_type = scheme_type.lower()
-        all_schemes = [s for s in all_schemes if s.scheme_type.lower() == target_type]
-    else:
-        all_schemes = [
-            s
-            for s in all_schemes
-            if s.scheme_type.lower() in ("mlst", "cgmlst", "wgmlst", "rmlst")
-        ]
+    all_schemes = _load_schemes(cache, provider, scheme_type)
 
     # Filter schemes by name regex if specified
     if name:
@@ -291,16 +307,6 @@ def cmd_list(
         except re.error as exc:
             err_console.print(f"[red]Invalid regex pattern:[/red] {exc}")
             return
-
-    # Filter out blocked schemes
-    blocked_schemes = _load_blocked_schemes()
-    if blocked_schemes:
-        all_schemes = [
-            s
-            for s in all_schemes
-            if s.scheme_name not in blocked_schemes.get(s.provider, [])
-            and s.extra.get("directory", "") not in blocked_schemes.get(s.provider, [])
-        ]
 
     # Filter to only show downloaded/cached schemes if --available flag is set
     if available:
@@ -430,32 +436,7 @@ def cmd_search(
     """
     cache = DatabaseCache(cache_dir)
 
-    providers_to_check = AVAILABLE_PROVIDERS if provider == "all" else [provider]
-    all_schemes = []
-    for prov in providers_to_check:
-        scheme_dicts = cache.load_catalog(prov)
-        if scheme_dicts:
-            schemes = [_DictSchemeInfo(d) for d in scheme_dicts]
-            all_schemes.extend(schemes)
-
-    if scheme_type != "all":
-        target_type = scheme_type.lower()
-        all_schemes = [s for s in all_schemes if s.scheme_type.lower() == target_type]
-    else:
-        all_schemes = [
-            s
-            for s in all_schemes
-            if s.scheme_type.lower() in ("mlst", "cgmlst", "wgmlst", "rmlst")
-        ]
-
-    blocked_schemes = _load_blocked_schemes()
-    if blocked_schemes:
-        all_schemes = [
-            s
-            for s in all_schemes
-            if s.scheme_name not in blocked_schemes.get(s.provider, [])
-            and s.extra.get("directory", "") not in blocked_schemes.get(s.provider, [])
-        ]
+    all_schemes = _load_schemes(cache, provider, scheme_type)
 
     needle = pattern.lower()
     matches = [

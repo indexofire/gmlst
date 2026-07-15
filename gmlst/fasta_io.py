@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import gzip
 import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TextIO
 
-
-def _open_text(path: Path):
-    return gzip.open(path, "rt") if path.suffix == ".gz" else path.open()
+from gmlst.utils import open_text
 
 
 def count_fasta_records(path: Path) -> int:
@@ -16,7 +13,7 @@ def count_fasta_records(path: Path) -> int:
     if not path.exists():
         return 0
     try:
-        with _open_text(path) as handle:
+        with open_text(path) as handle:
             return sum(1 for line in handle if line.startswith(">"))
     except OSError:
         return 0
@@ -42,7 +39,7 @@ def utc_now_iso() -> str:
 def iter_fasta_records(path: Path) -> Iterator[tuple[str, str]]:
     header: str | None = None
     chunks: list[str] = []
-    with _open_text(path) as handle:
+    with open_text(path) as handle:
         for raw_line in handle:
             line = raw_line.strip()
             if not line:
@@ -81,7 +78,7 @@ def is_valid_fasta(path: Path) -> bool:
     has_header = False
     has_sequence = False
     try:
-        with _open_text(path) as handle:
+        with open_text(path) as handle:
             for raw in handle:
                 line = raw.strip()
                 if not line:
