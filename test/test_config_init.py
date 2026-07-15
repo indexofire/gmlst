@@ -1,7 +1,8 @@
-"""Tests for gmlst config init command."""
+"""Tests for gmlst config init and set commands."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -147,6 +148,40 @@ class TestCmdInit:
 
         assert result.exit_code == 1
         assert "Could not detect" in result.output
+
+
+class TestConfigSetFilePermissions:
+    def test_env_file_is_owner_only(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        env_file = tmp_path / "env.sh"
+        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["set", "GMLST_PUBMLST_API_KEY", "secret-key-123"]
+        )
+
+        assert result.exit_code == 0
+        assert env_file.exists()
+        mode = env_file.stat().st_mode & 0o777
+        assert mode == 0o600
+
+    def test_existing_env_file_permissions_fixed_on_rewrite(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        env_file = tmp_path / "env.sh"
+        env_file.write_text('export GMLST_CACHE_DIR="/old"\n')
+        os.chmod(env_file, 0o644)
+        assert env_file.stat().st_mode & 0o777 == 0o644
+
+        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+
+        runner = CliRunner()
+        runner.invoke(config_group, ["set", "GMLST_TMPDIR", "/scratch"])
+
+        mode = env_file.stat().st_mode & 0o777
+        assert mode == 0o600
 
 
 if __name__ == "__main__":

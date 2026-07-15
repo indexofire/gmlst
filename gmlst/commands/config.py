@@ -309,6 +309,7 @@ def cmd_set(name: str, value: str) -> None:
 
     lines.append(f"export {entry.name}={shlex.quote(value)}")
     env_file.write_text("\n".join(lines) + "\n")
+    env_file.chmod(0o600)
 
     console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
     console.print(f"Written to: [bold]{env_file}[/bold]")
