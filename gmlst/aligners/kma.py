@@ -153,7 +153,7 @@ def _parse_kma_res(
 
 def _split_template(template: str) -> tuple[str, str]:
     if "_" in template:
-        return tuple(template.rsplit("_", 1))  # type: ignore[return-value]
+        return tuple(template.rsplit("_", 1))  # type: ignore[return-value]  # rsplit(sep, 1) always yields exactly 2 elements when sep is present
     if "-" in template:
-        return tuple(template.rsplit("-", 1))  # type: ignore[return-value]
+        return tuple(template.rsplit("-", 1))  # type: ignore[return-value]  # rsplit(sep, 1) always yields exactly 2 elements when sep is present
     return (template, "")

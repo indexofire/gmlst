@@ -157,7 +157,7 @@ def _try_wget(
 async def _try_httpx_async(url: str, dest: Path, timeout: float) -> bool:
     """Download with httpx async + Rich progress bar. Returns True on success."""
     try:
-        import httpx  # type: ignore[import-not-found]
+        import httpx  # type: ignore[import-not-found]  # httpx is an optional dependency, guarded by try/except ImportError
         from rich.progress import (
             BarColumn,
             DownloadColumn,

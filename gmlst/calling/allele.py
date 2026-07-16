@@ -105,7 +105,7 @@ def call_best_allele(
     unique_alleles = list(dict.fromkeys(m.allele_id for m in exact_hits))
     multiple = len(unique_alleles) > 1
 
-    call_type: CallType = best.call_type  # type: ignore[assignment]
+    call_type: CallType = best.call_type  # type: ignore[assignment]  # CallType is a str Literal alias; value is constrained by AlleleMatch.call_type property
     if call_type not in ("exact", "closest", "novel", "partial", "missing"):
         call_type = "closest"
     if call_type == "closest" and best.identity == 100.0 and best.coverage < 1.0:

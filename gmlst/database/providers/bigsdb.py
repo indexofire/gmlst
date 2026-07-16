@@ -102,7 +102,7 @@ class BigSdbProvider:
 
     def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
         """Return all schemes of *scheme_type* available on this BIGSdb host."""
-        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]
+        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]  # BIGSdb root endpoint returns a list of org dicts at runtime
 
         # First pass: collect all schemes with their base names
         raw_schemes: list[dict] = []
@@ -484,7 +484,7 @@ class BigSdbProvider:
 
         Handles suffixed scheme names (e.g., 'bcc_1' -> 'bcc').
         """
-        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]
+        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]  # BIGSdb root endpoint returns a list of org dicts at runtime
 
         # Remove suffix (_1, _2, etc.) if present
         base_scheme_name = scheme_name
@@ -637,7 +637,7 @@ def _extract_organism_name(db_description: str) -> str | None:
 def _fetch_schemes(seqdef_url: str) -> list[dict]:
     """Return the list of scheme dicts from ``<seqdef>/schemes``."""
     data = _get_json(f"{seqdef_url}/schemes")
-    return data.get("schemes", [])  # type: ignore[union-attr]
+    return data.get("schemes", [])  # type: ignore[union-attr]  # _fetch_schemes is only called on /schemes endpoints which return a dict
 
 
 _NON_TYPING_KEYWORDS = [
