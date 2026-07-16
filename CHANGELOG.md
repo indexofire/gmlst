@@ -24,11 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
-## [0.1.3] - 2026-07-12
+## [0.1.3] - 2026-07-16
 
 ### Fixed
 
-- duplicated codes clean.
+- **Dead code removed**: nucmer.py unreachable code after `return`, blastn.py wasted binary
+  write overwritten by text write, `count_sequences` dead function
+- **Provider silent exceptions**: 4 provider/cache sites escalated from `logger.debug` to
+  `logger.warning` (bigsdb, enterobase, cache)
+- **Exception handling**: 11 `except...: pass`/`suppress()` sites annotated with explanatory
+  comments per AGENTS.md guideline; nucmer malformed-line handler now logs skipped lines
+- **`novel/reader.py`**: bare `open()` replaced with `open_text()` (fixes `.gz` file support)
 
 ### Added
 
@@ -86,6 +92,70 @@ gmlst scheme export -s custom_0 --format grapetree -o mst.tsv
 ├── custom_0.txt         # Merged: original + novel profiles
 └── .meta.json           # Metadata: based_on, description, novel counts
 ```
+
+### Code Quality Improvements
+
+#### Security
+- **Shell injection fix**: `gmlst config set` now uses `shlex.quote()` for config values
+- **Credential file permissions**: `~/.config/gmlst/env.sh` is now created with `0600` permissions
+- **SSRF gap closed**: `assert_public_url()` added to aria2c batch download path and all
+  Enterobase direct `requests.get/head` calls (5 new guard points)
+- **`gmlst config init` command**: Auto-adds source line to shell rc file (bash/zsh/fish),
+  idempotent, for persistent environment variable loading
+
+#### Test Quality
+- **8 fake tests replaced**: `inspect.getsource()` string-matching tests rewritten as real
+  behavior tests with mocked network calls (test_provider_errors.py, test_bigsdb_errors.py)
+- **Pipeline tests added**: 9 behavior tests for core/pipeline.py orchestration functions
+  (previously zero direct test coverage)
+- **Aligner parsing tests**: 22 behavior tests for `_parse_coords` (nucmer) and
+  `_parse_blast_output` (blastn) — previously completely untested
+- **conftest.py created**: Shared test fixtures (DummyScheme, DummyCache, DummyAligner,
+  DummySample) eliminating ~30 repeated class definitions
+- **Frontend tests**: 27 new tests for mstApi.js, tableExport.js, sessionPersistence.js,
+  fileInput.js (43→70 total frontend tests)
+
+#### Code Deduplication
+- `utc_now_iso()`: 6 inline copies → 1 shared helper
+- `_load_blocked_schemes`: 2 implementations → 1 (common.py delegates to cache.py)
+- `_env_int()` helper: 5 near-identical env-var parser functions → 1 helper
+- `merge_fasta_files()`: 5 duplicated FASTA merge implementations → 1 shared helper
+- Dead code removed: `count_sequences`, nucmer unreachable block, blastn wasted I/O
+
+#### Modularity — God Module Split
+- `visual/cli.py`: 995→689 lines (+ `_cli_helpers.py` 123 lines + `_cli_export.py` 210 lines)
+- `commands/scheme.py`: 1588→896 lines (+ `scheme_common.py` 184 + `scheme_render.py` 133 + `scheme_custom.py` 423)
+- `commands/utils.py`: 1006→365 lines (+ `utils_extract.py` 338 + `utils_benchmark.py` 343)
+
+#### Type Safety
+- **pyright errors: 121→0**
+- `dict[str, object]` → `dict[str, Any]` across visual/app.py (65 errors fixed)
+- `int(int|None)` → explicit None guards in chew_policy.py (12 errors fixed)
+- 5 missing function annotations added
+- ~27 bare `dict`/`list[dict]` generics annotated with type parameters
+- All 7 `# type: ignore` comments now have explanatory notes
+
+#### Error Handling
+- 4 provider silent-exception sites escalated from `logger.debug` to `logger.warning`
+- 11 `except...: pass`/`suppress()` sites annotated with explanatory comments
+- `nucmer.py` malformed-line handler now logs skipped lines
+
+#### Architecture
+- **Layering violation fixed**: `ProdigalPredictor` moved from `schemefree/` to `core/`
+  (eliminates core→schemefree circular dependency)
+- Logger naming standardized to `logging.getLogger(__name__)` across 21 modules
+- Schemefree temp directories now use `temp_dir()` (respects GMLST_TMPDIR)
+- `print()` → `click.echo()` in benchmark report and output utilities
+- Magic numbers extracted to named constants in allele.py, blastn.py, gene_predictor.py,
+  assembly_engine.py
+
+#### Documentation
+- AGENTS.md module structure tree updated with all new split files
+- `docs/en/architecture.md` and `docs/zh/architecture.md` module trees synchronized
+- `docs/en/configuration.md` and `docs/zh/configuration.md` updated with `config init` usage
+- README.md updated with `config init` workflow
+- `dev/code_quality_audit.md` created with full evaluation report
+- `dev/remain.md` created tracking deferred items for v0.2.0
 
 ## [0.1.2] - 2026-07-08
 

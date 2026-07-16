@@ -208,15 +208,24 @@ gmlst/
 │   ├── refinement.py     #   Refinement pass
 │   ├── ranking.py        #   Result ranking
 │   ├── cds.py            #   CDS prediction integration
+│   ├── gene_predictor.py #   Prodigal/pyrodigal gene prediction
 │   └── ...               #   Adapters, config, types, sequences
 ├── commands/             # CLI command implementations
 │   ├── typing.py         #   typing command group
-│   ├── scheme.py         #   scheme command group
-│   ├── utils.py          #   Output utilities
+│   ├── scheme.py         #   scheme command group (facade)
+│   ├── scheme_common.py  #   scheme shared helpers + constants
+│   ├── scheme_render.py  #   scheme table/text rendering
+│   ├── scheme_custom.py  #   scheme create / update-custom commands
+│   ├── utils.py          #   utils command group (facade)
+│   ├── utils_extract.py  #   extract / novel allele logic
+│   ├── utils_benchmark.py #  benchmark engine + cgmlst gate
+│   ├── config.py         #   config command group
 │   └── ...
 ├── visual/               # Flask web visualization
 │   ├── app.py            #   Flask API routes + helpers
-│   ├── cli.py            #   visual CLI subcommand
+│   ├── cli.py            #   visual CLI subcommands
+│   ├── _cli_helpers.py   #   shared I/O + formatting helpers
+│   ├── _cli_export.py    #   export payload dispatcher
 │   ├── mst.py            #   MST builder (public API)
 │   ├── mst_shared.py     #   Shared types + parsing
 │   ├── mst_edmonds.py    #   Edmonds MST backend
@@ -234,6 +243,7 @@ gmlst/
 ├── database/             # Schema providers + cache
 ├── novel/                # Novel allele workflow
 ├── schemefree/           # tgmlst scheme-free typing
+│   └── gene_predictor.py #   Re-export shim (implementation in core/)
 ├── readers/              # FASTA/FASTQ readers
 ├── data/                 # Catalog JSON files
 ├── tools/                # External tool wrappers
@@ -243,7 +253,7 @@ gmlst/
 ├── metadata_io.py        # Metadata parsing
 └── core_config.py        # Global configuration
 test/
-├── conftest.py           # Shared fixtures (if present)
+├── conftest.py           # Shared fixtures (DummyScheme, DummyCache, etc.)
 ├── test_<module>.py      # One test file per module
 └── schemefree/           # Scheme-free test suite
 ```

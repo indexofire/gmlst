@@ -84,16 +84,23 @@ gmlst/
 │   └── st_lookup.py
 ├── commands/
 │   ├── common.py
+│   ├── config.py
 │   ├── typing.py
 │   ├── typing_output.py
 │   ├── typing_runner.py
 │   ├── typing_runtime.py
 │   ├── typing_scheme.py
 │   ├── scheme.py
-│   └── utils.py
+│   ├── scheme_common.py
+│   ├── scheme_render.py
+│   ├── scheme_custom.py
+│   ├── utils.py
+│   ├── utils_extract.py
+│   └── utils_benchmark.py
 ├── core/
 │   ├── config.py
 │   ├── pipeline.py
+│   ├── gene_predictor.py
 │   ├── indexing.py
 │   ├── prefilter.py
 │   ├── ranking.py
@@ -133,12 +140,14 @@ gmlst/
 │   ├── assembly_engine.py
 │   ├── cluster_engine.py
 │   ├── config.py
-│   ├── gene_predictor.py
+│   ├── gene_predictor.py   # re-export shim (实现在 core/)
 │   ├── hasher.py
 │   ├── io_handler.py
 │   └── typing_engine.py
 ├── visual/
 │   ├── cli.py
+│   ├── _cli_helpers.py
+│   ├── _cli_export.py
 │   ├── app.py
 │   └── mst.py
 └── web/
@@ -505,7 +514,7 @@ scheme-free typing 位于 `gmlst/schemefree/`，与基于 provider 下载的传�
 主入口是 `gmlst/schemefree/typing_engine.py` 中的 `SchemeFreeTyper`，它负责：
 
 1. 通过 `gmlst/schemefree/assembly_engine.py` 对 FASTQ 做可选组装
-2. 通过 `gmlst/schemefree/gene_predictor.py` 做基因预测
+2. 通过 `gmlst/core/gene_predictor.py` 做基因预测
 3. 通过 `gmlst/schemefree/cluster_engine.py` 做聚类
 4. 通过 `gmlst/schemefree/hasher.py` 做 allele 哈希
 5. 通过 `gmlst/schemefree/io_handler.py` 做 scheme 导入与导出
