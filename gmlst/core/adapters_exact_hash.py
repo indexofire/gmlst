@@ -8,7 +8,7 @@ from gmlst.aligners.base import AlleleMatch
 from . import cds as _cds
 from . import exact_hash as _exact_hash
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 
 def load_or_build_exact_hash_indexes_impl(

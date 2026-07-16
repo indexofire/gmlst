@@ -25,7 +25,7 @@ from gmlst.database.providers.base import SchemeInfo
 from gmlst.database.providers.cgmlst_schemes import _CGMLST_SCHEMES
 from gmlst.fasta_io import utc_now_iso
 
-logger = logging.getLogger("gmlst.providers.cgmlst")
+logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://www.cgmlst.org/ncs/1000"
 

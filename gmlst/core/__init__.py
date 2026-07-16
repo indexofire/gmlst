@@ -96,7 +96,7 @@ from . import sequences as _sequences
 
 _minimap2_ultrafast_second_pass_max_loci = _m2_ultrafast_second_pass_max_loci
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 _index_is_empty = _indexing.index_is_empty_impl
 _find_index = _indexing.find_index_impl

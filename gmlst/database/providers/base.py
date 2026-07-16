@@ -9,7 +9,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from gmlst.database.download import DownloadTool, download_files_batch
 
-logger = logging.getLogger("gmlst.database.providers.base")
+logger = logging.getLogger(__name__)
 
 
 @dataclass

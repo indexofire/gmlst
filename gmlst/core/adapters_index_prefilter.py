@@ -10,7 +10,7 @@ from gmlst.core import prefilter as _prefilter
 from gmlst.core import sequences as _sequences
 from gmlst.core.types import CgmlstModeOverrides
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 
 def ensure_full_index_impl(

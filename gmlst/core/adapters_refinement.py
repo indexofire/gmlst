@@ -15,7 +15,7 @@ from . import prefilter as _prefilter
 from . import ranking as _ranking
 from . import refinement as _refinement
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 
 def write_merged_fasta_impl(fasta_paths: list[Path], out_path: Path) -> None:

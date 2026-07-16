@@ -31,7 +31,7 @@ from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
 from gmlst.fasta_io import merge_fasta_files
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
-logger = logging.getLogger("gmlst.aligners.blastn")
+logger = logging.getLogger(__name__)
 
 # Tabular fields we request from BLAST
 _OUTFMT = (

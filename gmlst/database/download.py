@@ -30,7 +30,7 @@ from typing import Literal
 
 from gmlst.database.url_guard import assert_public_url
 
-logger = logging.getLogger("gmlst.download")
+logger = logging.getLogger(__name__)
 
 DownloadTool = Literal["auto", "aria2c", "curl", "wget", "httpx", "requests"]
 

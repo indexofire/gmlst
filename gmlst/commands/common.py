@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import click
 from rich.console import Console
 
 from gmlst.database.cache import _load_blocked_schemes as _load_blocked_schemes
@@ -69,7 +70,7 @@ def emit_output_text(output_text: str, output: Path | None) -> bool:
     if output is not None:
         output.write_text(payload)
         return True
-    print(payload, end="")
+    click.echo(payload, nl=False)
     return False
 
 

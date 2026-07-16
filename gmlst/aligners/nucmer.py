@@ -33,7 +33,7 @@ from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
 from gmlst.fasta_io import merge_fasta_files
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
-logger = logging.getLogger("gmlst.aligners.nucmer")
+logger = logging.getLogger(__name__)
 
 # Minimum values for a hit to be considered
 _MIN_IDENTITY = 70.0

@@ -39,7 +39,7 @@ from gmlst.fasta_io import merge_fasta_files
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
-logger = logging.getLogger("gmlst.aligners.minimap2")
+logger = logging.getLogger(__name__)
 
 _FASTA_PRESET = "asm20"
 _FASTA_SPEED_PROFILES: dict[str, list[str]] = {

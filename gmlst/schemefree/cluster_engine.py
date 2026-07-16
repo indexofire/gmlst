@@ -4,10 +4,10 @@ import hashlib
 import os
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 from gmlst.core.gene_predictor import PredictedGene
+from gmlst.utils import temp_dir
 
 
 class MMseqsClusterEngine:
@@ -40,8 +40,8 @@ class MMseqsClusterEngine:
                 return self._fallback_cluster(genes)
             raise ImportError("mmseqs is required for schemefree clustering")
 
-        with tempfile.TemporaryDirectory(prefix="gmlst_mmseqs_") as temp_dir:
-            temp_path = Path(temp_dir)
+        with temp_dir("gmlst_schemefree_") as tmp:
+            temp_path = Path(tmp)
             input_fasta = temp_path / "genes.fasta"
             result_prefix = temp_path / "clusters"
             tmp_dir = temp_path / "tmp"

@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO
 
-logger = logging.getLogger("gmlst")
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------

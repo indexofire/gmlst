@@ -22,7 +22,7 @@ import os
 import socket
 from urllib.parse import urlparse
 
-logger = logging.getLogger("gmlst.database.url_guard")
+logger = logging.getLogger(__name__)
 
 
 class UrlGuardError(ValueError):

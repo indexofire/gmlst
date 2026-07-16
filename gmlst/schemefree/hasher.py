@@ -10,10 +10,11 @@ import hashlib
 import random
 import shutil
 import subprocess
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
+
+from gmlst.utils import temp_dir
 
 
 class HashStrategy(ABC):
@@ -337,8 +338,8 @@ class BlastHashStrategy(HashStrategy):
         if not self._allele_sequences:
             return None
 
-        with tempfile.TemporaryDirectory(prefix="gmlst_blast_") as temp_dir:
-            temp_path = Path(temp_dir)
+        with temp_dir("gmlst_schemefree_") as tmp:
+            temp_path = Path(tmp)
             db_fasta = temp_path / "alleles.fasta"
             query_fasta = temp_path / "query.fasta"
             db_prefix = temp_path / "alleles_db"

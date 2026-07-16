@@ -9,11 +9,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import click
+
 from gmlst.commands.common import render_delimited_rows
 from gmlst.database.cache import DatabaseCache
 from gmlst.readers.sample import SampleInput
 
-logger = logging.getLogger("gmlst.benchmark")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -137,7 +139,7 @@ def run_benchmark(
 
 
 def print_report(result: BenchmarkResult) -> None:
-    print(render_report(result), end="")
+    click.echo(render_report(result), nl=False)
 
 
 def render_report(result: BenchmarkResult) -> str:

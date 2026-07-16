@@ -39,7 +39,7 @@ from gmlst.database.providers.base import (
 )
 from gmlst.fasta_io import count_fasta_records, count_profile_rows, utc_now_iso
 
-logger = logging.getLogger("gmlst.database.providers.bigsdb")
+logger = logging.getLogger(__name__)
 
 
 # How to classify schemes by description keyword

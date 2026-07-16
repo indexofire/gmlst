@@ -30,7 +30,7 @@ from gmlst.fasta_io import (
     utc_now_iso,
 )
 
-logger = logging.getLogger("gmlst.database.providers.enterobase")
+logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://enterobase.warwick.ac.uk/schemes"
 

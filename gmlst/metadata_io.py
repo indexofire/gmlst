@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger("gmlst.metadata_io")
+logger = logging.getLogger(__name__)
 
 
 def read_json_metadata(path: Path, *, default: Any) -> Any:

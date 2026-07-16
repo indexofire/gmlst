@@ -36,7 +36,7 @@ def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
-logger = logging.getLogger("gmlst.commands.scheme")
+logger = logging.getLogger(__name__)
 
 
 def _reject_if_blocked(

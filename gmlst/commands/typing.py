@@ -57,7 +57,7 @@ from gmlst.schemefree import (
 )
 from gmlst.utils import setup_logging
 
-logger = logging.getLogger("gmlst")
+logger = logging.getLogger(__name__)
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 

@@ -32,7 +32,7 @@ from gmlst.database.download import DownloadTool
 from gmlst.database.schema import Scheme
 from gmlst.fasta_io import utc_now_iso
 
-logger = logging.getLogger("gmlst.database_cache")
+logger = logging.getLogger(__name__)
 
 
 def _load_blocked_schemes() -> dict[str, set[str]]:

@@ -7,7 +7,6 @@ tying together gene prediction, clustering, and hashing to generate profiles.
 from __future__ import annotations
 
 import concurrent.futures
-import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -19,6 +18,7 @@ from gmlst.schemefree.cluster_engine import MMseqsClusterEngine
 from gmlst.schemefree.config import SchemaFreeConfig
 from gmlst.schemefree.hasher import HashStrategy, HashStrategyManager
 from gmlst.schemefree.io_handler import read_scheme_json, write_scheme_json
+from gmlst.utils import temp_dir
 
 
 class SampleProcessingError(RuntimeError):
@@ -119,8 +119,8 @@ class SchemeFreeTyper:
             max(1, self.config.assembly.max_parallel_samples),
             max(1, len(sample_inputs)),
         )
-        with tempfile.TemporaryDirectory(prefix="gmlst_schemefree_") as temp_dir:
-            temp_path = Path(temp_dir)
+        with temp_dir("gmlst_schemefree_") as tmp:
+            temp_path = Path(tmp)
             if max_workers == 1:
                 for sample in sample_inputs:
                     try:

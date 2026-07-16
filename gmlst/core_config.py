@@ -4,7 +4,7 @@ import logging
 import os
 from pathlib import Path
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 DEFAULT_PREFILTER_MAX_LOCI = 3000
 _TRUTHY = {"1", "true", "yes", "on"}

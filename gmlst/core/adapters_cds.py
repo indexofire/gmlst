@@ -10,7 +10,7 @@ from . import cds as _cds
 from .config import _configured_cgmlst_cds_training_file
 from .exact_hash import scheme_precomputed_dir_impl
 
-logger = logging.getLogger("gmlst.core")
+logger = logging.getLogger(__name__)
 
 
 def resolve_cgmlst_cds_training_file_impl(
