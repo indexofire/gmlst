@@ -15,16 +15,36 @@
 
 ## 安装方式
 
-### 方式 1：使用 Pixi 安装（推荐）
+### 方式 1: 使用 pip 安装
 
-如果你希望安装过程最省心，建议直接使用 Pixi。Pixi 会统一管理：
+推荐使用 conda 虚拟环境安装 gmlst 工具。
+
+```bash
+conda create -n gmlst
+conda activate gmlst
+conda install python=3.12
+pip install gmlst
+```
+
+要让gmlst能开展工作，还需要安装生信比对软件，目前 fasta 数据支持的后端有 blast, minimap2, nucmer 和 kma。fastq 数据支持的后端是 kma。可以根据自己的数据源需要进行安装
+
+```bash
+# 让 gmlst 发挥所有功能，安装所有的依赖软件
+conda install blast, minimap2, mummer4, kma
+```
+
+### 方式 2：使用源代码安装
+
+#### 使用 pixi 安装
+
+如果你希望安装过程省心，建议直接使用 Pixi。Pixi 会统一管理：
 
 - Python 解释器
 - Python 依赖包
 - 外部工具，例如 `blastn`、`kma`、`minimap2`、`nucmer`、`samtools`、`kmc`
 - 项目任务，例如 `pixi run start`、`pixi run test`、`pixi run check`
 
-### 第 1 步：安装 Pixi
+##### 第 1 步：安装 Pixi
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
@@ -32,14 +52,14 @@ curl -fsSL https://pixi.sh/install.sh | bash
 
 安装完成后，如果终端里暂时找不到 `pixi`，请重新打开一个 shell。
 
-### 第 2 步：克隆仓库
+##### 第 2 步：克隆仓库
 
 ```bash
 git clone https://github.com/indexofire/gmlst.git
 cd gmlst
 ```
 
-### 第 3 步：安装项目环境
+##### 第 3 步：安装项目环境
 
 ```bash
 pixi install
@@ -47,7 +67,7 @@ pixi install
 
 这一步会读取 `pixi.toml`，创建环境，并安装 Python 依赖和外部工具。
 
-### 第 4 步：进入 Pixi shell
+##### 第 4 步：进入 Pixi shell
 
 ```bash
 pixi shell
@@ -55,7 +75,7 @@ pixi shell
 
 进入后，`gmlst` 以及相关后端工具都会自动出现在 `PATH` 中。
 
-### 第 5 步：验证 CLI
+##### 第 5 步：验证 CLI
 
 ```bash
 gmlst --version
@@ -70,68 +90,39 @@ pixi run gmlst --help
 pixi run gmlst utils check -b blastn
 ```
 
-### 方式 2：使用 pip 安装
+#### 方式 2：使用 uv 安装
 
 如果你更习惯标准 Python 虚拟环境，也可以使用 pip 安装。不过这种方式需要你自己额外安装后端依赖工具。
 
-### 第 1 步：创建并激活虚拟环境
+##### 第 1 步：安装 uv
+
+uv 推荐采用用户级安装。
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 第 2 步：安装 `gmlst`
-
-```bash
-pip install gmlst
-```
-
-### 第 3 步：单独安装外部生物信息学工具
-
-如果使用 pip，`gmlst` 的 Python 包会安装好，但 `blastn`、`kma`、`minimap2`、`nucmer` 等后端工具需要你自己安装。
-
-完整工具列表和安装命令见下方的 [外部依赖](#外部依赖)。
-
-### 第 4 步：验证安装
-
-```bash
-gmlst --version
-gmlst --help
-gmlst utils check -b blastn
-```
-
-### 方式 3：从源码安装
-
-如果你要进行本地开发、调试，或者修改文档，源码安装最合适。
-
-### 第 1 步：克隆仓库
+##### 第 2 步：克隆仓库
 
 ```bash
 git clone https://github.com/indexofire/gmlst.git
 cd gmlst
 ```
 
-### 第 2 步：创建并激活虚拟环境
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-```
-
-### 第 3 步：以 editable 模式安装
-
-```bash
-pip install -e .
-```
+##### 第 3 步：创建并激活虚拟环境
 
 这一步会根据 `pyproject.toml` 安装项目，并在本地生成 `gmlst` 命令入口。
 
-### 第 4 步：安装后端工具
+```bash
+uv venv .venv
+pip install -e .
+```
 
-源码安装只会安装 Python 包，不会自动安装 `blastn`、`kma`、`minimap2`、`nucmer` 等外部工具。除非你改用 Pixi，否则仍然需要手动安装这些后端依赖。
+##### 第 4 步：单独安装外部生物信息学工具
+
+如果使用 pip，`gmlst` 的 Python 包会安装好，但 `blastn`、`kma`、`minimap2`、`nucmer` 等后端工具需要你自己安装。
+
+完整工具列表和安装命令见下方的 [外部依赖](#外部依赖)。
 
 ### 第 5 步：验证安装
 
@@ -141,7 +132,7 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
-### 方式 4：使用 Docker 安装
+### 方式 3：使用 Docker 安装
 
 如果你想要一个开箱即用的完整环境（无需配置 Python 或 conda），推荐使用 Docker。镜像包含 gmlst 以及所有外部比对工具（blastn、minimap2、nucmer、kma、mmseqs2、prodigal、samtools）。
 
@@ -255,7 +246,7 @@ gmlst --version
 示例输出：
 
 ```text
-gmlst, version 0.1.0
+gmlst, version 0.1.3
 ```
 
 ### 检查帮助信息

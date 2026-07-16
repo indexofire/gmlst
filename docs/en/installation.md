@@ -15,16 +15,36 @@ This guide covers the supported ways to install `gmlst` and verify that the CLI 
 
 ## Installation Methods
 
-### Method 1: Install with Pixi (recommended)
+### Method 1: Install with pip
 
-Use this method if you want the smoothest setup. Pixi manages:
+A conda virtual environment is recommended for installing gmlst.
 
-- Python
+```bash
+conda create -n gmlst
+conda activate gmlst
+conda install python=3.12
+pip install gmlst
+```
+
+To make gmlst functional, you also need to install bioinformatics alignment tools. Currently, FASTA data supports the `blastn`, `minimap2`, `nucmer`, and `kma` backends. FASTQ data supports the `kma` backend. Install the ones you need based on your data types.
+
+```bash
+# Install all backend dependencies for full functionality
+conda install blast minimap2 mummer4 kma
+```
+
+### Method 2: Install from source
+
+#### Install with Pixi
+
+If you want the smoothest setup, use Pixi. Pixi manages:
+
+- Python interpreter
 - Python dependencies
 - external tools such as `blastn`, `kma`, `minimap2`, `nucmer`, `samtools`, and `kmc`
 - project tasks such as `pixi run start`, `pixi run test`, and `pixi run check`
 
-### Step 1: Install Pixi
+##### Step 1: Install Pixi
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
@@ -32,14 +52,14 @@ curl -fsSL https://pixi.sh/install.sh | bash
 
 After installation, restart your shell if `pixi` is not immediately available.
 
-### Step 2: Clone the repository
+##### Step 2: Clone the repository
 
 ```bash
 git clone https://github.com/indexofire/gmlst.git
 cd gmlst
 ```
 
-### Step 3: Install the project environment
+##### Step 3: Install the project environment
 
 ```bash
 pixi install
@@ -47,7 +67,7 @@ pixi install
 
 This reads `pixi.toml`, creates the environment, and installs both Python and external dependencies.
 
-### Step 4: Enter the Pixi shell
+##### Step 4: Enter the Pixi shell
 
 ```bash
 pixi shell
@@ -55,7 +75,7 @@ pixi shell
 
 Inside the shell, `gmlst` and all required tools should be on `PATH`.
 
-### Step 5: Verify the CLI
+##### Step 5: Verify the CLI
 
 ```bash
 gmlst --version
@@ -70,68 +90,39 @@ pixi run gmlst --help
 pixi run gmlst utils check -b blastn
 ```
 
-### Method 2: Install with pip
+#### Install with uv
 
-Use this method if you want a plain Python virtual environment and you are comfortable installing the backend tools yourself.
+If you prefer a standard Python virtual environment, you can also use pip. However, this method requires you to install the backend tools separately.
 
-### Step 1: Create and activate a virtual environment
+##### Step 1: Install uv
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-```
-
-### Step 2: Install `gmlst`
+uv is recommended with a user-level installation.
 
 ```bash
-pip install gmlst
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Step 3: Install external bioinformatics tools separately
-
-If you use pip, you must install the external backend tools yourself. Conda and Homebrew are the most practical choices.
-
-See [External Dependencies](#external-dependencies) below for the full tool matrix and install commands.
-
-### Step 4: Verify the install
-
-```bash
-gmlst --version
-gmlst --help
-gmlst utils check -b blastn
-```
-
-### Method 3: Install from source
-
-Use this method if you want an editable checkout for local development or documentation work.
-
-### Step 1: Clone the repository
+##### Step 2: Clone the repository
 
 ```bash
 git clone https://github.com/indexofire/gmlst.git
 cd gmlst
 ```
 
-### Step 2: Create and activate a virtual environment
+##### Step 3: Create and activate a virtual environment
+
+This installs the project based on `pyproject.toml` and generates the `gmlst` CLI entry point locally.
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-```
-
-### Step 3: Install the package in editable mode
-
-```bash
+uv venv .venv
 pip install -e .
 ```
 
-This uses the project build configuration in `pyproject.toml` and installs the `gmlst` CLI entry point locally.
+##### Step 4: Install external bioinformatics tools separately
 
-### Step 4: Install backend tools
+If you use pip, the Python package will be installed, but backend tools such as `blastn`, `kma`, `minimap2`, and `nucmer` must be installed separately.
 
-Editable install only covers the Python package. You still need to install tools such as `blastn`, `kma`, `minimap2`, and `nucmer` separately unless you use Pixi.
+See [External Dependencies](#external-dependencies) below for the full tool matrix and install commands.
 
 ### Step 5: Verify the install
 
@@ -141,7 +132,7 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
-### Method 4: Install with Docker
+### Method 3: Install with Docker
 
 Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed. The image includes gmlst plus all external alignment tools (blastn, minimap2, nucmer, kma, mmseqs2, prodigal, samtools).
 
@@ -255,7 +246,7 @@ gmlst --version
 Example output:
 
 ```text
-gmlst, version 0.1.0
+gmlst, version 0.1.3
 ```
 
 ### Check top level help
