@@ -35,7 +35,7 @@ def resolve_cgmlst_cds_training_file_impl(
     if sample_path is None:
         return None
 
-    from gmlst.schemefree.gene_predictor import create_pyrodigal_training_file
+    from gmlst.core.gene_predictor import create_pyrodigal_training_file
 
     try:
         create_pyrodigal_training_file(sample_path, target)
@@ -56,7 +56,7 @@ def predict_cds_genes_impl(
     cds_training_file: Path | None,
     cds_closed_ends: bool,
 ) -> list[Any]:
-    from gmlst.schemefree.gene_predictor import ProdigalPredictor
+    from gmlst.core.gene_predictor import ProdigalPredictor
 
     predictor = ProdigalPredictor(
         tool="pyrodigal",

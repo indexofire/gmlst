@@ -4,10 +4,10 @@ This module provides de novo scheme discovery and typing capabilities,
 allowing users to perform MLST-like analysis without predefined schemes.
 """
 
+from gmlst.core.gene_predictor import PredictedGene, ProdigalPredictor
 from gmlst.schemefree.assembly_engine import MegahitAssembler
 from gmlst.schemefree.cluster_engine import MMseqsClusterEngine
 from gmlst.schemefree.config import SchemaFreeConfig
-from gmlst.schemefree.gene_predictor import PredictedGene, ProdigalPredictor
 from gmlst.schemefree.hasher import (
     BlastHashStrategy,
     FastHashStrategy,

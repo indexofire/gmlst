@@ -7,8 +7,8 @@ from pathlib import Path
 import gmlst.core as core
 from gmlst.aligners.base import AlignmentResult, AlleleMatch
 from gmlst.calling.allele import LocusCall
+from gmlst.core.gene_predictor import PredictedGene
 from gmlst.readers.sample import SampleInput
-from gmlst.schemefree.gene_predictor import PredictedGene
 
 
 @dataclass
@@ -805,7 +805,7 @@ def test_resolve_cgmlst_cds_training_file_autocreates_in_single_mode(
 
     monkeypatch.delenv("GMLST_CGMLST_CDS_TRAINING_FILE", raising=False)
     monkeypatch.setattr(
-        "gmlst.schemefree.gene_predictor.create_pyrodigal_training_file",
+        "gmlst.core.gene_predictor.create_pyrodigal_training_file",
         _fake_create,
     )
 
@@ -834,7 +834,7 @@ def test_resolve_cgmlst_cds_training_file_skips_autocreate_in_meta_mode(
 
     monkeypatch.delenv("GMLST_CGMLST_CDS_TRAINING_FILE", raising=False)
     monkeypatch.setattr(
-        "gmlst.schemefree.gene_predictor.create_pyrodigal_training_file",
+        "gmlst.core.gene_predictor.create_pyrodigal_training_file",
         _unexpected,
     )
 

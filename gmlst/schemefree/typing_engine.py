@@ -12,11 +12,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+from gmlst.core.gene_predictor import PredictedGene, ProdigalPredictor
 from gmlst.readers.sample import SampleInput
 from gmlst.schemefree.assembly_engine import MegahitAssembler
 from gmlst.schemefree.cluster_engine import MMseqsClusterEngine
 from gmlst.schemefree.config import SchemaFreeConfig
-from gmlst.schemefree.gene_predictor import PredictedGene, ProdigalPredictor
 from gmlst.schemefree.hasher import HashStrategy, HashStrategyManager
 from gmlst.schemefree.io_handler import read_scheme_json, write_scheme_json
 

@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from gmlst.schemefree.gene_predictor import PredictedGene
+from gmlst.core.gene_predictor import PredictedGene
 
 
 class MMseqsClusterEngine:
