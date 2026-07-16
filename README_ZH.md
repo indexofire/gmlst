@@ -25,78 +25,25 @@
 
 ## 安装
 
-### 方式一，使用 pixi，推荐
+### 快速安装
 
-Pixi 可以同时管理 Python、外部生信工具和可编辑安装的项目环境。
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-git clone https://github.com/indexofire/gmlst.git
-cd gmlst
-pixi install
-pixi run gmlst --version
-```
-
-### 方式二，使用 pip
-
-如果你已经有自己的 Python 环境和系统级工具管理方式，可以使用 pip 安装。
+推荐使用 conda 虚拟环境安装 gmlst 工具。
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda create -n gmlst
+conda activate gmlst
+conda install python=3.12
 pip install gmlst
-
-# 外部工具需单独安装，例如使用 conda 或 mamba
-conda install -c bioconda blast minimap2 mummer4 mmseqs2 prodigal kma kmc samtools
 ```
 
-### 方式三，从源码安装
+要让gmlst能开展工作，还需要安装生信比对软件，目前 fasta 数据支持的后端有 blast, minimap2, nucmer 和 kma。fastq 数据支持的后端是 kma。可以根据自己的数据源需要进行安装
 
 ```bash
-git clone https://github.com/indexofire/gmlst.git
-cd gmlst
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-gmlst --help
+# 让 gmlst 发挥所有功能，安装所有的依赖软件
+conda install blast, minimap2, mummer4, kma
 ```
 
-### 方式四，使用 Docker
-
-所有工具预装完成，无需配置 Python 或 conda。
-
-```bash
-docker pull indexofire/gmlst:latest
-
-# 对样本进行分型
-docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
-  typing mlst -s saureus_1 /data/sample.fasta
-
-# Web 可视化
-docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
-  visual web --host 0.0.0.0 --port 8787
-```
-
-### pixi 环境中的外部工具
-
-- `blast >=2.14`
-- `minimap2 >=2.26`
-- `mummer4 >=4.0`
-- `mmseqs2 >=15`
-- `prodigal >=2.6`
-- `kma >=1.6.8`
-- `kmc >=3.2.4`
-- `samtools >=1.23.1`
-
-### Python 依赖
-
-- `click`
-- `flask`
-- `requests`
-- `rich`
-- `xxhash`
-- `pyyaml`
-- `pyrodigal`
+其他安装方法参见文档/安装部分。
 
 ## 快速开始
 
@@ -106,33 +53,38 @@ docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
 # 查看缓存中和可用的方案
 gmlst scheme list
 
-# 只看某一个 provider
+# 分页查看缓存中和可用的方案
+gmlst scheme list --pager
+
+# 只看某一个 provider，比如pubmlst.org的scheme
 gmlst scheme list -p pubmlst
 
 # 下载方案到本地缓存
 gmlst scheme download -s saureus_1
 ```
 
-### 2. 对单个样本分型
+### 2. 对样本分型
 
 ```bash
-# 对组装基因组做 MLST
+# 对基因组组装子做 MLST
 gmlst typing mlst -s saureus_1 sample.fasta
 
-# 对双端 reads 做 MLST
-gmlst typing mlst -s saureus_1 -b minimap2 sample_R1.fastq.gz sample_R2.fastq.gz
+# 对双端 reads 做 MLST，前提条件是安装了 kma 作为后端
+gmlst typing mlst -s saureus_1 sample_R1.fastq.gz sample_R2.fastq.gz
+# 软件支持使用通配符，能识别 _1/_2, _R1/_R2 的双端数据文件
+gmlst typing mlst -s saureus_1 sample*.fastq.gz
 
 # 对组装结果做 cgMLST
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fasta
 ```
 
 ### 3. 批量处理
 
 ```bash
 # 批量处理多个组装文件并输出 TSV
-gmlst typing mlst -s saureus_1 --max-workers 8 samples/*.fasta -o results.tsv
+gmlst typing mlst -s saureus_1 --max-workers 8 -o results.tsv samples/*.fasta 
 
-# 保存 JSON，便于后续 novel 提取
+# 保存成 JSON 格式，便于后续 novel 提取，或者投喂数据给AI
 gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 ```
 
@@ -147,6 +99,7 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 ```
 
 - 纯数字，表示 exact 已知等位基因匹配
+- `23*`，表示同一等位基因出现在多个拷贝上（如基因在两条染色体上重复），不影响 ST 判定
 - `~23`，表示非 exact 但高覆盖的调用，通常对应 closest 或 novel 倾向位点，具体可结合 identity 判断
 - `15?`，表示 partial 命中，覆盖度不足
 - `-`，表示该位点未找到
@@ -159,7 +112,7 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 | --- | --- | --- | --- | --- | --- |
 | `blastn` | 是 | 是 | 否 | 经典组装基因组 MLST | 适合做精确等位基因调用和重点复核 |
 | `kma` | 是 | 是 | 是 | FASTQ 分型和 cgMLST FASTQ 路径 | 对 reads 映射型等位基因调用很实用 |
-| `minimap2` | 是 | 是 | 是 | 快速组装分型和灵活的 reads 工作流 | cgMLST 优化路径中使用很多 |
+| `minimap2` | 是 | 是 | 否 | 快速组装分型和灵活的工作流 | cgMLST 优化路径中使用很多 |
 | `nucmer` | 是 | 是 | 否 | 组装级敏感比对 | 适合较远距离匹配和补充证据 |
 
 ### 后端说明
@@ -167,6 +120,8 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 - `typing mlst` 和 `typing cgmlst` 会自动识别常见双端 FASTQ 命名模式，例如 `_R1/_R2`、`_1/_2`、`.1/.2`。
 - `typing cgmlst` 在 FASTA 组装输入时默认使用 `minimap2`。
 - 对于 FASTQ cgMLST，CLI 采用 KMA-first 策略，chew 风格 cgMLST 模式主要面向 FASTA 场景。
+- FASTQ 输入会自动切换到 KMA 后端（`mlst` 和 `cgmlst` 均如此）。
+- `--max-depth` — 对 FASTQ 进行最大读深子采样（默认 100x，仅限 FASTQ）
 - `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto` 可控制 minimap2 的 k-mer 支持评分引擎。
 
 ## 数据提供方
@@ -182,9 +137,16 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 示例：
 
 ```bash
+# 查看 pubmlst 网站提供的 schemes
 gmlst scheme list -p pubmlst
+
+# 查看 enterobase 网站提供的类型是 cgmlst 的 schemes
 gmlst scheme list -p enterobase -t cgmlst
+
+# 查看用户建立的本地 scheme 
 gmlst scheme list -p local
+
+# 查看具体一个 scheme 的信息：saureus_1
 gmlst scheme show -s saureus_1
 ```
 
@@ -273,6 +235,25 @@ gmlst visual web --host 0.0.0.0 --port 8787
 
 ## 配置
 
+自 2025 年 1 月起，PubMLST 和 Pasteur 要求对 2024 年 12 月 31 日之后新增的数据进行认证。获取 API key 后配置：
+
+```bash
+# PubMLST：在 pubmlst.org → Preferences → API keys 注册
+gmlst config set GMLST_PUBMLST_API_KEY your-key-here
+gmlst config init     # 每个新 shell 自动加载（只需运行一次）
+source ~/.config/gmlst/env.sh   # 当前 shell 立即生效
+```
+
+使用 `gmlst config show` 查看所有配置变量及当前值：
+
+```bash
+gmlst config show                          # 分组表格视图
+gmlst config env                           # shell 可 source 的格式
+gmlst config get GMLST_CACHE_DIR           # 查看单个变量
+gmlst config set GMLST_CACHE_DIR /data     # 写入 ~/.config/gmlst/env.sh
+gmlst config init                          # 在 shell rc 文件中添加 source 行（只需运行一次）
+```
+
 关键环境变量：
 
 | 变量 | 作用 |
@@ -285,6 +266,9 @@ gmlst visual web --host 0.0.0.0 --port 8787
 | `GMLST_PRIVATE_BIGSDB_URL` | 注册私有 BIGSdb 实例为额外 provider |
 | `GMLST_PRIVATE_BIGSDB_NAME` | 私有 BIGSdb provider 的名称 |
 | `GMLST_PRIVATE_BIGSDB_LABEL` | 私有 BIGSdb provider 的显示标签 |
+| `GMLST_PUBMLST_API_KEY` | PubMLST API key（用于 2024 年后数据访问） |
+| `GMLST_PASTEUR_API_KEY` | Pasteur BIGSdb API key（用于 2024 年后数据访问） |
+| `ENTEROBASE_TOKEN` | Enterobase API 认证令牌 |
 
 示例：
 
@@ -309,20 +293,23 @@ gmlst scheme list -p labdb
 
 默认 TSV 格式会用紧凑标记表示每个位点的调用状态。
 
-| 标记 | 含义 |
-| --- | --- |
-| `23` | exact 等位基因调用 |
-| `~23` | 非 exact 但高覆盖的调用，可表示 closest 命中或 novel 倾向位点 |
-| `15?` | partial 调用，覆盖度低于置信阈值 |
-| `-` | 位点缺失 |
+| 标记 | 含义 | ST 分配 |
+| --- | --- | --- |
+| `23` | exact 等位基因调用，单拷贝 | ✅ 是 |
+| `23*` | exact 等位基因调用，**同等位基因多拷贝**（如基因在两条染色体上重复） | ✅ 是（使用 `23`） |
+| `~23` | 非 exact 但高覆盖的调用，可表示 closest 命中或 novel 倾向位点 | ❌ Novel |
+| `15?` | partial 调用，覆盖度低于置信阈值 | ❌ 不完整 |
+| `1,2` | **冲突性**多拷贝——不同等位基因出现在不同拷贝上 | ❌ 模糊 |
+| `1,1` | 同等位基因拷贝展开（使用 `--count-same-copy` 标志） | ✅ 是 |
+| `-` | 位点缺失 | ❌ 不完整 |
 
 如果要保留结构化字段，例如每个位点的调用元数据和 `novel_sequence` 信息，建议使用 JSON 输出。
 
 ## 多拷贝位点说明
 
-- 冲突性的多拷贝调用会以 `1,2` 这种逗号格式表示。
-- 一旦存在冲突性多拷贝位点，ST 会输出为 `-`，避免过度自信的 profile 判定。
-- 像 `1,1` 这样的同等位基因拷贝计数是可选功能，目前可通过 `blastn` 工作流中的 `--count-same-copy` 启用。
+- **同等位基因多拷贝**（`23*`）：同一个等位基因在多个基因组拷贝上被检测到（如副溶血弧菌等物种的双染色体上的管家基因重复）。这是正常生物学现象，**不影响 ST 分配**。`*` 标记仅用于提示，ST 查找使用不带 `*` 的等位基因编号。
+- **冲突性多拷贝**（`1,2`）：不同等位基因出现在同一位点的不同拷贝上（可能是旁系同源或混合感染）。ST 报告为 `-`，因为无法分配可信的 profile。
+- **显式拷贝计数**（`1,1`）：使用 `--count-same-copy` 展开同等位基因多拷贝为逗号格式，供下游工具使用。
 
 推荐复核流程：
 
@@ -364,9 +351,10 @@ pixi run ruff format .
 ## 文档索引
 
 - [docs/README.md](docs/README.md) 查看完整文档地图
-- [docs/installation.md](docs/installation.md) 查看安装说明
-- [docs/quickstart.md](docs/quickstart.md) 查看快速上手指南
-- [docs/commands.md](docs/commands.md) 查看 CLI 命令参考
+- [docs/zh/installation.md](docs/zh/installation.md) 查看安装说明
+- [docs/zh/quickstart.md](docs/zh/quickstart.md) 查看快速上手指南
+- [docs/zh/commands.md](docs/zh/commands.md) 查看 CLI 命令参考
+- [docs/zh/configuration.md](docs/zh/configuration.md) 查看配置参考
 - [README.md](README.md) 返回英文根文档
 
 ## 许可证

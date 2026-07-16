@@ -25,78 +25,25 @@ English | [简体中文](README_ZH.md)
 
 ## Installation
 
-### Option 1, pixi, recommended
+### Quick install
 
-Pixi installs Python, external bioinformatics tools, and the editable package in one environment.
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-git clone https://github.com/indexofire/gmlst.git
-cd gmlst
-pixi install
-pixi run gmlst --version
-```
-
-### Option 2, pip
-
-Use this if you already manage your own Python and system tools.
+A conda virtual environment is recommended for installing gmlst.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+conda create -n gmlst
+conda activate gmlst
+conda install python=3.12
 pip install gmlst
-
-# Install external tools separately, for example with conda or mamba
-conda install -c bioconda blast minimap2 mummer4 mmseqs2 prodigal kma kmc samtools
 ```
 
-### Option 3, from source
+To make gmlst functional, you also need to install bioinformatics alignment tools. Currently, FASTA data supports the `blastn`, `minimap2`, `nucmer`, and `kma` backends. FASTQ data supports the `kma` backend. Install the ones you need based on your data types.
 
 ```bash
-git clone https://github.com/indexofire/gmlst.git
-cd gmlst
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-gmlst --help
+# Install all backend dependencies for full functionality
+conda install blast minimap2 mummer4 kma
 ```
 
-### Option 4, Docker
-
-All tools pre-installed, no Python or conda setup needed.
-
-```bash
-docker pull indexofire/gmlst:latest
-
-# Type a sample
-docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
-  typing mlst -s saureus_1 /data/sample.fasta
-
-# Web visualization
-docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
-  visual web --host 0.0.0.0 --port 8787
-```
-
-### External tools managed by pixi
-
-- `blast >=2.14`
-- `minimap2 >=2.26`
-- `mummer4 >=4.0`
-- `mmseqs2 >=15`
-- `prodigal >=2.6`
-- `kma >=1.6.8`
-- `kmc >=3.2.4`
-- `samtools >=1.23.1`
-
-### Python package requirements
-
-- `click`
-- `flask`
-- `requests`
-- `rich`
-- `xxhash`
-- `pyyaml`
-- `pyrodigal`
+For other installation methods (Pixi, uv, source, Docker), see the [Installation Guide](docs/en/installation.md).
 
 ## Quick Start
 
@@ -126,8 +73,10 @@ gmlst scheme download saureus_1 --force -x 2
 # MLST on an assembled genome
 gmlst typing mlst -s saureus_1 sample.fasta
 
-# MLST on paired-end reads
-gmlst typing mlst -s saureus_1 -b minimap2 sample_R1.fastq.gz sample_R2.fastq.gz
+# MLST on paired-end reads (requires kma backend)
+gmlst typing mlst -s saureus_1 sample_R1.fastq.gz sample_R2.fastq.gz
+# Wildcard patterns are supported for _1/_2 and _R1/_R2 naming
+gmlst typing mlst -s saureus_1 sample*.fastq.gz
 
 # cgMLST on an assembly
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
@@ -154,6 +103,7 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 ```
 
 - plain allele number, exact known allele match
+- `23*`, same allele detected at multiple genomic copies (e.g. gene duplicated on two chromosomes); does not affect ST assignment
 - `~23`, non-exact high-coverage call, typically a closest or novel-style locus depending on identity
 - `15?`, partial locus hit with insufficient coverage
 - `-`, locus not found
@@ -392,14 +342,15 @@ pixi run ruff check .
 pixi run ruff format .
 ```
 
-See [docs/contributing.md](docs/contributing.md) for contributor workflow and [docs/architecture.md](docs/architecture.md) for module boundaries and typing-path contracts.
+See [docs/en/contributing.md](docs/en/contributing.md) for contributor workflow and [docs/en/architecture.md](docs/en/architecture.md) for module boundaries and typing-path contracts.
 
 ## Documentation Index
 
 - [docs/README.md](docs/README.md) for the full documentation map
-- [docs/installation.md](docs/installation.md) for installation details
-- [docs/quickstart.md](docs/quickstart.md) for a guided first run
-- [docs/commands.md](docs/commands.md) for the CLI reference
+- [docs/en/installation.md](docs/en/installation.md) for installation details
+- [docs/en/quickstart.md](docs/en/quickstart.md) for a guided first run
+- [docs/en/commands.md](docs/en/commands.md) for the CLI reference
+- [docs/en/configuration.md](docs/en/configuration.md) for configuration reference
 - [README_ZH.md](README_ZH.md) for the Chinese root guide
 
 ## License
