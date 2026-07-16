@@ -33,6 +33,8 @@ from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger(__name__)
 
+_MIN_BLAST_IDENTITY = 80
+
 # Tabular fields we request from BLAST
 _OUTFMT = (
     "6 qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore sseq"
@@ -156,7 +158,7 @@ class BlastnAligner:
                     "-out",
                     str(out_file),
                     "-perc_identity",
-                    "80",
+                    str(_MIN_BLAST_IDENTITY),
                     "-dust",
                     "no",
                     "-num_threads",

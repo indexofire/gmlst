@@ -6,6 +6,8 @@ from pathlib import Path
 
 from gmlst.readers.fastq import FastqReader
 
+_FALLBACK_CHUNK_SIZE = 1000
+
 
 class MegahitAssembler:
     def __init__(
@@ -78,7 +80,7 @@ class MegahitAssembler:
         if not contigs:
             merged = "".join(reads)
             if len(merged) >= self.min_contig_len:
-                chunk = max(self.min_contig_len, 1000)
+                chunk = max(self.min_contig_len, _FALLBACK_CHUNK_SIZE)
                 contigs = [
                     merged[i : i + chunk]
                     for i in range(0, len(merged), chunk)

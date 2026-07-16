@@ -170,6 +170,11 @@ def _rank_matches(matches: list[AlleleMatch]) -> list[AlleleMatch]:
     )
 
 
+_DEPTH_SATURATION = 30.0
+_CONTAMINATION_DEPTH = 300
+_CONTAMINATION_PENALTY = 0.9
+
+
 def _confidence(match: AlleleMatch) -> float:
     """Compute a 0–1 confidence score for a single match.
 
@@ -177,9 +182,8 @@ def _confidence(match: AlleleMatch) -> float:
     """
     base = (match.identity / 100.0) * match.coverage
     if match.depth is not None:
-        # Saturate depth contribution at 30×; very high depth slightly penalised
-        depth_factor = min(match.depth / 30.0, 1.0)
-        if match.depth > 300:
-            depth_factor *= 0.9  # possible contamination flag
+        depth_factor = min(match.depth / _DEPTH_SATURATION, 1.0)
+        if match.depth > _CONTAMINATION_DEPTH:
+            depth_factor *= _CONTAMINATION_PENALTY
         return base * depth_factor
     return base

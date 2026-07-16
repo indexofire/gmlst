@@ -13,6 +13,8 @@ try:
 except ImportError:
     pyrodigal = None
 
+_FALLBACK_WINDOW_SIZE = 900
+
 
 @dataclass(frozen=True)
 class PredictedGene:
@@ -243,7 +245,9 @@ class ProdigalPredictor:
         index = 1
         for record in FastaReader(sample_path).records():
             sequence = record.sequence
-            window = max(self.min_gene_len, min(900, self.max_gene_len))
+            window = max(
+                self.min_gene_len, min(_FALLBACK_WINDOW_SIZE, self.max_gene_len)
+            )
             if (
                 len(sequence) <= self.max_gene_len
                 and len(sequence) >= self.min_gene_len
