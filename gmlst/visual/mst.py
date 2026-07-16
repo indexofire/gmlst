@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict, cast
 
 from gmlst.visual.mst_edmonds import build_edmonds_mst
 from gmlst.visual.mst_grapetree import build_grapetree_v2_mst
@@ -145,7 +145,7 @@ def build_locus_diff_from_tsv(
     right_label: str,
     include_missing: bool,
     metadata_text: str | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     if not tsv_text.strip():
         raise ValueError("No TSV content provided")
 
@@ -243,7 +243,7 @@ def build_allele_heatmap_from_tsv(
 def build_result_comparison_from_tsv(
     left_tsv: str,
     right_tsv: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     if not left_tsv.strip() or not right_tsv.strip():
         raise ValueError("Both left_tsv and right_tsv are required")
 

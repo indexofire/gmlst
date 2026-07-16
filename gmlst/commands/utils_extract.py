@@ -265,9 +265,11 @@ def _extract_novel_from_tsv_with_retyping(
     cache = DatabaseCache(cache_dir)
     scheme_obj = cache.ensure_scheme(scheme_name, provider=chosen_provider)
     from gmlst.commands.utils import run_typing
+    from gmlst.readers.sample import SampleInput
 
+    typing_paths: list[Path | SampleInput] = list(sample_paths)
     results = run_typing(
-        sample_paths=sample_paths,
+        sample_paths=typing_paths,
         scheme_name=scheme_name,
         backend=backend,
         provider=chosen_provider,

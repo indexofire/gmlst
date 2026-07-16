@@ -19,6 +19,7 @@ from gmlst.visual._cli_helpers import (
 from gmlst.visual.app import create_visual_app
 from gmlst.visual.mst import (
     VALID_MST_METHODS,
+    MstMethod,
     build_allele_heatmap_from_tsv,
     build_distance_matrix_from_tsv,
     build_locus_diff_from_tsv,
@@ -125,7 +126,7 @@ def cmd_visual_mst(
     output_format: str,
     include_missing: bool,
     aggregate_profiles: bool,
-    method: str,
+    method: MstMethod,
 ) -> None:
     """Generate MST node/edge payload without starting the web server."""
     tsv_text = read_input_text(input_path, label="input")
@@ -597,7 +598,7 @@ def cmd_visual_export(
     right_label: str | None,
     include_missing: bool,
     aggregate_profiles: bool,
-    method: str,
+    method: MstMethod,
     output_path: Path | None,
     output_format: str,
     schema_version: str,

@@ -5,7 +5,6 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
 from gmlst.readers.fasta import FastaReader
 
@@ -52,7 +51,7 @@ def create_pyrodigal_training_file(sample_path: Path, output_path: Path) -> Path
 class ProdigalPredictor:
     def __init__(
         self,
-        tool: Literal["pyrodigal", "prodigal"] = "pyrodigal",
+        tool: str = "pyrodigal",
         mode: str = "meta",
         min_gene_len: int = 100,
         max_gene_len: int = 5000,

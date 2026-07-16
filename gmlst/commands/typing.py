@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
+from rich.console import Console
 
 from gmlst.aligners import AVAILABLE_BACKENDS
 from gmlst.commands.common import (
@@ -1371,7 +1372,7 @@ _FASTQ_BYTES_PER_READ = 250
 def _maybe_subsample_fastq(
     samples: list[Path | SampleInput],
     max_depth: float,
-    console: object,
+    console: Console,
 ) -> list[Path | SampleInput]:
     """Subsample FASTQ files when estimated depth exceeds max_depth."""
 
@@ -1424,6 +1425,7 @@ def _maybe_subsample_fastq(
                         path=new_paths[0],
                         mate_path=new_paths[1] if len(new_paths) > 1 else None,
                         sample_id=sample.sample_id,
+                        input_type=sample.input_type,
                     )
                 )
             else:

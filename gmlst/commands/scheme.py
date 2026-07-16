@@ -394,7 +394,7 @@ def cmd_show(
         "updated_at": scheme_meta.get("updated_at", ""),
     }
 
-    locus_stats: list[dict[str, object]] = []
+    locus_stats: list[dict[str, int | str]] = []
     if show_all and is_downloaded:
         try:
             loaded = cache.load_scheme(scheme, scheme_info.provider)

@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from collections.abc import Iterator
-from typing import TextIO
+from typing import Any, TextIO
 
 from gmlst.commands.common import (
     _DictSchemeInfo,
@@ -39,7 +39,9 @@ HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 logger = logging.getLogger("gmlst.commands.scheme")
 
 
-def _reject_if_blocked(scheme: str, match_info: dict, provider: str) -> None:
+def _reject_if_blocked(
+    scheme: str, match_info: _DictSchemeInfo | dict[str, Any], provider: str
+) -> None:
     """Exit with error if scheme is blocked."""
     blocked = _load_blocked_schemes()
     provider_blocked = blocked.get(provider, set())

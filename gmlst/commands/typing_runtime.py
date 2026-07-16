@@ -3,11 +3,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from gmlst.readers.sample import SampleInput
+
 
 def normalize_cgmlst_fastq_runtime(
     *,
     mode: str,
-    prepared_samples: list[Path | object],
+    prepared_samples: list[Path | SampleInput],
     normalized_policy: str,
     backend: str,
     cgmlst_mode: str,

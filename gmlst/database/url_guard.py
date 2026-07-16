@@ -132,11 +132,9 @@ def assert_public_url(url: str, *, allow: set[str] | None = None) -> None:
     ips: list[str] = []
     for family, _stype, _proto, _canon, sockaddr in infos:
         if family == socket.AF_INET:
-            ips.append(sockaddr[0])
+            ips.append(str(sockaddr[0]))
         elif family == socket.AF_INET6:
-            # sockaddr = (host, port, flowinfo, scope_id); host may carry
-            # a scope-id suffix (e.g. fe80::1%eth0). ip_address handles it.
-            ips.append(sockaddr[0].split("%", 1)[0])
+            ips.append(str(sockaddr[0]).split("%", 1)[0])
 
     if not ips:
         raise UrlGuardError(

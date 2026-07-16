@@ -84,8 +84,8 @@ def _parse_non_negative_int(payload: dict[str, Any], key: str, *, default: int) 
 
 
 def _build_adjacency(
-    nodes: list[dict[str, object]],
-    edges: list[dict[str, object]],
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
 ) -> dict[int, list[tuple[int, int]]]:
     adjacency = {int(node["id"]): [] for node in nodes}
     for edge in edges:
@@ -98,8 +98,8 @@ def _build_adjacency(
 
 
 def _choose_root_id(
-    nodes: list[dict[str, object]],
-    edges: list[dict[str, object]],
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
 ) -> int | None:
     if not nodes:
         return None
@@ -127,9 +127,9 @@ def _choose_root_id(
         return dist
 
     dist_a = _dfs_dist(node_ids[0])
-    end1 = max(dist_a, key=dist_a.get)
+    end1 = max(dist_a, key=lambda k: dist_a[k])
     dist1 = _dfs_dist(end1)
-    end2 = max(dist1, key=dist1.get)
+    end2 = max(dist1, key=lambda k: dist1[k])
     dist2 = _dfs_dist(end2)
 
     eccentricity = {nid: max(dist1.get(nid, 0), dist2.get(nid, 0)) for nid in node_ids}
@@ -199,7 +199,7 @@ def _color_field_preference(field: str) -> tuple[int, str]:
 
 
 def _suggest_color_fields(
-    nodes: list[dict[str, object]],
+    nodes: list[dict[str, Any]],
     metadata_fields: list[str],
 ) -> tuple[list[str], str | None]:
     candidates: list[tuple[tuple[int, int, str], str]] = []
@@ -223,8 +223,8 @@ def _suggest_color_fields(
     return suggested, default_field
 
 
-def _build_table_rows(nodes: list[dict[str, object]]) -> list[dict[str, object]]:
-    rows: list[dict[str, object]] = []
+def _build_table_rows(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for node in nodes:
         members = [str(member) for member in node.get("members", [])]
         rows.append(
@@ -243,11 +243,11 @@ def _build_table_rows(nodes: list[dict[str, object]]) -> list[dict[str, object]]
 
 
 def _cluster_nodes(
-    nodes: list[dict[str, object]],
-    edges: list[dict[str, object]],
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
     *,
     threshold: int,
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     nodes_by_id = {int(node["id"]): node for node in nodes}
     adjacency = {int(node["id"]): [] for node in nodes}
     for edge in edges:
@@ -260,14 +260,14 @@ def _cluster_nodes(
         adjacency[target].append(source)
 
     cluster_by_node: dict[int, int] = {}
-    cluster_summary: list[dict[str, object]] = []
+    cluster_summary: list[dict[str, Any]] = []
     next_cluster_id = 0
     for node in nodes:
         node_id = int(node["id"])
         if node_id in cluster_by_node:
             continue
         stack = [node_id]
-        members: list[dict[str, object]] = []
+        members: list[dict[str, Any]] = []
         while stack:
             current = stack.pop()
             if current in cluster_by_node:
@@ -305,11 +305,11 @@ def _cluster_nodes(
 
 
 def _cluster_nodes_by_matrix(
-    nodes: list[dict[str, object]],
+    nodes: list[dict[str, Any]],
     matrix: list[list[int]],
     *,
     threshold: int,
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     nodes_by_id = {int(node["id"]): node for node in nodes}
     adjacency = {int(node["id"]): [] for node in nodes}
     for row_index, row in enumerate(matrix):
@@ -319,14 +319,14 @@ def _cluster_nodes_by_matrix(
             adjacency[row_index].append(col_index)
 
     cluster_by_node: dict[int, int] = {}
-    cluster_summary: list[dict[str, object]] = []
+    cluster_summary: list[dict[str, Any]] = []
     next_cluster_id = 0
     for node in nodes:
         node_id = int(node["id"])
         if node_id in cluster_by_node:
             continue
         stack = [node_id]
-        members: list[dict[str, object]] = []
+        members: list[dict[str, Any]] = []
         while stack:
             current = stack.pop()
             if current in cluster_by_node:
@@ -379,7 +379,7 @@ def create_visual_app(*, title: str) -> Flask:
     werkzeug_logger.addFilter(_QuietNotFoundFilter())
 
     @app.before_request
-    def _enforce_same_origin() -> tuple[object, int] | None:
+    def _enforce_same_origin() -> tuple[Any, int] | None:
         if request.method not in ("POST", "PUT", "DELETE", "PATCH"):
             return None
         origin = request.headers.get("Origin")
@@ -423,7 +423,7 @@ def create_visual_app(*, title: str) -> Flask:
         return {"status": "ok"}, 200
 
     @app.post("/api/mst")
-    def api_mst() -> tuple[object, int]:
+    def api_mst() -> tuple[Any, int]:
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -499,7 +499,7 @@ def create_visual_app(*, title: str) -> Flask:
         )
 
     @app.post("/api/distance-matrix")
-    def api_distance_matrix() -> tuple[object, int]:
+    def api_distance_matrix() -> tuple[Any, int]:
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -553,7 +553,7 @@ def create_visual_app(*, title: str) -> Flask:
         )
 
     @app.post("/api/locus-diff")
-    def api_locus_diff() -> tuple[object, int]:
+    def api_locus_diff() -> tuple[Any, int]:
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -578,7 +578,7 @@ def create_visual_app(*, title: str) -> Flask:
         return jsonify(diff), 200
 
     @app.post("/api/allele-heatmap")
-    def api_allele_heatmap() -> tuple[object, int]:
+    def api_allele_heatmap() -> tuple[Any, int]:
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -619,7 +619,7 @@ def create_visual_app(*, title: str) -> Flask:
         )
 
     @app.post("/api/compare-results")
-    def api_compare_results() -> tuple[object, int]:
+    def api_compare_results() -> tuple[Any, int]:
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("left_tsv", "") or "")

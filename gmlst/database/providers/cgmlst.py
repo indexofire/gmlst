@@ -12,7 +12,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-import time
 import zipfile
 from pathlib import Path
 from shutil import copyfileobj
@@ -23,6 +22,7 @@ from gmlst.database.atomic import atomic_write_text
 from gmlst.database.download import DownloadTool, download_file
 from gmlst.database.providers.base import SchemeInfo
 from gmlst.database.providers.cgmlst_schemes import _CGMLST_SCHEMES
+from gmlst.fasta_io import utc_now_iso
 
 logger = logging.getLogger("gmlst.providers.cgmlst")
 
@@ -141,7 +141,7 @@ class CgmlstProvider:
             "provider": self._name,
             "scheme_type": "cgmlst",
             "schema_id": schema_id,
-            "downloaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "downloaded_at": utc_now_iso(),
             "loci": loci,
             "remote": status,
         }
@@ -210,7 +210,7 @@ class CgmlstProvider:
             )
             return True
 
-        local_meta["checked_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        local_meta["checked_at"] = utc_now_iso()
         local_meta["remote"] = remote
         atomic_write_text(meta_file, json.dumps(local_meta, indent=2))
         return False

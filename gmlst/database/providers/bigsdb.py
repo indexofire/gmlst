@@ -23,7 +23,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import time
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +37,7 @@ from gmlst.database.providers.base import (
     download_required_files,
     generate_scheme_base_name,
 )
-from gmlst.fasta_io import count_fasta_records, count_profile_rows
+from gmlst.fasta_io import count_fasta_records, count_profile_rows, utc_now_iso
 
 logger = logging.getLogger("gmlst.database.providers.bigsdb")
 
@@ -311,7 +310,7 @@ class BigSdbProvider:
             "scheme_type": scheme_type,
             "seqdef_url": seqdef_url,
             "scheme_url": scheme_url,
-            "downloaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "downloaded_at": utc_now_iso(),
             "loci": [u.rstrip("/").split("/")[-1] for u in loci_urls],
             "locus_meta": {
                 path.stem: {
@@ -454,7 +453,7 @@ class BigSdbProvider:
             local_meta.get("locus_meta", None), dict
         ) or not isinstance(local_meta.get("profile_meta", None), dict)
         if changed or needs_metadata_backfill:
-            now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            now = utc_now_iso()
             updated_meta = {
                 "scheme": scheme_name,
                 "provider": self._name,

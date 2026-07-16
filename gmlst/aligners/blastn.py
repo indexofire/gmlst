@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Literal
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
+from gmlst.fasta_io import merge_fasta_files
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger("gmlst.aligners.blastn")
@@ -74,10 +75,7 @@ class BlastnAligner:
         require_tool("makeblastdb")
         index_dir.mkdir(parents=True, exist_ok=True)
 
-        merged = index_dir / "alleles.fasta"
-        with merged.open("w") as out:
-            for fasta in sorted(allele_fastas):
-                out.write(fasta.read_text())
+        merged = merge_fasta_files(allele_fastas, index_dir / "alleles.fasta")
 
         db_prefix = index_dir / "alleles"
 

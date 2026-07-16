@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.resources as pkg_resources
 import json
 import re
 from collections.abc import Callable
@@ -11,24 +10,11 @@ from typing import Any
 
 from rich.console import Console
 
+from gmlst.database.cache import _load_blocked_schemes as _load_blocked_schemes
+
 # Shared console instances
 console = Console()
 err_console = Console(stderr=True)
-
-
-def _load_blocked_schemes() -> dict[str, list[str]]:
-    """Load blocked schemes from data/blocked_schemes.json."""
-    try:
-        blocked_file = pkg_resources.files("gmlst") / "data" / "blocked_schemes.json"
-        if blocked_file.exists():
-            with open(blocked_file) as f:
-                data = json.load(f)
-                return {k: v for k, v in data.items() if not k.startswith("_")}
-    except (OSError, json.JSONDecodeError) as exc:
-        err_console.print(
-            f"[yellow]Warning:[/yellow] Failed to load blocked schemes: {exc}"
-        )
-    return {}
 
 
 class _DictSchemeInfo:
@@ -45,7 +31,7 @@ class _DictSchemeInfo:
             return self._data[name]
         raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default=None) -> Any:
         return self._data.get(key, default)
 
 

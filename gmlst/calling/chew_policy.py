@@ -115,23 +115,23 @@ def _contig_position_classification(call: LocusCall) -> str | None:
     match = call.best_match
     if match is None:
         return None
-    values = [
-        match.query_contig_length,
-        match.query_start,
-        match.query_end,
-        match.allele_length,
-        match.allele_start,
-        match.allele_end,
-    ]
-    if not all(isinstance(v, int) for v in values):
-        return None
 
-    contig_len = int(match.query_contig_length)
-    contig_start = int(match.query_start)
-    contig_end = int(match.query_end)
-    allele_len = int(match.allele_length)
-    allele_start = int(match.allele_start)
-    allele_end = int(match.allele_end)
+    contig_len = match.query_contig_length
+    contig_start = match.query_start
+    contig_end = match.query_end
+    allele_len = match.allele_length
+    allele_start = match.allele_start
+    allele_end = match.allele_end
+
+    if (
+        contig_len is None
+        or contig_start is None
+        or contig_end is None
+        or allele_len is None
+        or allele_start is None
+        or allele_end is None
+    ):
+        return None
 
     if contig_len < allele_len:
         return "LOTSC"

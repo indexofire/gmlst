@@ -45,7 +45,7 @@ def _ultrafast_confirmation_rank(call: LocusCall) -> tuple[int, float, float, fl
     )
 
 
-def _ultrafast_second_pass_rank(call: LocusCall) -> tuple[int, float, float]:
+def _ultrafast_second_pass_rank(call: LocusCall) -> tuple[float, float, float]:
     match = call.best_match
     identity = match.identity if match is not None else 0.0
     coverage = match.coverage if match is not None else 0.0

@@ -72,6 +72,7 @@ class Provider(Protocol):
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
+        extra: dict | None = None,
     ) -> None:
         """Download allele FASTAs and ST profile to *dest_dir*.
 

@@ -100,3 +100,13 @@ def write_wrapped_sequence(
 ) -> None:
     for index in range(0, len(sequence), width):
         handle.write(sequence[index : index + width] + "\n")
+
+
+def merge_fasta_files(allele_fastas: list[Path], dest: Path) -> Path:
+    """Concatenate sorted allele FASTAs into a single output file."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w") as out:
+        for fasta in sorted(allele_fastas):
+            with open_text(fasta) as fh:
+                out.write(fh.read())
+    return dest

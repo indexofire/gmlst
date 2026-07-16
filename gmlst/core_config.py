@@ -10,6 +10,16 @@ DEFAULT_PREFILTER_MAX_LOCI = 3000
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
+def _env_int(env_var: str, default: int) -> int:
+    raw = os.getenv(env_var, str(default))
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %d", env_var, raw, default)
+        return default
+    return max(0, value)
+
+
 def cgmlst_prefilter_max_loci() -> int:
     raw = os.getenv("GMLST_CGMLST_PREFILTER_MAX_LOCI")
     if raw is None:
@@ -37,45 +47,15 @@ def minimap2_fasta_emit_cigar_enabled() -> bool:
 
 
 def minimap2_hash_refine_max_loci() -> int:
-    raw = os.getenv("GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI", "0")
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI=%r; using default %d",
-            raw,
-            0,
-        )
-        return 0
-    return max(0, value)
+    return _env_int("GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI", 0)
 
 
 def minimap2_hash_locus_top_n() -> int:
-    raw = os.getenv("GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N", "0")
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N=%r; using default %d",
-            raw,
-            0,
-        )
-        return 0
-    return max(0, value)
+    return _env_int("GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N", 0)
 
 
 def minimap2_bsr_confirm_max_loci() -> int:
-    raw = os.getenv("GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI", "0")
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI=%r; using default %d",
-            raw,
-            0,
-        )
-        return 0
-    return max(0, value)
+    return _env_int("GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI", 0)
 
 
 def minimap2_ultrafast_second_pass_max_loci() -> int | None:
@@ -107,16 +87,7 @@ def kma_fastq_mem_mode_enabled() -> bool:
 
 
 def kma_fastq_mem_confirm_max_loci() -> int:
-    raw = os.getenv("GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI", "64").strip()
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI=%r; using 64",
-            raw,
-        )
-        return 64
-    return max(0, value)
+    return _env_int("GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI", 64)
 
 
 def exact_hash_prefilter_enabled() -> bool:
@@ -156,17 +127,7 @@ def cgmlst_evidence_fallback_backend() -> str:
 
 
 def cgmlst_evidence_fallback_max_loci() -> int:
-    raw = os.getenv("GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI", "300")
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI=%r; using default %d",
-            raw,
-            300,
-        )
-        return 300
-    return max(0, value)
+    return _env_int("GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI", 300)
 
 
 def cgmlst_cds_prediction_mode() -> str:

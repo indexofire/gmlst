@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch
 from gmlst.calling.st_lookup import STResult
@@ -155,7 +156,7 @@ def _run_prefilter_phase(
 ) -> tuple[AlignmentResult, Path | None]:
     with core_mod.temp_dir("gmlst_cgpf_") as tmp:
         prefilter_start = core_mod.time.perf_counter()
-        representative_aln: core_mod.AlignmentResult | None = None
+        representative_aln: AlignmentResult | None = None
         if ctx.use_minimap2_hash_prefilter:
             candidates, representative_aln = (
                 core_mod._minimap2_representative_prefilter_candidates(
@@ -201,9 +202,11 @@ def _run_prefilter_phase(
                 )
             else:
                 candidate_loci = set(candidates.keys()) - set(exact_matches.keys())
+                overrides = ctx.mode_overrides
                 candidate_top_n = (
-                    ctx.mode_overrides.minimap2_hash_locus_top_n
-                    if ctx.mode_overrides.minimap2_hash_locus_top_n is not None
+                    overrides.minimap2_hash_locus_top_n
+                    if overrides is not None
+                    and overrides.minimap2_hash_locus_top_n is not None
                     else core_mod._minimap2_hash_locus_top_n()
                 )
                 if (
@@ -410,13 +413,14 @@ def _run_direct_alignment_phase(
 
 
 def _type_single_sample(ctx: TypingContext) -> tuple[STResult, Path | None]:
-    core_mod = ctx.core
+    core_mod: Any = ctx.core
     sample = ctx.sample
     scheme = ctx.scheme
     backend = ctx.backend
     aligner = ctx.aligner
     index_path = ctx.index_path
 
+    assert sample is not None
     core_mod.logger.info("Typing %s with %s …", sample.path.name, backend)
 
     sample_source = _resolve_sample_source(sample, aligner, backend)

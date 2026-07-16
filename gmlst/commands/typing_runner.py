@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from rich.progress import (
@@ -14,6 +14,8 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
+
+from gmlst.readers.sample import SampleInput
 
 
 def _make_progress(quiet: bool) -> Progress | None:
@@ -34,7 +36,7 @@ def _make_progress(quiet: bool) -> Progress | None:
 def execute_typing_run(
     *,
     run_typing_fn,
-    prepared_samples: list[Path | object],
+    prepared_samples: list[Path | SampleInput],
     scheme_name: str,
     backend: str,
     provider: str,
@@ -119,7 +121,7 @@ def execute_typing_run(
                 on_result=None,
             )
 
-        futures: dict[object, int] = {}
+        futures: dict[Future[list], int] = {}
         ordered_results: list[object | None] = [None for _ in prepared_samples]
         next_flush_idx = 0
         flush_lock = threading.Lock()
@@ -135,7 +137,7 @@ def execute_typing_run(
                     on_result(result)
                     next_flush_idx += 1
                     completed_count += 1
-                    if task_id is not None:
+                    if task_id is not None and progress is not None:
                         progress.update(task_id, completed=completed_count)
 
         task_id = None
@@ -143,6 +145,7 @@ def execute_typing_run(
 
         with ctx:
             if show_progress:
+                assert progress is not None
                 task_id = progress.add_task(
                     f"Typing ({max_workers} workers)", total=total
                 )
@@ -164,12 +167,13 @@ def execute_typing_run(
 
     with ctx:
         if show_progress:
+            assert progress is not None
             task_id = progress.add_task(f"Typing ({backend})", total=total)
         original_on_result = on_result
 
         def _progress_on_result(result):
             original_on_result(result)
-            if task_id is not None:
+            if task_id is not None and progress is not None:
                 nonlocal_count[0] += 1
                 progress.update(task_id, completed=nonlocal_count[0])
 

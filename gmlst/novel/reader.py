@@ -10,6 +10,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
+from gmlst.utils import open_text
+
 
 @dataclass
 class NovelAllele:
@@ -82,7 +84,7 @@ class NovelDataReader:
         current_samples = []
         current_seq_parts = []
 
-        with open(fasta_path) as f:
+        with open_text(fasta_path) as f:
             for line in f:
                 line = line.strip()
                 if line.startswith(">"):

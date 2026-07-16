@@ -136,7 +136,7 @@ def temp_dir(prefix: str = "gmlst_") -> Generator[Path, None, None]:
     try:
         yield Path(tmp)
     finally:
-        _force_rmtree(tmp)
+        _force_rmtree(Path(tmp))
 
 
 def _force_rmtree(path: Path, retries: int = 3, delay: float = 0.5) -> None:
@@ -181,13 +181,3 @@ def open_text(path: Path) -> Iterator[TextIO]:
 # ---------------------------------------------------------------------------
 # FASTA helpers
 # ---------------------------------------------------------------------------
-
-
-def count_sequences(fasta: Path) -> int:
-    """Count the number of sequences in a FASTA file (supports .gz)."""
-    count = 0
-    with open_text(fasta) as fh:
-        for line in fh:
-            if line.startswith(">"):
-                count += 1
-    return count

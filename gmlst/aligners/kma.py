@@ -7,8 +7,9 @@ from pathlib import Path
 from typing import Literal
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch
+from gmlst.fasta_io import merge_fasta_files
 from gmlst.readers.sample import SampleInput
-from gmlst.utils import open_text, temp_dir
+from gmlst.utils import temp_dir
 
 
 class KmaAligner:
@@ -34,13 +35,8 @@ class KmaAligner:
 
     def index(self, allele_fastas: list[Path], index_dir: Path) -> Path:
         index_dir.mkdir(parents=True, exist_ok=True)
-        merged = index_dir / "alleles.fasta"
+        merged = merge_fasta_files(allele_fastas, index_dir / "alleles.fasta")
         db_prefix = index_dir / "kma_db"
-
-        with merged.open("w") as out:
-            for fasta in sorted(allele_fastas):
-                with open_text(fasta) as fh:
-                    out.write(fh.read())
 
         subprocess.run(
             [

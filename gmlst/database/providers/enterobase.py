@@ -14,7 +14,6 @@ import gzip
 import json
 import logging
 import re
-import time
 from pathlib import Path
 
 import requests
@@ -22,7 +21,12 @@ import requests
 from gmlst.database.atomic import atomic_write_bytes, atomic_write_text
 from gmlst.database.download import DownloadTool, download_file
 from gmlst.database.providers.base import SchemeInfo, download_required_files
-from gmlst.fasta_io import count_fasta_records, count_profile_rows, is_valid_fasta
+from gmlst.fasta_io import (
+    count_fasta_records,
+    count_profile_rows,
+    is_valid_fasta,
+    utc_now_iso,
+)
 
 logger = logging.getLogger("gmlst.database.providers.enterobase")
 
@@ -263,7 +267,7 @@ class EnterobaseProvider:
             "provider": self.name,
             "scheme_type": _classify_scheme_type(dir_name),
             "directory": dir_name,
-            "downloaded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "downloaded_at": utc_now_iso(),
             "loci": loci,
             "locus_meta": {
                 locus: {"records": count_fasta_records(dest_dir / f"{locus}.tfa")}
@@ -370,7 +374,7 @@ class EnterobaseProvider:
                 max_connections=max_connections,
             )
 
-        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        now = utc_now_iso()
 
         meta = {
             "scheme": scheme_name,

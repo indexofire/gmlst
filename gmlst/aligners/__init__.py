@@ -1,12 +1,14 @@
 """Alignment backend registry."""
 
+from typing import Any
+
 from gmlst.aligners.base import Aligner, AlignmentResult, AlleleMatch
 from gmlst.aligners.blastn import BlastnAligner
 from gmlst.aligners.kma import KmaAligner
 from gmlst.aligners.minimap2 import Minimap2Aligner
 from gmlst.aligners.nucmer import NucmerAligner
 
-_REGISTRY: dict[str, type[Aligner]] = {
+_REGISTRY: dict[str, Any] = {
     "blastn": BlastnAligner,
     "kma": KmaAligner,
     "minimap2": Minimap2Aligner,

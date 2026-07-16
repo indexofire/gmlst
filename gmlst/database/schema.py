@@ -86,16 +86,12 @@ class Scheme:
         The file is written to the same directory as the allele files the
         first time this method is called.
         """
+        from gmlst.fasta_io import merge_fasta_files
+
         merged = next(iter(self.allele_files.values())).parent / "_all_alleles.fasta"
         if merged.exists():
             return merged
-
-        with merged.open("w") as out:
-            for locus in self.loci:
-                path = self.allele_files[locus]
-                with open_text(path) as fh:
-                    out.write(fh.read())
-        return merged
+        return merge_fasta_files(list(self.allele_files.values()), merged)
 
     # ------------------------------------------------------------------
     # ST profile lookup

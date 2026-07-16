@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -156,7 +157,7 @@ def _try_wget(
 async def _try_httpx_async(url: str, dest: Path, timeout: float) -> bool:
     """Download with httpx async + Rich progress bar. Returns True on success."""
     try:
-        import httpx
+        import httpx  # type: ignore[import-not-found]
         from rich.progress import (
             BarColumn,
             DownloadColumn,
@@ -229,7 +230,7 @@ def download_file(
     connections = max_connections if max_connections is not None else 4
     req_headers = headers or {}
 
-    backends: list[tuple[str, object]] = [
+    backends: list[tuple[str, Callable[[], bool]]] = [
         (
             "aria2c",
             lambda: _try_aria2c(

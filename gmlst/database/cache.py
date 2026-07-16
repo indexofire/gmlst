@@ -593,7 +593,7 @@ class DatabaseCache:
                 self.save_catalog(provider, schemes)
                 logger.info("Copied and processed default catalog: %s", provider)
                 return True
-        except (OSError, json.JSONDecodeError) as e:
+        except (OSError, json.JSONDecodeError) as e:  # pyright: ignore[reportPossiblyUnboundVariable]  # json is module-level import; pyright false positive
             logger.warning("Failed to copy default catalog: %s", e)
         return False
 

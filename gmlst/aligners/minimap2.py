@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Literal
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
+from gmlst.fasta_io import merge_fasta_files
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
@@ -118,12 +119,7 @@ class Minimap2Aligner:
 
         merged = index_dir / "alleles.fasta"
         if not merged.exists():
-            with merged.open("wb") as out:
-                for fasta in sorted(allele_fastas):
-                    with fasta.open("rb") as f:
-                        import shutil
-
-                        shutil.copyfileobj(f, out)
+            merge_fasta_files(allele_fastas, merged)
 
         mmi = index_dir / "alleles.asm20.mmi"
         if not mmi.exists():

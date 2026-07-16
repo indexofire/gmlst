@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
+from typing import Any
 
 from gmlst.readers.sample import SampleInput
 
@@ -54,7 +55,7 @@ def predict_cds_genes_impl(
     cds_prediction_mode: str,
     cds_training_file: Path | None,
     cds_closed_ends: bool,
-) -> list[object]:
+) -> list[Any]:
     from gmlst.schemefree.gene_predictor import ProdigalPredictor
 
     predictor = ProdigalPredictor(
