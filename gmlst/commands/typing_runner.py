@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 from rich.progress import (
     BarColumn,
@@ -171,7 +172,7 @@ def execute_typing_run(
             task_id = progress.add_task(f"Typing ({backend})", total=total)
         original_on_result = on_result
 
-        def _progress_on_result(result):
+        def _progress_on_result(result: Any) -> None:
             original_on_result(result)
             if task_id is not None and progress is not None:
                 nonlocal_count[0] += 1

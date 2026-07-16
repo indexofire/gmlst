@@ -125,7 +125,7 @@ class SafeHashStrategy(HashStrategy):
         }
         return self._format_locus_allele(locus_id, seq_hash)
 
-    def _verify_match(self, seq1: str, existing: dict) -> bool:
+    def _verify_match(self, seq1: str, existing: dict[str, Any]) -> bool:
         """Quick verification of sequence match."""
         if self.use_length_check and len(seq1) != existing["length"]:
             return False

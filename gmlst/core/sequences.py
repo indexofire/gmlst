@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 from gmlst.fasta_io import iter_fasta_records, iter_fasta_sequences
@@ -12,7 +13,7 @@ def split_allele_header_impl(header: str) -> tuple[str, str]:
     return header, ""
 
 
-def iter_fasta_sequences_impl(path: Path):
+def iter_fasta_sequences_impl(path: Path) -> Iterator[str]:
     yield from iter_fasta_sequences(path)
 
 

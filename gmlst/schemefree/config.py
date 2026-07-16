@@ -20,7 +20,7 @@ class HashConfig:
     """Hash strategy configuration."""
 
     strategy: str = "safe"
-    safe: dict = field(
+    safe: dict[str, Any] = field(
         default_factory=lambda: {
             "hash_algorithm": "md5",
             "verification_rate": 0.01,
@@ -30,7 +30,7 @@ class HashConfig:
             "prefix_length": 50,
         }
     )
-    fast: dict = field(
+    fast: dict[str, Any] = field(
         default_factory=lambda: {
             "hash_algorithm": "xxhash64",
             "use_length_index": True,
@@ -38,13 +38,13 @@ class HashConfig:
             "prefix_length": 30,
         }
     )
-    ultra: dict = field(
+    ultra: dict[str, Any] = field(
         default_factory=lambda: {
             "hash_algorithm": "xxhash32",
             "no_verification": True,
         }
     )
-    strict: dict = field(
+    strict: dict[str, Any] = field(
         default_factory=lambda: {
             "hash_algorithm": "sha256",
             "full_verification": True,

@@ -15,6 +15,7 @@ import re
 import zipfile
 from pathlib import Path
 from shutil import copyfileobj
+from typing import Any
 
 import requests
 
@@ -69,7 +70,7 @@ class CgmlstProvider:
         scheme_type: str = "cgmlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Download cgMLST scheme alleles from cgMLST.org.
 
@@ -158,10 +159,10 @@ class CgmlstProvider:
         scheme_type: str = "cgmlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> bool:
         meta_file = dest_dir / ".meta.json"
-        local_meta: dict = {}
+        local_meta: dict[str, Any] = {}
         if meta_file.exists():
             local_meta = json.loads(meta_file.read_text())
 

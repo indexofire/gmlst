@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from gmlst.database.download import DownloadTool, download_files_batch
 
@@ -37,7 +37,7 @@ class SchemeInfo:
     provider: str = ""
     """Provider identifier, e.g. ``"pubmlst"``."""
 
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
     """Provider-specific metadata (internal URLs, IDs, etc.)."""
 
 
@@ -72,7 +72,7 @@ class Provider(Protocol):
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Download allele FASTAs and ST profile to *dest_dir*.
 

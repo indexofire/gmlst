@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 
 def last_allele_numbers(novel_alleles: dict[str, list]) -> dict[str, int]:
@@ -50,7 +51,7 @@ def build_custom_scheme_metadata(
 
 
 def merge_custom_scheme_update_metadata(
-    meta: dict,
+    meta: dict[str, Any],
     *,
     last_allele_numbers: dict[str, int],
     current_st_num: int,

@@ -102,10 +102,12 @@ class BigSdbProvider:
 
     def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
         """Return all schemes of *scheme_type* available on this BIGSdb host."""
-        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]  # BIGSdb root endpoint returns a list of org dicts at runtime
+        orgs: list[dict[str, Any]] = _get_json(  # type: ignore[assignment]  # root endpoint returns list at runtime
+            self._base_url, headers=self._auth_headers()
+        )
 
         # First pass: collect all schemes with their base names
-        raw_schemes: list[dict] = []
+        raw_schemes: list[dict[str, Any]] = []
 
         for org in orgs:
             # Get all seqdef databases for this organism
@@ -235,7 +237,7 @@ class BigSdbProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Download allele FASTAs + ST profile for *scheme_name*."""
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -335,12 +337,12 @@ class BigSdbProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> bool:
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         meta_file = dest_dir / ".meta.json"
-        local_meta: dict = {}
+        local_meta: dict[str, Any] = {}
         if meta_file.exists():
             local_meta = json.loads(meta_file.read_text())
 
@@ -484,7 +486,9 @@ class BigSdbProvider:
 
         Handles suffixed scheme names (e.g., 'bcc_1' -> 'bcc').
         """
-        orgs: list[dict] = _get_json(self._base_url, headers=self._auth_headers())  # type: ignore[assignment]  # BIGSdb root endpoint returns a list of org dicts at runtime
+        orgs: list[dict[str, Any]] = _get_json(  # type: ignore[assignment]  # root endpoint returns list at runtime
+            self._base_url, headers=self._auth_headers()
+        )
 
         # Remove suffix (_1, _2, etc.) if present
         base_scheme_name = scheme_name
@@ -580,7 +584,7 @@ def _resolve_scheme_url(
 # ---------------------------------------------------------------------------
 
 
-def _find_seqdef_databases(org: dict) -> list[dict]:
+def _find_seqdef_databases(org: dict[str, Any]) -> list[dict[str, Any]]:
     """Return all seqdef databases from an organism entry.
 
     Returns list of dicts with 'url', 'description' and 'name' keys.
@@ -634,7 +638,7 @@ def _extract_organism_name(db_description: str) -> str | None:
     return name
 
 
-def _fetch_schemes(seqdef_url: str) -> list[dict]:
+def _fetch_schemes(seqdef_url: str) -> list[dict[str, Any]]:
     """Return the list of scheme dicts from ``<seqdef>/schemes``."""
     data = _get_json(f"{seqdef_url}/schemes")
     return data.get("schemes", [])  # type: ignore[union-attr]  # _fetch_schemes is only called on /schemes endpoints which return a dict

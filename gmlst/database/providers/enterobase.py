@@ -15,6 +15,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 import requests
 
@@ -202,7 +203,7 @@ class EnterobaseProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Download allele FASTAs and ST profiles from Enterobase via HTTP.
 
@@ -292,14 +293,14 @@ class EnterobaseProvider:
         scheme_type: str = "mlst",
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
-        extra: dict | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> bool:
         dir_name = (extra or {}).get("directory")
         if not dir_name:
             resolved = _resolve_enterobase_scheme_name(scheme_name, scheme_type)
             dir_name = _SCHEME_ALIASES[resolved]
         meta_file = dest_dir / ".meta.json"
-        local_meta: dict = {}
+        local_meta: dict[str, Any] = {}
         if meta_file.exists():
             local_meta = json.loads(meta_file.read_text())
 
@@ -486,7 +487,7 @@ def _head_remote_file(url: str) -> dict[str, str]:
     }
 
 
-def _headers_changed(old: dict, new: dict[str, str]) -> bool:
+def _headers_changed(old: dict[str, Any], new: dict[str, str]) -> bool:
     return (
         str(old.get("etag", "")) != new.get("etag", "")
         or str(old.get("last_modified", "")) != new.get("last_modified", "")

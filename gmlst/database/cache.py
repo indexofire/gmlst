@@ -340,7 +340,7 @@ class DatabaseCache:
             profile_file=profile_file,
         )
 
-    def list_cached(self) -> list[dict]:
+    def list_cached(self) -> list[dict[str, Any]]:
         """Return metadata dicts for all locally cached schemes."""
         results = []
         for provider_dir in sorted(self.root.iterdir()):
@@ -496,7 +496,7 @@ class DatabaseCache:
         """Check if a cached catalog exists."""
         return self._catalog_path(provider).exists()
 
-    def load_catalog(self, provider: str) -> list[dict] | None:
+    def load_catalog(self, provider: str) -> list[dict[str, Any]] | None:
         """Load cached catalog; return None if missing or corrupt.
 
         If no local cache exists, attempts to copy default catalog from
@@ -517,12 +517,14 @@ class DatabaseCache:
             logger.warning("Failed to load catalog %s: %s", path, exc)
             return None
 
-    def _normalize_scheme_names(self, schemes: list[dict]) -> list[dict]:
+    def _normalize_scheme_names(
+        self, schemes: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Normalize scheme names to short format (e.g., 'lmonocytogenes_1')."""
         from gmlst.database.providers.base import generate_scheme_base_name
 
         # Group schemes by their base organism
-        organism_groups: dict[str, list[dict]] = defaultdict(list)
+        organism_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
         for scheme in schemes:
             organism = scheme.get("organism", "")
@@ -597,7 +599,7 @@ class DatabaseCache:
             logger.warning("Failed to copy default catalog: %s", e)
         return False
 
-    def save_catalog(self, provider: str, schemes: list[dict]) -> None:
+    def save_catalog(self, provider: str, schemes: list[dict[str, Any]]) -> None:
         """Write catalog JSON to cache with globally unique scheme names.
 
         Ensures scheme names are unique across all providers by checking
@@ -629,7 +631,7 @@ class DatabaseCache:
 
         # Check for conflicts and reassign names if needed
         # Group by base name to handle suffix allocation
-        base_name_groups: dict[str, list[dict]] = defaultdict(list)
+        base_name_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for scheme in schemes:
             scheme_name = scheme["scheme_name"]
             # Extract base name (e.g., "abaumannii_1" -> "abaumannii")
@@ -687,7 +689,7 @@ class DatabaseCache:
 
     def update_catalog(
         self, provider: str, scheme_type: str = "mlst", token: str | None = None
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Fetch fresh catalog from provider API and cache it.
 
         Returns the list of scheme dicts.

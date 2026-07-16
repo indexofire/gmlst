@@ -20,22 +20,22 @@ err_console = Console(stderr=True)
 class _DictSchemeInfo:
     """Wrapper to access dict keys as attributes."""
 
-    def __init__(self, data: dict) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self._data = data
         # Ensure 'extra' key exists for consistency with SchemeInfo
         if "extra" not in self._data:
             self._data["extra"] = {}
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         if name in self._data:
             return self._data[name]
         raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
 
-    def get(self, key: str, default=None) -> Any:
+    def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, default)
 
 
-def _natural_sort_key(scheme_name: str):
+def _natural_sort_key(scheme_name: str) -> tuple[str, int]:
     """Extract key for natural sorting.
 
     Example:
