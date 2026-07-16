@@ -527,6 +527,9 @@ def _download_single_batch(
     if not pending:
         return (0, 0)
 
+    for url, _dest in pending:
+        assert_public_url(url)
+
     # Single file: use regular download
     if len(pending) == 1:
         url, dest = pending[0]

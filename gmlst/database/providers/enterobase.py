@@ -21,6 +21,7 @@ import requests
 from gmlst.database.atomic import atomic_write_bytes, atomic_write_text
 from gmlst.database.download import DownloadTool, download_file
 from gmlst.database.providers.base import SchemeInfo, download_required_files
+from gmlst.database.url_guard import assert_public_url
 from gmlst.fasta_io import (
     count_fasta_records,
     count_profile_rows,
@@ -105,6 +106,7 @@ class EnterobaseProvider:
     def _discover_remote_directories(self) -> list[str]:
         """Fetch the list of scheme directories from the Enterobase /schemes/ index."""
         try:
+            assert_public_url(_BASE_URL + "/")
             resp = requests.get(
                 _BASE_URL + "/", timeout=30, headers=self._auth_headers()
             )
@@ -177,6 +179,7 @@ class EnterobaseProvider:
     def _count_loci(self, dir_name: str) -> int:
         """Count number of loci by listing the scheme HTTP directory."""
         url = f"{_BASE_URL}/{dir_name}/"
+        assert_public_url(url)
         resp = requests.get(url, timeout=120, headers=self._auth_headers())
         if resp.status_code == 403:
             logger.warning(
@@ -401,6 +404,7 @@ class EnterobaseProvider:
     def _get_loci(self, dir_name: str) -> list[str]:
         """Get list of locus names from the scheme HTTP directory listing."""
         url = f"{_BASE_URL}/{dir_name}/"
+        assert_public_url(url)
         resp = requests.get(url, timeout=30, headers=self._auth_headers())
         if resp.status_code == 403:
             raise RuntimeError(
@@ -472,6 +476,7 @@ class EnterobaseProvider:
 
 
 def _head_remote_file(url: str) -> dict[str, str]:
+    assert_public_url(url)
     resp = requests.head(url, timeout=30, allow_redirects=True)
     resp.raise_for_status()
     return {
