@@ -80,7 +80,6 @@ No BLASTN-specific environment variables are currently implemented. Control BLAS
 | `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | Enables hash-first candidate reduction before minimap2 main alignment. | cgMLST FASTA, minimap2 prefilter path |
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | `0` | Max missing loci sent to a minimap2 refinement pass when not overridden by a workflow mode. `0` disables this pass. | cgMLST FASTA, minimap2 refinement |
 | `GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N` | `0` | Limits how many loci survive the hash stage before main alignment. `0` keeps default behavior. | cgMLST FASTA, minimap2 prefilter path |
-| `GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI` | `0` | Limits additional strict confirmation work in `chew-bsr` style workflows. `0` disables this confirmation pass. | cgMLST FASTA, minimap2 chew-bsr path |
 | `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | Budget for the ultrafast second pass. Use `adaptive`, `auto`, empty value, or a non-negative integer. | cgMLST FASTA, minimap2 chew-ultrafast path |
 | `GMLST_CGMLST_MINIMAP2_REPRESENTATIVE_MAIN_ALIGNMENT` | `0` | Restricts main alignment to representative targets in speed-focused workflows. | cgMLST FASTA, minimap2 representative alignment path |
 

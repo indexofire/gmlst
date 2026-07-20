@@ -67,7 +67,6 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | --- | --- | --- |
 | `-s, --scheme TEXT` | Scheme name to type against. Required. | - |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | Alignment backend. | `minimap2` |
-| `--cgmlst-mode [standard\|chew-fast\|chew-ultrafast\|chew-bsr\|chew-balanced]` | Runtime mode for cgMLST FASTA workflows. | `standard` |
 | `--min-id FLOAT` | Minimum percent identity for confident allele calls. | `95.0` |
 | `--min-cov FLOAT` | Minimum coverage fraction for confident allele calls. | `0.95` |
 | `--min-depth FLOAT` | Minimum depth threshold for depth-aware workflows. | `10.0` |
@@ -99,7 +98,6 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | `standard` | Conservative baseline. |
 | `chew-fast` | Exact-hash + minimap2 prefilter with targeted rescue. |
 | `chew-ultrafast` | Aggressive speed profile with bounded second-pass rescue. |
-| `chew-bsr` | Protein-level exact-hash on top of `chew-fast`. |
 | `chew-balanced` | Hash-first with targeted `blastn` fallback. |
 
 ### Examples

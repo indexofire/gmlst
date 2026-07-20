@@ -540,7 +540,6 @@ def cmd_typing_mlst(
             "standard",
             "chew-fast",
             "chew-ultrafast",
-            "chew-bsr",
             "chew-balanced",
         ],
         case_sensitive=False,

@@ -314,7 +314,6 @@ gmlst typing mlst -s saureus_1 -b kma sample_R1.fastq.gz sample_R2.fastq.gz
 - `chew-fast`，适合常见 FASTA cgMLST 场景
 - `chew-ultrafast`，适合更大的 FASTA 批量任务
 - `chew-balanced`，适合想保留更多 fallback 复核时
-- `chew-bsr`，适合蛋白层面的 exact 匹配很重要时
 
 示例：
 

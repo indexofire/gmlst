@@ -81,7 +81,6 @@ source ~/.config/gmlst/env.sh        # 在当前 shell 中立即生效
 | `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | 在 minimap2 主比对前启用哈希优先的候选缩减。 | cgMLST FASTA、minimap2 prefilter 路径 |
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | `0` | 在工作流模式没有覆盖时，控制送入 minimap2 精修阶段的缺失位点上限。`0` 表示关闭。 | cgMLST FASTA、minimap2 refinement |
 | `GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N` | `0` | 限制哈希阶段保留下来的位点数量。`0` 表示保持默认行为。 | cgMLST FASTA、minimap2 prefilter 路径 |
-| `GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI` | `0` | 控制 `chew-bsr` 风格流程中的额外严格确认范围。`0` 表示关闭。 | cgMLST FASTA、minimap2 chew-bsr 路径 |
 | `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | ultrafast 第二遍的预算。可用 `adaptive`、`auto`、空值，或者非负整数。 | cgMLST FASTA、minimap2 chew-ultrafast 路径 |
 | `GMLST_CGMLST_MINIMAP2_REPRESENTATIVE_MAIN_ALIGNMENT` | `0` | 在偏重速度的流程中，只对代表序列执行主比对。 | cgMLST FASTA、minimap2 representative alignment 路径 |
 

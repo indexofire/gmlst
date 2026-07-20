@@ -11,7 +11,6 @@ from gmlst.readers.sample import SampleInput
 
 def _sample_overrides() -> CgmlstModeOverrides:
     return CgmlstModeOverrides(
-        protein_exact_hash_prefilter=False,
         exact_hash_prefilter=False,
         minimap2_hash_prefilter=False,
         minimap2_hash_locus_top_n=None,
@@ -63,7 +62,6 @@ def test_typing_context_optional_fields_default_to_none() -> None:
     assert ctx.cache is None
     assert ctx.cache_root is None
     assert ctx.exact_hash_index is None
-    assert ctx.protein_hash_index is None
     assert ctx.allele_sequence_cache is None
     assert ctx.prefilter_alleles is None
     assert ctx.minimap2_prefilter_index_path is None
@@ -109,7 +107,6 @@ def test_typing_context_all_fields_set() -> None:
         use_minimap2_hash_prefilter=True,
         use_exact_hash_prefilter=False,
         exact_hash_index=None,
-        protein_hash_index=None,
         allele_sequence_cache={"abc": {"abc_1": "ATGC"}},
         prefilter_alleles=None,
         minimap2_prefilter_representatives={("abc", "abc_1"): "ATGC"},

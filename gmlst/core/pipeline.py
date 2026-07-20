@@ -20,7 +20,6 @@ def _resolve_exact_matches(
         exact_matches = core_mod._resolve_exact_cds_matches(
             sample.path,
             ctx.exact_hash_index,
-            protein_hash_index=ctx.protein_hash_index,
             sample_cache_root=getattr(ctx.cache, "root", ctx.cache_root),
             cds_prediction_mode=ctx.cds_prediction_mode,
             cds_training_file=ctx.cds_training_file,
@@ -104,7 +103,7 @@ def _finalize_sample_result(
                 cds_closed_ends=ctx.cds_closed_ends,
             )
         )
-        chew_cds_hashes = {dna_hash for dna_hash, _protein_hash in sample_cds_hashes}
+        chew_cds_hashes = {dna_hash for dna_hash in sample_cds_hashes}
         chew_cds_sequences = sample_cds_sequences
 
     st_result = core_mod.lookup_st(
@@ -553,7 +552,6 @@ def _setup_typing_config(
     exact_hash_prefilter_enabled = (
         core._exact_hash_prefilter_enabled() or mode_overrides.exact_hash_prefilter
     )
-    protein_exact_hash_prefilter_enabled = mode_overrides.protein_exact_hash_prefilter
     use_prefilter = (
         prefilter_enabled
         and scheme_type == "cgmlst"
@@ -642,12 +640,10 @@ def _setup_typing_config(
         else core._load_representative_allele_sequences(scheme.allele_files)
     )
     exact_hash_index: dict[str, list[tuple[str, str]]] | None = None
-    protein_hash_index: dict[str, list[tuple[str, str]]] | None = None
     if use_exact_hash_prefilter and allele_sequence_cache is not None:
-        exact_hash_index, protein_hash_index = core._load_or_build_exact_hash_indexes(
+        exact_hash_index = core._load_or_build_exact_hash_indexes(
             allele_files=scheme.allele_files,
             allele_sequences=allele_sequence_cache,
-            include_protein=protein_exact_hash_prefilter_enabled,
         )
     minimap2_prefilter_index_path: Path | None = None
     if use_prefilter and use_minimap2_hash_prefilter:
@@ -699,7 +695,6 @@ def _setup_typing_config(
         use_minimap2_hash_prefilter=use_minimap2_hash_prefilter,
         use_exact_hash_prefilter=use_exact_hash_prefilter,
         exact_hash_index=exact_hash_index,
-        protein_hash_index=protein_hash_index,
         allele_sequence_cache=allele_sequence_cache,
         prefilter_alleles=prefilter_alleles,
         minimap2_prefilter_representatives=minimap2_prefilter_representatives,

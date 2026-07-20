@@ -460,7 +460,6 @@ The user-visible modes are:
 - `standard`
 - `chew-fast`
 - `chew-ultrafast`
-- `chew-bsr`
 - `chew-balanced`
 
 These modes mainly affect FASTA-oriented minimap2 and refinement behavior, for example:

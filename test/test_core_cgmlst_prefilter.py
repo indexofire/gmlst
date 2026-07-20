@@ -934,7 +934,6 @@ def test_cgmlst_mode_overrides_standard_for_minimap2() -> None:
         scheme_type="cgmlst",
         backend="minimap2",
     )
-    assert ov.protein_exact_hash_prefilter is False
     assert ov.exact_hash_prefilter is False
     assert ov.minimap2_hash_prefilter is False
     assert ov.minimap2_hash_locus_top_n is None
@@ -953,7 +952,6 @@ def test_cgmlst_mode_overrides_chew_fast_for_minimap2() -> None:
         scheme_type="cgmlst",
         backend="minimap2",
     )
-    assert ov.protein_exact_hash_prefilter is False
     assert ov.exact_hash_prefilter is True
     assert ov.minimap2_hash_prefilter is True
     assert ov.minimap2_hash_locus_top_n is None
@@ -973,7 +971,6 @@ def test_cgmlst_mode_overrides_chew_balanced_for_minimap2() -> None:
         scheme_type="cgmlst",
         backend="minimap2",
     )
-    assert ov.protein_exact_hash_prefilter is False
     assert ov.exact_hash_prefilter is True
     assert ov.minimap2_hash_prefilter is True
     assert ov.minimap2_hash_locus_top_n is None
@@ -993,7 +990,6 @@ def test_cgmlst_mode_overrides_chew_ultrafast_for_minimap2() -> None:
         scheme_type="cgmlst",
         backend="minimap2",
     )
-    assert ov.protein_exact_hash_prefilter is False
     assert ov.exact_hash_prefilter is True
     assert ov.minimap2_hash_prefilter is True
     assert ov.minimap2_hash_locus_top_n is None
@@ -1007,26 +1003,6 @@ def test_cgmlst_mode_overrides_chew_ultrafast_for_minimap2() -> None:
     assert ov.evidence_fallback_max_loci == 0
 
 
-def test_cgmlst_mode_overrides_chew_bsr_for_minimap2() -> None:
-    ov = core._cgmlst_mode_overrides(
-        cgmlst_mode="chew-bsr",
-        scheme_type="cgmlst",
-        backend="minimap2",
-    )
-    assert ov.protein_exact_hash_prefilter is True
-    assert ov.exact_hash_prefilter is True
-    assert ov.minimap2_hash_prefilter is True
-    assert ov.minimap2_hash_locus_top_n is None
-    assert ov.minimap2_hash_refine_max_loci == 500
-    assert ov.minimap2_fasta_emit_cigar is True
-    assert ov.minimap2_fasta_speed_profile == "default"
-    assert ov.minimap2_representative_main_alignment is False
-    assert ov.minimap2_bsr_confirm_max_loci == 0
-    assert ov.minimap2_ultrafast_second_pass_max_loci is None
-    assert ov.evidence_fallback_backend == "blastn"
-    assert ov.evidence_fallback_max_loci == 500
-
-
 def test_build_allele_hash_index_groups_duplicate_sequences() -> None:
     index = core._build_allele_hash_index(
         {
@@ -1036,23 +1012,6 @@ def test_build_allele_hash_index_groups_duplicate_sequences() -> None:
     )
     values = list(index.values())
     assert any(set(entries) == {("a", "1"), ("a", "2")} for entries in values)
-
-
-def test_build_allele_protein_hash_index_groups_synonymous_sequences() -> None:
-    index = core._build_allele_protein_hash_index(
-        {
-            "a": {
-                "1": "ATGGCC",
-                "2": "ATGGCT",
-            }
-        }
-    )
-    values = list(index.values())
-    assert any(set(entries) == {("a", "1"), ("a", "2")} for entries in values)
-
-
-def test_translate_cds_to_protein_stops_at_stop_codon() -> None:
-    assert core._translate_cds_to_protein("ATGAAATAATTT") == "MK"
 
 
 def test_representatives_from_nested_alleles_selects_lowest_id() -> None:
@@ -1119,18 +1078,15 @@ def test_load_or_build_exact_hash_indexes_writes_precomputed_files(
         "b": {"1": "ATGAAA"},
     }
 
-    dna, protein = core._load_or_build_exact_hash_indexes(
+    dna = core._load_or_build_exact_hash_indexes(
         allele_files=allele_files,
         allele_sequences=allele_sequences,
-        include_protein=True,
     )
 
     precomputed = tmp_path / "pre_computed"
     assert (precomputed / "exact_hash_meta.json").exists()
     assert (precomputed / "dna_hash_index.json").exists()
-    assert (precomputed / "protein_hash_index.json").exists()
     assert dna
-    assert protein
 
 
 def test_load_or_build_exact_hash_indexes_rebuilds_on_corrupt_cache(
@@ -1151,14 +1107,12 @@ def test_load_or_build_exact_hash_indexes_rebuilds_on_corrupt_cache(
         json_mod.dumps({"fingerprint": "anything"})
     )
 
-    dna, protein = core._load_or_build_exact_hash_indexes(
+    dna = core._load_or_build_exact_hash_indexes(
         allele_files=allele_files,
         allele_sequences=allele_sequences,
-        include_protein=False,
     )
 
     assert dna
-    assert protein is None
     assert (precomputed / "dna_hash_index.json").exists()
     rebuilt = json_mod.loads((precomputed / "dna_hash_index.json").read_text())
     assert isinstance(rebuilt, dict)
@@ -1172,26 +1126,22 @@ def test_load_or_build_exact_hash_indexes_reuses_precomputed_cache(
     allele_files = {"a": locus_a}
     allele_sequences = {"a": {"1": "ATGGCC"}}
 
-    first_dna, first_protein = core._load_or_build_exact_hash_indexes(
+    first_dna = core._load_or_build_exact_hash_indexes(
         allele_files=allele_files,
         allele_sequences=allele_sequences,
-        include_protein=True,
     )
 
     def _unexpected(*_args, **_kwargs):
         raise AssertionError("hash builders should not run on cache hit")
 
     monkeypatch.setattr(core, "_build_allele_hash_index", _unexpected)
-    monkeypatch.setattr(core, "_build_allele_protein_hash_index", _unexpected)
 
-    second_dna, second_protein = core._load_or_build_exact_hash_indexes(
+    second_dna = core._load_or_build_exact_hash_indexes(
         allele_files=allele_files,
         allele_sequences=allele_sequences,
-        include_protein=True,
     )
 
     assert second_dna == first_dna
-    assert second_protein == first_protein
 
 
 def test_load_or_build_sample_cds_hashes_reuses_cache(
@@ -1955,7 +1905,6 @@ def test_apply_post_alignment_refinements_noop_keeps_calls(monkeypatch) -> None:
         sample_source=sample.path,
         scheme=DummyScheme(),
         mode_overrides=core.CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=False,
             minimap2_hash_prefilter=False,
             minimap2_hash_locus_top_n=None,
@@ -2036,7 +1985,6 @@ def test_apply_post_alignment_refinements_minimap2_refine_path(monkeypatch) -> N
         sample_source=sample.path,
         scheme=DummyScheme(),
         mode_overrides=core.CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=False,
             minimap2_hash_prefilter=True,
             minimap2_hash_locus_top_n=None,

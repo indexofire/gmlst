@@ -171,7 +171,6 @@ FASTQ 路径分两步。
 | `standard` | 保守默认行为 |
 | `chew-fast` | 更快的 chew 风格流程，包含 exact-hash、hash prefilter、refinement 和 fallback |
 | `chew-ultrafast` | 面向 FASTA 的最高吞吐模式，带代表序列主比对和二次补救 |
-| `chew-bsr` | 在快速路径上增加蛋白层面的精确哈希预判 |
 | `chew-balanced` | 在速度和确认之间取中间值 |
 
 要注意，这些 chew 风格优化主要针对 FASTA。对于 FASTQ 输入，`typing cgmlst` 会自动把 `-b minimap2` 调整为 `-b kma`，`--cgmlst-mode` 只保留兼容意义。

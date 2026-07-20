@@ -64,7 +64,6 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | --- | --- | --- |
 | `-s, --scheme TEXT` | 指定 cgMLST 或 wgMLST 方案名称，例如 `vparahaemolyticus_3`。 | 必填 |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | 选择比对后端。 | `minimap2` |
-| `--cgmlst-mode [standard\|chew-fast\|chew-ultrafast\|chew-bsr\|chew-balanced]` | 选择 cgMLST 工作流模式。 | `standard` |
 | `--min-id FLOAT` | 最小百分比 identity。 | `95.0` |
 | `--min-cov FLOAT` | 最小 allele 覆盖度，范围 0 到 1。 | `0.95` |
 | `--min-depth FLOAT` | 最小 read depth，仅用于 FASTQ。 | `10.0` |
@@ -95,7 +94,6 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | `standard` | 保守的基线行为，不强制启用 chew 风格覆盖。 | 需要稳定、通用设置时先从这里开始 |
 | `chew-fast` | 启用 exact-hash、minimap2 哈希预过滤、缺失位点 minimap2 精修，以及面向低置信度位点的定向 `blastn` 回退。 | 日常 FASTA 组装分型 |
 | `chew-ultrafast` | 基于 `chew-fast`，进一步偏向速度，使用代表序列主比对、严格救援和第二遍定向补救。 | 大批量样本，最看重吞吐量 |
-| `chew-bsr` | 在 `chew-fast` 基础上加入 protein 级 exact-hash 预判。 | 需要额外 protein 证据时 |
 | `chew-balanced` | 启用 exact-hash、minimap2 哈希预过滤，以及面向低置信度位点的定向 `blastn` 回退。 | 在速度和复核能力之间求平衡 |
 
 ### 环境变量

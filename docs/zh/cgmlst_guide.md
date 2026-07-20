@@ -77,20 +77,6 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
   --cgmlst-mode chew-ultrafast sample.fna
 ```
 
-### `chew-bsr`
-
-在 `chew-fast` 之上增加蛋白层面的 exact-hash 预解析，并可通过环境变量启用 BSR 确认。
-
-适合场景：
-
-- 需要额外的蛋白层确认行为
-- 正在分析 DNA 级别预解析不够稳定的边缘案例
-
-```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-bsr sample.fna
-```
-
 ### `chew-balanced`
 
 启用 exact-hash、minimap2 hash prefilter 和定向 `blastn` fallback，但不走最激进的 ultrafast 路线。

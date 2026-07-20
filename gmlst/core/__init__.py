@@ -115,7 +115,6 @@ _scheme_precomputed_dir = _exact_hash.scheme_precomputed_dir_impl
 _allele_files_fingerprint = _exact_hash.allele_files_fingerprint_impl
 _build_allele_hash_index = _exact_hash.build_allele_hash_index_impl
 _sample_cds_cache_config = _exact_hash.sample_cds_cache_config_impl
-_translate_cds_to_protein = _exact_hash.translate_cds_to_protein_impl
 
 _predict_cds_genes = _cds.predict_cds_genes_impl
 
@@ -159,9 +158,6 @@ _write_cds_coordinates = _adapters_cds.write_cds_coordinates_impl
 _load_or_build_exact_hash_indexes = (
     _adapters_exact_hash.load_or_build_exact_hash_indexes_impl
 )
-_build_allele_protein_hash_index = (
-    _adapters_exact_hash.build_allele_protein_hash_index_impl
-)
 _resolve_exact_cds_matches = _adapters_exact_hash.resolve_exact_cds_matches_impl
 _predict_cds_sequences = _adapters_exact_hash.predict_cds_sequences_impl
 _load_or_build_sample_cds_hashes = (
@@ -171,7 +167,7 @@ _load_or_build_sample_cds_sequences = (
     _adapters_exact_hash.load_or_build_sample_cds_sequences_impl
 )
 _load_or_build_sample_cds_data = _adapters_exact_hash.load_or_build_sample_cds_data_impl
-_hash_cds_and_protein = _adapters_exact_hash.hash_cds_and_protein_impl
+_hash_cds = _adapters_exact_hash.hash_cds_impl
 
 
 def run_typing(

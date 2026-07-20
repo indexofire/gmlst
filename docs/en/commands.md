@@ -75,7 +75,7 @@ gmlst typing -s schemefree sample.fna
 
 `cgmlst` prefilter options:
 
-- `--cgmlst-mode [standard|chew-fast|chew-ultrafast|chew-bsr|chew-balanced]`
+- `--cgmlst-mode [standard|chew-fast|chew-ultrafast|chew-balanced]`
 - `--prefilter-k INTEGER`
 - `--prefilter-top-n INTEGER`
 - `--prefilter-min-loci-fraction FLOAT`
@@ -89,7 +89,6 @@ gmlst typing -s schemefree sample.fna
 - `--cgmlst-mode standard`: conservative behavior, no forced chew-style overrides.
 - `--cgmlst-mode chew-fast`: enables exact-hash + minimap2 hash prefilter plus automatic missing-locus minimap2 refinement (default cap: 500 loci), then targeted blastn evidence fallback for low-confidence loci (default cap: 500 loci).
 - `--cgmlst-mode chew-ultrafast`: same as `chew-fast`, but uses representative-only main alignment, disables minimap2 FASTA CIGAR emission, applies an ultrafast minimap2 FASTA speed profile, performs a strict low-confidence rescue pass (default limit: 120 loci), and then runs a second targeted pass with an adaptive budget over remaining partial/closest loci.
-- `--cgmlst-mode chew-bsr`: adds protein-level exact-hash pre-resolution on top of `chew-fast` (including missing-locus refinement cap 500 and targeted blastn fallback cap 500). By default, no additional strict confirmation pass is performed (`BSR_CONFIRM_MAX_LOCI=0`), but you can enable targeted confirmation via environment variable when needed.
 - `--cgmlst-mode chew-balanced`: enables exact-hash + minimap2 hash prefilter + targeted `blastn` fallback for low-confidence loci.
 - For FASTQ inputs, `typing cgmlst` now auto-switches `-b minimap2` to `-b kma` and treats `--cgmlst-mode` as compatibility-only (`standard`) because chew-style mode optimizations are FASTA-oriented.
 - `--call-policy chewbbaca` requires FASTA assemblies and keeps raw calls unchanged while rendering chew-style per-locus class labels in output.

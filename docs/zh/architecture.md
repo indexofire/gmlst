@@ -460,7 +460,6 @@ cgMLST mode 配置由 `gmlst/core_config.py` 加上 `gmlst/core/` 与 `gmlst/cor
 - `standard`
 - `chew-fast`
 - `chew-ultrafast`
-- `chew-bsr`
 - `chew-balanced`
 
 这些模式主要影响偏 FASTA 的 minimap2 与 refinement 路线，例如：

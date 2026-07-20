@@ -11,29 +11,18 @@ def load_or_build_exact_hash_indexes_impl(
     *,
     allele_files: dict[str, Path],
     allele_sequences: dict[str, dict[str, str]],
-    include_protein: bool,
     scheme_precomputed_dir_fn,
     allele_files_fingerprint_fn,
     build_allele_hash_index_fn,
-    build_allele_protein_hash_index_fn,
     logger,
-) -> tuple[
-    dict[str, list[tuple[str, str]]],
-    dict[str, list[tuple[str, str]]] | None,
-]:
+) -> dict[str, list[tuple[str, str]]]:
     precomputed_dir = scheme_precomputed_dir_fn(allele_files)
     meta_file = precomputed_dir / "exact_hash_meta.json"
     dna_file = precomputed_dir / "dna_hash_index.json"
-    protein_file = precomputed_dir / "protein_hash_index.json"
     legacy_dna_file = precomputed_dir / "dna_hash_index.pkl"
-    legacy_protein_file = precomputed_dir / "protein_hash_index.pkl"
     current_fingerprint = allele_files_fingerprint_fn(allele_files)
 
-    if (
-        meta_file.exists()
-        and dna_file.exists()
-        and ((not include_protein) or protein_file.exists())
-    ):
+    if meta_file.exists() and dna_file.exists():
         try:
             cached_meta = read_json_metadata(meta_file, default={})
             if cached_meta.get("fingerprint") == current_fingerprint:
@@ -43,21 +32,11 @@ def load_or_build_exact_hash_indexes_impl(
                     ]
                     for digest, hits in json.loads(dna_file.read_text()).items()
                 }
-                protein_index = (
-                    {
-                        str(digest): [
-                            (str(locus), str(allele_id)) for locus, allele_id in hits
-                        ]
-                        for digest, hits in json.loads(protein_file.read_text()).items()
-                    }
-                    if include_protein and protein_file.exists()
-                    else None
-                )
                 logger.info(
                     "Loaded precomputed exact-hash index from %s",
                     precomputed_dir,
                 )
-                return dna_index, protein_index
+                return dna_index
         except (OSError, json.JSONDecodeError, KeyError, ValueError):
             logger.warning(
                 "Failed to load precomputed index from %s, rebuilding",
@@ -66,24 +45,15 @@ def load_or_build_exact_hash_indexes_impl(
             )
 
     dna_index = build_allele_hash_index_fn(allele_sequences)
-    protein_index = (
-        build_allele_protein_hash_index_fn(allele_sequences)
-        if include_protein
-        else None
-    )
     dna_json = json.dumps(dna_index)
     dna_file.write_text(dna_json)
     legacy_dna_file.write_text(dna_json)
-    if protein_index is not None:
-        protein_json = json.dumps(protein_index)
-        protein_file.write_text(protein_json)
-        legacy_protein_file.write_text(protein_json)
     write_json_metadata(meta_file, {"fingerprint": current_fingerprint})
     logger.info(
         "Wrote precomputed exact-hash index to %s",
         precomputed_dir,
     )
-    return dna_index, protein_index
+    return dna_index
 
 
 def scheme_precomputed_dir_impl(allele_files: dict[str, Path]) -> Path:
@@ -119,27 +89,10 @@ def build_allele_hash_index_impl(
     return index
 
 
-def build_allele_protein_hash_index_impl(
-    allele_sequences: dict[str, dict[str, str]],
-    *,
-    translate_cds_to_protein_fn,
-) -> dict[str, list[tuple[str, str]]]:
-    index: dict[str, list[tuple[str, str]]] = {}
-    for locus, alleles in allele_sequences.items():
-        for allele_id, sequence in alleles.items():
-            protein = translate_cds_to_protein_fn(sequence)
-            if not protein:
-                continue
-            digest = hashlib.sha256(protein.encode("ascii")).hexdigest()
-            index.setdefault(digest, []).append((locus, allele_id))
-    return index
-
-
 def resolve_exact_cds_matches_impl(
     sample_path: Path,
     hash_index: dict[str, list[tuple[str, str]]],
     *,
-    protein_hash_index: dict[str, list[tuple[str, str]]] | None = None,
     sample_cache_root: Path | None = None,
     cds_prediction_mode: str,
     cds_training_file: Path | None,
@@ -156,17 +109,12 @@ def resolve_exact_cds_matches_impl(
     )
 
     by_locus: dict[str, set[str]] = {}
-    by_locus_protein: dict[str, set[str]] = {}
-    for digest, protein_digest in hashed_sequences:
+    for digest in hashed_sequences:
         hits = hash_index.get(digest)
         if not hits:
-            hits = []
+            continue
         for locus, allele_id in hits:
             by_locus.setdefault(locus, set()).add(allele_id)
-        if protein_hash_index and protein_digest:
-            protein_hits = protein_hash_index.get(protein_digest, [])
-            for locus, allele_id in protein_hits:
-                by_locus_protein.setdefault(locus, set()).add(allele_id)
 
     resolved: dict[str, object] = {}
     for locus, allele_ids in by_locus.items():
@@ -179,17 +127,6 @@ def resolve_exact_cds_matches_impl(
             identity=100.0,
             coverage=1.0,
             score=100.0,
-        )
-    for locus, allele_ids in by_locus_protein.items():
-        if locus in resolved or len(allele_ids) != 1:
-            continue
-        allele_id = next(iter(allele_ids))
-        resolved[locus] = allele_match_cls(
-            locus=locus,
-            allele_id=allele_id,
-            identity=99.0,
-            coverage=1.0,
-            score=99.0,
         )
     return resolved
 
@@ -219,7 +156,7 @@ def load_or_build_sample_cds_hashes_impl(
     cds_training_file: Path | None,
     cds_closed_ends: bool,
     load_or_build_sample_cds_data_fn,
-) -> list[tuple[str, str | None]]:
+) -> list[str]:
     records, _sequences = load_or_build_sample_cds_data_fn(
         sample_path,
         cache_root=cache_root,
@@ -257,10 +194,10 @@ def load_or_build_sample_cds_data_impl(
     cds_training_file: Path | None,
     cds_closed_ends: bool,
     predict_cds_sequences_fn,
-    hash_cds_and_protein_fn,
+    hash_cds_fn,
     sample_cds_cache_config_fn,
     logger,
-) -> tuple[list[tuple[str, str | None]], list[str]]:
+) -> tuple[list[str], list[str]]:
     if cache_root is None:
         sequences = predict_cds_sequences_fn(
             sample_path,
@@ -268,7 +205,7 @@ def load_or_build_sample_cds_data_impl(
             cds_training_file=cds_training_file,
             cds_closed_ends=cds_closed_ends,
         )
-        return [hash_cds_and_protein_fn(sequence) for sequence in sequences], sequences
+        return [hash_cds_fn(sequence) for sequence in sequences], sequences
 
     sample_cache_dir = cache_root / "_sample_cds_hashes"
     sample_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -292,10 +229,7 @@ def load_or_build_sample_cds_data_impl(
                 records = cached.get("records", [])
                 sequences = cached.get("sequences", [])
                 logger.info("Loaded sample CDS hash cache for %s", sample_path.name)
-                normalized_records = [
-                    (str(record[0]), (None if record[1] is None else str(record[1])))
-                    for record in records
-                ]
+                normalized_records = [str(record) for record in records]
                 normalized_sequences = [str(sequence).upper() for sequence in sequences]
                 if len(normalized_sequences) == len(normalized_records):
                     return normalized_records, normalized_sequences
@@ -312,7 +246,7 @@ def load_or_build_sample_cds_data_impl(
         cds_training_file=cds_training_file,
         cds_closed_ends=cds_closed_ends,
     )
-    records = [hash_cds_and_protein_fn(sequence) for sequence in sequences]
+    records = [hash_cds_fn(sequence) for sequence in sequences]
     cache_file.write_text(
         json.dumps(
             {
@@ -345,96 +279,6 @@ def sample_cds_cache_config_impl(
     return f"{cds_prediction_mode}|{int(cds_closed_ends)}|{training_marker}"
 
 
-def hash_cds_and_protein_impl(
-    sequence: str,
-    *,
-    translate_cds_to_protein_fn,
-) -> tuple[str, str | None]:
+def hash_cds_impl(sequence: str) -> str:
     dna = sequence.upper()
-    dna_digest = hashlib.sha256(dna.encode("ascii")).hexdigest()
-    protein = translate_cds_to_protein_fn(dna)
-    if not protein:
-        return dna_digest, None
-    return dna_digest, hashlib.sha256(protein.encode("ascii")).hexdigest()
-
-
-def translate_cds_to_protein_impl(sequence: str) -> str:
-    dna = sequence.upper()
-    usable = len(dna) - (len(dna) % 3)
-    if usable < 3:
-        return ""
-    protein_chars: list[str] = []
-    for i in range(0, usable, 3):
-        aa = CODON_TABLE.get(dna[i : i + 3], "X")
-        if aa == "*":
-            break
-        protein_chars.append(aa)
-    return "".join(protein_chars)
-
-
-CODON_TABLE = {
-    "TTT": "F",
-    "TTC": "F",
-    "TTA": "L",
-    "TTG": "L",
-    "TCT": "S",
-    "TCC": "S",
-    "TCA": "S",
-    "TCG": "S",
-    "TAT": "Y",
-    "TAC": "Y",
-    "TAA": "*",
-    "TAG": "*",
-    "TGT": "C",
-    "TGC": "C",
-    "TGA": "*",
-    "TGG": "W",
-    "CTT": "L",
-    "CTC": "L",
-    "CTA": "L",
-    "CTG": "L",
-    "CCT": "P",
-    "CCC": "P",
-    "CCA": "P",
-    "CCG": "P",
-    "CAT": "H",
-    "CAC": "H",
-    "CAA": "Q",
-    "CAG": "Q",
-    "CGT": "R",
-    "CGC": "R",
-    "CGA": "R",
-    "CGG": "R",
-    "ATT": "I",
-    "ATC": "I",
-    "ATA": "I",
-    "ATG": "M",
-    "ACT": "T",
-    "ACC": "T",
-    "ACA": "T",
-    "ACG": "T",
-    "AAT": "N",
-    "AAC": "N",
-    "AAA": "K",
-    "AAG": "K",
-    "AGT": "S",
-    "AGC": "S",
-    "AGA": "R",
-    "AGG": "R",
-    "GTT": "V",
-    "GTC": "V",
-    "GTA": "V",
-    "GTG": "V",
-    "GCT": "A",
-    "GCC": "A",
-    "GCA": "A",
-    "GCG": "A",
-    "GAT": "D",
-    "GAC": "D",
-    "GAA": "E",
-    "GAG": "E",
-    "GGT": "G",
-    "GGC": "G",
-    "GGA": "G",
-    "GGG": "G",
-}
+    return hashlib.sha256(dna.encode("ascii")).hexdigest()

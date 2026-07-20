@@ -77,20 +77,6 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
   --cgmlst-mode chew-ultrafast sample.fna
 ```
 
-### `chew-bsr`
-
-Adds protein-level exact-hash pre-resolution on top of `chew-fast`, with optional BSR confirmation controlled by environment variables.
-
-Use it when:
-
-- you need extra protein-aware confirmation behavior
-- you are investigating edge cases where DNA-only pre-resolution is not enough
-
-```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-bsr sample.fna
-```
-
 ### `chew-balanced`
 
 Uses exact-hash resolution, minimap2 hash prefiltering, and targeted `blastn` fallback without the more aggressive ultrafast path.

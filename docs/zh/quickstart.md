@@ -194,7 +194,6 @@ gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fasta
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fasta
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fasta
 gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-balanced sample.fasta
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-bsr sample.fasta
 ```
 
 如果输入是 FASTQ，`typing cgmlst` 会自动偏向 `kma` 路径，即使你请求了 `minimap2`，因为 chew 风格优化主要是为 FASTA 场景设计的。

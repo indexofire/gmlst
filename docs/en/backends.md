@@ -170,7 +170,6 @@ Related knobs:
 | `standard` | Conservative default behavior |
 | `chew-fast` | Faster chew-style pipeline with exact-hash, hash prefilter, refinement, and fallback |
 | `chew-ultrafast` | Most aggressive FASTA-oriented throughput mode with representative alignment and second-pass rescue |
-| `chew-bsr` | Adds protein-level exact-hash pre-resolution on top of the fast path |
 | `chew-balanced` | Middle ground between speed and confirmation |
 
 Important: these chew-style optimizations are FASTA-oriented. For FASTQ inputs, `typing cgmlst` auto-switches `-b minimap2` to `-b kma`, and `--cgmlst-mode` becomes compatibility-only behavior.

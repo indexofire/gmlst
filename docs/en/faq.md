@@ -314,7 +314,6 @@ Start with:
 - `chew-fast` for common FASTA cgMLST work
 - `chew-ultrafast` for larger FASTA batches where speed matters more
 - `chew-balanced` if you want more fallback review
-- `chew-bsr` if protein-level exact matching matters for your analysis
 
 Examples:
 

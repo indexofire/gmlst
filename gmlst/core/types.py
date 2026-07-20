@@ -8,7 +8,6 @@ from gmlst.readers.sample import SampleInput
 
 @dataclass(frozen=True)
 class CgmlstModeOverrides:
-    protein_exact_hash_prefilter: bool
     exact_hash_prefilter: bool
     minimap2_hash_prefilter: bool
     minimap2_hash_locus_top_n: int | None
@@ -39,7 +38,6 @@ class TypingContext:
     use_minimap2_hash_prefilter: bool = False
     use_exact_hash_prefilter: bool = False
     exact_hash_index: dict[str, list[tuple[str, str]]] | None = None
-    protein_hash_index: dict[str, list[tuple[str, str]]] | None = None
     allele_sequence_cache: dict[str, dict[str, str]] | None = None
     prefilter_alleles: dict[tuple[str, str], str] | None = None
     minimap2_prefilter_representatives: dict[tuple[str, str], str] | None = None

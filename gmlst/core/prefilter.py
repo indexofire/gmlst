@@ -107,7 +107,6 @@ def cgmlst_mode_overrides_impl(
 ) -> CgmlstModeOverrides:
     if scheme_type != "cgmlst" or backend != "minimap2":
         return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=False,
             minimap2_hash_prefilter=False,
             minimap2_hash_locus_top_n=None,
@@ -124,7 +123,6 @@ def cgmlst_mode_overrides_impl(
     mode = cgmlst_mode.strip().lower()
     if mode == "standard":
         return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=False,
             minimap2_hash_prefilter=False,
             minimap2_hash_locus_top_n=None,
@@ -139,7 +137,6 @@ def cgmlst_mode_overrides_impl(
         )
     if mode == "chew-fast":
         return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
             minimap2_hash_locus_top_n=None,
@@ -154,7 +151,6 @@ def cgmlst_mode_overrides_impl(
         )
     if mode == "chew-ultrafast":
         return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
             minimap2_hash_locus_top_n=None,
@@ -167,24 +163,8 @@ def cgmlst_mode_overrides_impl(
             evidence_fallback_backend="none",
             evidence_fallback_max_loci=0,
         )
-    if mode == "chew-bsr":
-        return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=True,
-            exact_hash_prefilter=True,
-            minimap2_hash_prefilter=True,
-            minimap2_hash_locus_top_n=None,
-            minimap2_hash_refine_max_loci=500,
-            minimap2_fasta_emit_cigar=True,
-            minimap2_fasta_speed_profile="default",
-            minimap2_representative_main_alignment=False,
-            minimap2_bsr_confirm_max_loci=0,
-            minimap2_ultrafast_second_pass_max_loci=None,
-            evidence_fallback_backend="blastn",
-            evidence_fallback_max_loci=500,
-        )
     if mode == "chew-balanced":
         return CgmlstModeOverrides(
-            protein_exact_hash_prefilter=False,
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
             minimap2_hash_locus_top_n=None,
@@ -200,7 +180,6 @@ def cgmlst_mode_overrides_impl(
 
     logger.warning("Unknown cgMLST mode %r; using 'standard'", cgmlst_mode)
     return CgmlstModeOverrides(
-        protein_exact_hash_prefilter=False,
         exact_hash_prefilter=False,
         minimap2_hash_prefilter=False,
         minimap2_hash_locus_top_n=None,
