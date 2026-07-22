@@ -537,14 +537,13 @@ def cmd_typing_mlst(
     "--cgmlst-mode",
     type=click.Choice(
         [
-            "standard",
-            "chew-fast",
-            "chew-ultrafast",
-            "chew-balanced",
+            "fast",
+            "ultrafast",
+            "balanced",
         ],
         case_sensitive=False,
     ),
-    default="standard",
+    default="fast",
     show_default=True,
     help="cgMLST workflow mode.",
 )
@@ -887,7 +886,7 @@ def cmd_typing_tgmlst(
 def _run_mlst_like_typing(
     *,
     mode: str,
-    cgmlst_mode: str = "standard",
+    cgmlst_mode: str = "fast",
     samples: tuple[Path, ...],
     scheme: str,
     backend: str,
@@ -938,9 +937,7 @@ def _run_mlst_like_typing(
         )
         sys.exit(1)
     if mode != "cgmlst" and normalized_policy != "default":
-        err_console.print(
-            "[red]Error:[/red] call-policy is only for cgMLST."
-        )
+        err_console.print("[red]Error:[/red] call-policy is only for cgMLST.")
         sys.exit(1)
 
     if normalized_policy == "chew-exact":

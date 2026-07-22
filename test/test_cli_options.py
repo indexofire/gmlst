@@ -355,13 +355,13 @@ def test_typing_cgmlst_mode_option_forwarded(monkeypatch, tmp_path: Path) -> Non
             "-s",
             "vparahaemolyticus_3",
             "--cgmlst-mode",
-            "chew-balanced",
+            "balanced",
             str(sample),
         ],
     )
 
     assert result.exit_code == 0
-    assert captured["cgmlst_mode"] == "chew-balanced"
+    assert captured["cgmlst_mode"] == "balanced"
 
 
 def test_typing_backend_list_excludes_kmerhash() -> None:

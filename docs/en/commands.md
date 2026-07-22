@@ -75,7 +75,7 @@ gmlst typing -s schemefree sample.fna
 
 `cgmlst` prefilter options:
 
-- `--cgmlst-mode [standard|chew-fast|chew-ultrafast|chew-balanced]`
+- `--cgmlst-mode [fast|ultrafast|balanced]`
 - `--prefilter-k INTEGER`
 - `--prefilter-top-n INTEGER`
 - `--prefilter-min-loci-fraction FLOAT`
@@ -86,11 +86,10 @@ gmlst typing -s schemefree sample.fna
 `cgmlst` defaults and performance notes:
 
 - Default backend for `typing cgmlst` is `minimap2`.
-- `--cgmlst-mode standard`: conservative behavior, no forced chew-style overrides.
-- `--cgmlst-mode chew-fast`: enables exact-hash + minimap2 hash prefilter plus automatic missing-locus minimap2 refinement (default cap: 500 loci), then targeted blastn evidence fallback for low-confidence loci (default cap: 500 loci).
-- `--cgmlst-mode chew-ultrafast`: same as `chew-fast`, but uses representative-only main alignment, disables minimap2 FASTA CIGAR emission, applies an ultrafast minimap2 FASTA speed profile, performs a strict low-confidence rescue pass (default limit: 120 loci), and then runs a second targeted pass with an adaptive budget over remaining partial/closest loci.
-- `--cgmlst-mode chew-balanced`: enables exact-hash + minimap2 hash prefilter + targeted `blastn` fallback for low-confidence loci.
-- For FASTQ inputs, `typing cgmlst` now auto-switches `-b minimap2` to `-b kma` and treats `--cgmlst-mode` as compatibility-only (`standard`) because chew-style mode optimizations are FASTA-oriented.
+- `--cgmlst-mode fast`: enables exact-hash + minimap2 hash prefilter plus automatic missing-locus minimap2 refinement (default cap: 500 loci), then targeted blastn evidence fallback for low-confidence loci (default cap: 500 loci).
+- `--cgmlst-mode ultrafast`: same as `fast`, but uses representative-only main alignment, disables minimap2 FASTA CIGAR emission, applies an ultrafast minimap2 FASTA speed profile, performs a strict low-confidence rescue pass (default limit: 120 loci), and then runs a second targeted pass with an adaptive budget over remaining partial/closest loci.
+- `--cgmlst-mode balanced`: enables exact-hash + minimap2 hash prefilter + targeted `blastn` fallback for low-confidence loci.
+- For FASTQ inputs, `typing cgmlst` now auto-switches `-b minimap2` to `-b kma` and treats `--cgmlst-mode` as compatibility-only (`fast`) because chew-style mode optimizations are FASTA-oriented.
 - `--call-policy chewbbaca` requires FASTA assemblies and keeps raw calls unchanged while rendering chew-style per-locus class labels in output.
 - By default, `--call-policy chewbbaca` enforces CDS-gated classification (`--chew-cds-gate`). Use `--no-chew-cds-gate` to allow classification from any matched sequence context.
 

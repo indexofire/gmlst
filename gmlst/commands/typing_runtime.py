@@ -40,13 +40,12 @@ def normalize_cgmlst_fastq_runtime(
             "[red]Error:[/red] --call-policy chewbbaca requires FASTA assemblies."
         )
         sys.exit(1)
-    if cgmlst_mode != "standard":
+    if cgmlst_mode != "fast":
         console.print(
-            "[yellow]Warning:[/yellow] FASTQ cgMLST currently treats "
-            "[cyan]--cgmlst-mode[/cyan] as compatibility-only. "
-            "Forcing mode to [cyan]standard[/cyan]."
+            "[yellow]Warning:[/yellow] FASTQ cgMLST ignores "
+            "[cyan]--cgmlst-mode[/cyan]. Using default behavior."
         )
-        cgmlst_mode = "standard"
+        cgmlst_mode = "fast"
     if backend.lower() == "kma" and max_workers <= 1 and threads == 1:
         auto_threads = fastq_kma_auto_threads_fn()
         if auto_threads > 1:

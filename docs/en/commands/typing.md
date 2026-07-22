@@ -95,15 +95,14 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 
 | Mode | Description |
 | --- | --- |
-| `standard` | Conservative baseline. |
-| `chew-fast` | Exact-hash + minimap2 prefilter with targeted rescue. |
-| `chew-ultrafast` | Aggressive speed profile with bounded second-pass rescue. |
-| `chew-balanced` | Hash-first with targeted `blastn` fallback. |
+| `fast` | Exact-hash + minimap2 prefilter with targeted rescue. |
+| `ultrafast` | Aggressive speed profile with bounded second-pass rescue. |
+| `balanced` | Hash-first with targeted `blastn` fallback. |
 
 ### Examples
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 --prefilter-k 31 --prefilter-top-n 20 sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 --call-policy chewbbaca --cds-coordinates-out cds.tsv sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 -b kma -t 8 reads_R1.fastq.gz reads_R2.fastq.gz
@@ -111,7 +110,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -b kma -t 8 reads_R1.fastq.gz reads_R
 
 ### Notes
 - `typing cgmlst` is tuned for large locus sets, where the per-locus profile matters more than a compact legacy ST.
-- FASTA assemblies use the full cgMLST mode system. FASTQ input follows a KMA-first path. If you request `-b minimap2` with FASTQ files, `gmlst` auto-switches to `-b kma` and treats `--cgmlst-mode` as compatibility-only `standard` behavior.
+- FASTA assemblies use the full cgMLST mode system. FASTQ input follows a KMA-first path. If you request `-b minimap2` with FASTQ files, `gmlst` auto-switches to `-b kma` and treats `--cgmlst-mode` as compatibility-only `fast` behavior.
 - `--call-policy chewbbaca` requires FASTA assemblies. Raw calls stay unchanged, while output labels follow chewBBACA-style classes.
 - CDS-gated classification is enabled by default for `--call-policy chewbbaca`. Use `--no-chew-cds-gate` only when you want classification from any matched sequence context.
 - Prefiltering is most useful for FASTA assembly workflows. For `-b kma` and the default `-b minimap2` path, `gmlst` can skip prefiltering and use its persistent full-index route instead.
@@ -121,7 +120,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -b kma -t 8 reads_R1.fastq.gz reads_R
 | Variable | Purpose |
 | --- | --- |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | Select minimap2 FASTA speed profile for cgMLST FASTA runs. |
-| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | Control the rescue budget for the `chew-ultrafast` second pass. |
+| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | Control the rescue budget for the `ultrafast` second pass. |
 | `GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS` | Auto-raise KMA threads for cgMLST FASTQ runs when possible. |
 | `GMLST_CGMLST_KMA_FASTQ_MEM_MODE` | Toggle KMA `-mem_mode` for cgMLST FASTQ mapping. |
 | `GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI` | Limit strict KMA confirmation after the FASTQ mem-mode pass. |

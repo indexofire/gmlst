@@ -382,7 +382,7 @@ typing 相关命令实现位于 `gmlst/commands/typing.py`，主要负责：
 
 ### FASTQ cgMLST 的命令层策略
 
-命令层承担一个非常重要的策略决策。对于带 FASTQ 输入的 cgMLST 运行，后端采用 KMA-first。若用户显式选择 `minimap2`，`gmlst/commands/typing.py` 会检测到 FASTQ 样本后切换到 `kma`，并把 `cgmlst_mode` 强制为 `standard`。
+命令层承担一个非常重要的策略决策。对于带 FASTQ 输入的 cgMLST 运行，后端采用 KMA-first。若用户显式选择 `minimap2`，`gmlst/commands/typing.py` 会检测到 FASTQ 样本后切换到 `kma`，并把 `cgmlst_mode` 强制为 `fast`。
 
 这样做可以明确表明，FASTQ cgMLST 不是在走 FASTA 专用的 chew 风格优化路径。
 
@@ -457,10 +457,9 @@ cgMLST mode 配置由 `gmlst/core_config.py` 加上 `gmlst/core/` 与 `gmlst/cor
 
 用户可见模式包括：
 
-- `standard`
-- `chew-fast`
-- `chew-ultrafast`
-- `chew-balanced`
+- `fast`
+- `ultrafast`
+- `balanced`
 
 这些模式主要影响偏 FASTA 的 minimap2 与 refinement 路线，例如：
 
@@ -480,7 +479,7 @@ cgMLST mode 配置由 `gmlst/core_config.py` 加上 `gmlst/core/` 与 `gmlst/cor
 - `gmlst/core/adapters_cds.py`
 - `gmlst/core/adapters_exact_hash.py`
 
-对于 FASTQ cgMLST，`gmlst/commands/typing.py` 会把这些模式统一压回 `standard`。
+对于 FASTQ cgMLST，`gmlst/commands/typing.py` 会把这些模式统一压回 `fast`。
 
 ## Novel allele 工作流
 

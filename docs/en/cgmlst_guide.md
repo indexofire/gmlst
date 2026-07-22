@@ -34,22 +34,7 @@ For many cgMLST schemes, ST may be `-` because the main value is the per-locus p
 
 Choose a mode based on dataset size and how much rescue logic you want.
 
-### `standard`
-
-Conservative mode. No forced chew-style overrides.
-
-Use it when:
-
-- you want the plainest behavior
-- you are comparing results across backends
-- you are working with FASTQ, because chew-style modes are forced back to `standard` there
-
-```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode standard sample.fna
-```
-
-### `chew-fast`
+### `fast`
 
 Adds exact-hash resolution, minimap2 hash prefiltering, automatic missing-locus refinement with a default cap of 500 loci, and targeted `blastn` evidence fallback with a default cap of 500 loci.
 
@@ -60,12 +45,12 @@ Use it when:
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-fast sample.fna
+  --cgmlst-mode fast sample.fna
 ```
 
-### `chew-ultrafast`
+### `ultrafast`
 
-Builds on `chew-fast` with representative-only main alignment, disabled CIGAR emission, an ultrafast minimap2 speed profile, a strict low-confidence rescue cap of 120 loci, and an adaptive second pass.
+Builds on `fast` with representative-only main alignment, disabled CIGAR emission, an ultrafast minimap2 speed profile, a strict low-confidence rescue cap of 120 loci, and an adaptive second pass.
 
 Use it when:
 
@@ -74,20 +59,20 @@ Use it when:
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast sample.fna
+  --cgmlst-mode ultrafast sample.fna
 ```
 
-### `chew-balanced`
+### `balanced`
 
 Uses exact-hash resolution, minimap2 hash prefiltering, and targeted `blastn` fallback without the more aggressive ultrafast path.
 
 Use it when:
 
-- you want a middle ground between `standard` and the most aggressive acceleration profiles
+- you want a middle ground between `fast` and the most aggressive acceleration profiles
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-balanced sample.fna
+  --cgmlst-mode balanced sample.fna
 ```
 
 ## FASTA cgMLST
@@ -113,7 +98,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 # Use a faster chew-style mode for a large scheme
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast sample.fna
+  --cgmlst-mode ultrafast sample.fna
 ```
 
 Why FASTA gets more options:
@@ -126,7 +111,7 @@ Why FASTA gets more options:
 
 FASTQ follows a KMA-first policy.
 
-If you request `-b minimap2` with FASTQ inputs, `gmlst` automatically switches to `-b kma`. Chew-style modes are compatibility-only in FASTQ mode and are forced back to `standard`.
+If you request `-b minimap2` with FASTQ inputs, `gmlst` automatically switches to `-b kma`. Chew-style modes are compatibility-only in FASTQ mode and are forced back to `fast`.
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
@@ -136,7 +121,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 Effective behavior:
 
 - backend is auto-switched to `kma`
-- cgMLST mode is treated as `standard`
+- cgMLST mode is treated as `fast`
 - per-sample threads may be auto-raised through `GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS`
 - `--call-policy chewbbaca` is rejected for FASTQ input
 
@@ -291,8 +276,8 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
 
 Use these rules as a starting point:
 
-- small to medium FASTA schemes, start with `standard` or `chew-balanced`
-- large FASTA schemes, start with `chew-ultrafast`
+- small to medium FASTA schemes, start with `fast` or `balanced`
+- large FASTA schemes, start with `ultrafast`
 - FASTQ, use `-b kma` and set `-t 8` to `-t 16` when CPU is available
 - many samples, add `--max-workers` for sample-level parallelism
 
@@ -301,7 +286,7 @@ Examples:
 ```bash
 # Large scheme, fast assembly path
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast \
+  --cgmlst-mode ultrafast \
   --max-workers 4 \
   samples/*.fna
 
@@ -320,7 +305,7 @@ Operational caveats:
 
 For schemes with 1000 or more loci:
 
-- prefer `chew-ultrafast` for FASTA assemblies
+- prefer `ultrafast` for FASTA assemblies
 - expect the prefilter to matter more when the candidate space is still manageable
 - remember that prefilter auto-skip can trigger above the configured threshold
 - use `--max-workers` carefully, because each sample can still be expensive on its own

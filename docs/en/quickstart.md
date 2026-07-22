@@ -190,10 +190,9 @@ The default backend for `typing cgmlst` is `minimap2`.
 You can select different cgMLST runtime modes depending on speed and sensitivity needs:
 
 ```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fasta
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fasta
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fasta
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-balanced sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode ultrafast sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode balanced sample.fasta
 ```
 
 For FASTQ inputs, `typing cgmlst` automatically favors a `kma`-based path even if you requested `minimap2`, because the chew-style optimizations are FASTA-oriented.

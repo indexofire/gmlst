@@ -91,17 +91,16 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 
 | 模式 | 说明 | 适合场景 |
 | --- | --- | --- |
-| `standard` | 保守的基线行为，不强制启用 chew 风格覆盖。 | 需要稳定、通用设置时先从这里开始 |
-| `chew-fast` | 启用 exact-hash、minimap2 哈希预过滤、缺失位点 minimap2 精修，以及面向低置信度位点的定向 `blastn` 回退。 | 日常 FASTA 组装分型 |
-| `chew-ultrafast` | 基于 `chew-fast`，进一步偏向速度，使用代表序列主比对、严格救援和第二遍定向补救。 | 大批量样本，最看重吞吐量 |
-| `chew-balanced` | 启用 exact-hash、minimap2 哈希预过滤，以及面向低置信度位点的定向 `blastn` 回退。 | 在速度和复核能力之间求平衡 |
+| `fast` | 启用 exact-hash、minimap2 哈希预过滤、缺失位点 minimap2 精修，以及面向低置信度位点的定向 `blastn` 回退。 | 日常 FASTA 组装分型 |
+| `ultrafast` | 基于 `fast`，进一步偏向速度，使用代表序列主比对、严格救援和第二遍定向补救。 | 大批量样本，最看重吞吐量 |
+| `balanced` | 启用 exact-hash、minimap2 哈希预过滤，以及面向低置信度位点的定向 `blastn` 回退。 | 在速度和复核能力之间求平衡 |
 
 ### 环境变量
 
 | 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | 控制 minimap2 FASTA 速度档位，可选 `default`、`fast`、`ultrafast`。 | `default` |
-| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | 控制 `chew-ultrafast` 第二遍的位点预算，可设为 `adaptive` 或整数。 | `adaptive` |
+| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | 控制 `ultrafast` 第二遍的位点预算，可设为 `adaptive` 或整数。 | `adaptive` |
 | `GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS` | 对 FASTQ cgMLST 自动提升 KMA 每样本线程数。设为 `1` 可关闭。 | `8` |
 | `GMLST_CGMLST_KMA_FASTQ_MEM_MODE` | 为 FASTQ cgMLST 启用 KMA `-mem_mode`。 | `1` |
 | `GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI` | `-mem_mode` 后最多对多少个 `closest` 位点执行严格 KMA 复查。 | `64` |
@@ -121,7 +120,7 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 ### 示例
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 --prefilter-k 31 --prefilter-top-n 20 sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 --call-policy chewbbaca --cds-coordinates-out cds.tsv sample.fna
 ```

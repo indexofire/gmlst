@@ -365,7 +365,7 @@ def test_run_typing_cgmlst_minimap2_prefilter_uses_fast_settings(
     assert captured["min_coverage"] == 0.8
 
 
-def test_run_typing_chew_ultrafast_uses_representative_main_alignment(
+def test_run_typing_ultrafast_uses_representative_main_alignment(
     monkeypatch, tmp_path: Path
 ) -> None:
     sample = tmp_path / "s1.fna"
@@ -454,7 +454,7 @@ def test_run_typing_chew_ultrafast_uses_representative_main_alignment(
         "minimap2",
         provider="pubmlst",
         scheme_type="cgmlst",
-        cgmlst_mode="chew-ultrafast",
+        cgmlst_mode="ultrafast",
         threads=1,
         prefilter_min_loci_fraction=0.1,
     )
@@ -928,27 +928,9 @@ def test_exact_hash_prefilter_enabled_from_env(monkeypatch) -> None:
     assert core._exact_hash_prefilter_enabled() is True
 
 
-def test_cgmlst_mode_overrides_standard_for_minimap2() -> None:
+def test_cgmlst_mode_overrides_fast_for_minimap2() -> None:
     ov = core._cgmlst_mode_overrides(
-        cgmlst_mode="standard",
-        scheme_type="cgmlst",
-        backend="minimap2",
-    )
-    assert ov.exact_hash_prefilter is False
-    assert ov.minimap2_hash_prefilter is False
-    assert ov.minimap2_hash_locus_top_n is None
-    assert ov.minimap2_hash_refine_max_loci is None
-    assert ov.minimap2_fasta_emit_cigar is None
-    assert ov.minimap2_fasta_speed_profile is None
-    assert ov.minimap2_representative_main_alignment is None
-    assert ov.minimap2_bsr_confirm_max_loci is None
-    assert ov.minimap2_ultrafast_second_pass_max_loci is None
-    assert ov.evidence_fallback_backend is None
-
-
-def test_cgmlst_mode_overrides_chew_fast_for_minimap2() -> None:
-    ov = core._cgmlst_mode_overrides(
-        cgmlst_mode="chew-fast",
+        cgmlst_mode="fast",
         scheme_type="cgmlst",
         backend="minimap2",
     )
@@ -965,9 +947,9 @@ def test_cgmlst_mode_overrides_chew_fast_for_minimap2() -> None:
     assert ov.evidence_fallback_max_loci == 500
 
 
-def test_cgmlst_mode_overrides_chew_balanced_for_minimap2() -> None:
+def test_cgmlst_mode_overrides_balanced_for_minimap2() -> None:
     ov = core._cgmlst_mode_overrides(
-        cgmlst_mode="chew-balanced",
+        cgmlst_mode="balanced",
         scheme_type="cgmlst",
         backend="minimap2",
     )
@@ -984,9 +966,9 @@ def test_cgmlst_mode_overrides_chew_balanced_for_minimap2() -> None:
     assert ov.evidence_fallback_max_loci == 300
 
 
-def test_cgmlst_mode_overrides_chew_ultrafast_for_minimap2() -> None:
+def test_cgmlst_mode_overrides_ultrafast_for_minimap2() -> None:
     ov = core._cgmlst_mode_overrides(
-        cgmlst_mode="chew-ultrafast",
+        cgmlst_mode="ultrafast",
         scheme_type="cgmlst",
         backend="minimap2",
     )
@@ -1434,6 +1416,12 @@ def test_run_typing_minimap2_hash_refinement_uses_missing_loci_only(
     class _Call:
         def __init__(self, call_type: str):
             self.call_type = call_type
+            self.multiple_hits = False
+            self.allele_id = None
+            self.best_match = None
+            self.novel_sequence = None
+            self.copy_count = 1
+            self.allele_ids = []
 
     call_count = {"value": 0}
 

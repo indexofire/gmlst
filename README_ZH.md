@@ -14,7 +14,7 @@
 - ⚡ **多后端支持**：支持 BLAST+、KMA、minimap2、MUMmer4，内置 exact-hash 预解析用于 cgMLST 工作流。
 - 🧫 **支持 FASTA 与 FASTQ**：既能处理组装完成的基因组，也能处理双端原始 reads。
 - 🗂️ **多数据提供方**：支持 PubMLST、Pasteur BIGSdb、Enterobase、cgmlst.org 和本地自定义方案。
-- 🧠 **灵活的 cgMLST 模式**：可选 `standard`、`chew-fast`、`chew-ultrafast`、`chew-balanced`，适配不同速度与证据需求。
+- 🧠 **灵活的 cgMLST 模式**：可选 `fast`、`ultrafast`、`balanced`，适配不同速度与证据需求。
 - 🆕 **新等位基因工作流**：支持发现 novel allele、提取 novel profile，并构建实验室自定义 MLST 数据库。
 - 🔍 **无方案分型**：通过 `tgmlst` 进行 de novo 等位基因发现，不依赖预先选择的公共方案。
 - 📦 **丰富输出格式**：支持 `tsv`、`json`、`pretty`，也支持 GrapeTree 兼容导出。
@@ -75,7 +75,7 @@ gmlst typing mlst -s saureus_1 sample_R1.fastq.gz sample_R2.fastq.gz
 gmlst typing mlst -s saureus_1 sample*.fastq.gz
 
 # 对组装结果做 cgMLST
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fasta
 ```
 
 ### 3. 批量处理
@@ -184,18 +184,16 @@ gmlst utils extract -i typing_results.tsv -s saureus_1 --novel-allele --novel-pr
 
 | 模式 | 作用 | 适合场景 |
 | --- | --- | --- |
-| `standard` | 保守的基础行为 | 想先得到稳定默认行为时 |
-| `chew-fast` | 结合 exact-hash 与 minimap2 预过滤，并做定向补救 | 日常组装 cgMLST |
-| `chew-ultrafast` | 更激进的速度配置，带有受限第二轮补救 | 大批量样本追求更快周转 |
-| `chew-balanced` | hash-first 路径加定向 `blastn` fallback | 想兼顾速度与低置信度复核 |
+| `fast` | 结合 exact-hash 与 minimap2 预过滤，并做定向补救 | 日常组装 cgMLST |
+| `ultrafast` | 更激进的速度配置，带有受限第二轮补救 | 大批量样本追求更快周转 |
+| `balanced` | hash-first 路径加定向 `blastn` fallback | 想兼顾速度与低置信度复核 |
 
 示例：
 
 ```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-balanced sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode ultrafast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode balanced sample.fna
 ```
 
 ## 无方案分型（`tgmlst`）

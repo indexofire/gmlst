@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
+## [0.1.5] - 2026-07-22
+
+### Changed
+
+#### cgMLST: Mode rename and simplification
+- Removed `standard` mode (baseline without hash acceleration)
+- Renamed modes for clarity:
+  - `chew-fast` → `fast` (new default)
+  - `chew-ultrafast` → `ultrafast`
+  - `chew-balanced` → `balanced`
+- 3 cgMLST modes remain: `fast`, `ultrafast`, `balanced`
+- All documentation, examples, and tests updated to use new names
+
 ## [0.1.4] - 2026-07-21
 
 ### Added

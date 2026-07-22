@@ -80,7 +80,7 @@ No BLASTN-specific environment variables are currently implemented. Control BLAS
 | `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | Enables hash-first candidate reduction before minimap2 main alignment. | cgMLST FASTA, minimap2 prefilter path |
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | `0` | Max missing loci sent to a minimap2 refinement pass when not overridden by a workflow mode. `0` disables this pass. | cgMLST FASTA, minimap2 refinement |
 | `GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N` | `0` | Limits how many loci survive the hash stage before main alignment. `0` keeps default behavior. | cgMLST FASTA, minimap2 prefilter path |
-| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | Budget for the ultrafast second pass. Use `adaptive`, `auto`, empty value, or a non-negative integer. | cgMLST FASTA, minimap2 chew-ultrafast path |
+| `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | Budget for the ultrafast second pass. Use `adaptive`, `auto`, empty value, or a non-negative integer. | cgMLST FASTA, minimap2 ultrafast path |
 | `GMLST_CGMLST_MINIMAP2_REPRESENTATIVE_MAIN_ALIGNMENT` | `0` | Restricts main alignment to representative targets in speed-focused workflows. | cgMLST FASTA, minimap2 representative alignment path |
 
 ### nucmer
@@ -248,7 +248,7 @@ export GMLST_CGMLST_EXACT_HASH_PREFILTER=1
 export GMLST_CGMLST_MINIMAP2_HASH_PREFILTER=1
 export GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI=adaptive
 
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-ultrafast -t 16 samples/*.fasta -o cgmlst.tsv
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode ultrafast -t 16 samples/*.fasta -o cgmlst.tsv
 ```
 
 ### FASTQ cgMLST with KMA
@@ -303,5 +303,5 @@ export GMLST_CGMLST_EVIDENCE_FALLBACK_BACKEND=blastn
 export GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI=120
 export GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI=500
 
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-fast -t 12 sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode fast -t 12 sample.fasta
 ```

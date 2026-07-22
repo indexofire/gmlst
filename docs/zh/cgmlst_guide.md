@@ -34,22 +34,7 @@ sample.fna	vparahaemolyticus_3	-	12	44	109	...
 
 不同模式适合不同数据规模和速度/恢复能力平衡。
 
-### `standard`
-
-保守模式，不强制启用 chew 风格优化。
-
-适合场景：
-
-- 想获得最直接、最基础的行为
-- 想比较不同后端结果
-- 使用 FASTQ，因为 FASTQ 下 chew 风格模式会被强制退回 `standard`
-
-```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode standard sample.fna
-```
-
-### `chew-fast`
+### `fast`
 
 在基础流程上增加 exact-hash、minimap2 hash prefilter、自动缺失位点 refine（默认上限 500 loci），以及定向 `blastn` 证据回退（默认上限 500 loci）。
 
@@ -60,12 +45,12 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-fast sample.fna
+  --cgmlst-mode fast sample.fna
 ```
 
-### `chew-ultrafast`
+### `ultrafast`
 
-在 `chew-fast` 的基础上进一步启用 representative-only 主比对、关闭 CIGAR 输出、使用 ultrafast minimap2 配置、严格低置信度 rescue（默认 120 loci）和自适应第二轮。
+在 `fast` 的基础上进一步启用 representative-only 主比对、关闭 CIGAR 输出、使用 ultrafast minimap2 配置、严格低置信度 rescue（默认 120 loci）和自适应第二轮。
 
 适合场景：
 
@@ -74,20 +59,20 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast sample.fna
+  --cgmlst-mode ultrafast sample.fna
 ```
 
-### `chew-balanced`
+### `balanced`
 
 启用 exact-hash、minimap2 hash prefilter 和定向 `blastn` fallback，但不走最激进的 ultrafast 路线。
 
 适合场景：
 
-- 希望在 `standard` 与更激进的加速模式之间找到折中
+- 希望在 `fast` 与更激进的加速模式之间找到折中
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-balanced sample.fna
+  --cgmlst-mode balanced sample.fna
 ```
 
 ## FASTA cgMLST
@@ -113,7 +98,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 # 大 scheme 使用更快模式
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast sample.fna
+  --cgmlst-mode ultrafast sample.fna
 ```
 
 为什么 FASTA 选项更多：
@@ -126,7 +111,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 FASTQ 模式遵循 KMA-first 策略。
 
-如果你对 FASTQ 输入指定 `-b minimap2`，`gmlst` 会自动切换到 `-b kma`。同时，chew 风格模式在 FASTQ 下只保留兼容意义，最终会被强制视为 `standard`。
+如果你对 FASTQ 输入指定 `-b minimap2`，`gmlst` 会自动切换到 `-b kma`。同时，chew 风格模式在 FASTQ 下只保留兼容意义，最终会被强制视为 `fast`。
 
 ```bash
 gmlst typing cgmlst -s vparahaemolyticus_3 \
@@ -136,7 +121,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 实际行为是：
 
 - 后端自动切换为 `kma`
-- cgMLST mode 被当作 `standard`
+- cgMLST mode 被当作 `fast`
 - 可通过 `GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS` 自动提高每个样本的线程数
 - `--call-policy chewbbaca` 会直接拒绝 FASTQ 输入
 
@@ -287,8 +272,8 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
 
 可以先按以下经验选择：
 
-- 小到中等规模 FASTA scheme：先试 `standard` 或 `chew-balanced`
-- 大型 FASTA scheme：优先试 `chew-ultrafast`
+- 小到中等规模 FASTA scheme：先试 `fast` 或 `balanced`
+- 大型 FASTA scheme：优先试 `ultrafast`
 - FASTQ：优先使用 `-b kma`，线程数通常设为 `8` 到 `16`
 - 批量样本：使用 `--max-workers` 进行样本级并行
 
@@ -297,7 +282,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
 ```bash
 # 大 scheme，偏向快速的 assembly 路径
 gmlst typing cgmlst -s vparahaemolyticus_3 \
-  --cgmlst-mode chew-ultrafast \
+  --cgmlst-mode ultrafast \
   --max-workers 4 \
   samples/*.fna
 
@@ -316,7 +301,7 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 对于 1000 个以上 loci 的 scheme：
 
-- FASTA 组装优先考虑 `chew-ultrafast`
+- FASTA 组装优先考虑 `ultrafast`
 - 规模越大，prefilter 的意义通常越明显
 - 但也要注意超过阈值后可能自动跳过 prefilter
 - `--max-workers` 不一定越大越快，要结合后端线程一起平衡

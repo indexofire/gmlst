@@ -177,7 +177,7 @@ def run_typing(
     *,
     provider: str = "pubmlst",
     scheme_type: str = "mlst",
-    cgmlst_mode: str = "standard",
+    cgmlst_mode: str = "fast",
     cache_root: Path | None = None,
     min_identity: float = 95.0,
     min_coverage: float = 0.95,

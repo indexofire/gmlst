@@ -125,14 +125,14 @@ gmlst typing mlst -s saureus_1 -b kma sample.fasta
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 
 # 显式指定 minimap2，并使用 chew 兼容模式
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-fast sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode fast sample.fasta
 
 # FASTQ 分型，使用 minimap2 候选生成加定向验证
 gmlst typing mlst -s saureus_1 -b minimap2 reads/sample_R1.fastq.gz reads/sample_R2.fastq.gz
 
 # 面向大规模 cgMLST 的 ultrafast 调优
 GMLST_MINIMAP2_FASTA_SPEED_PROFILE=ultrafast \
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-ultrafast samples/*.fasta -o cgmlst.tsv
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode ultrafast samples/*.fasta -o cgmlst.tsv
 ```
 
 ### FASTA 路径
@@ -168,10 +168,9 @@ FASTQ 路径分两步。
 
 | 模式 | 常见用途 |
 | --- | --- |
-| `standard` | 保守默认行为 |
-| `chew-fast` | 更快的 chew 风格流程，包含 exact-hash、hash prefilter、refinement 和 fallback |
-| `chew-ultrafast` | 面向 FASTA 的最高吞吐模式，带代表序列主比对和二次补救 |
-| `chew-balanced` | 在速度和确认之间取中间值 |
+| `fast` | 更快的 chew 风格流程，包含 exact-hash、hash prefilter、refinement 和 fallback |
+| `ultrafast` | 面向 FASTA 的最高吞吐模式，带代表序列主比对和二次补救 |
+| `balanced` | 在速度和确认之间取中间值 |
 
 要注意，这些 chew 风格优化主要针对 FASTA。对于 FASTQ 输入，`typing cgmlst` 会自动把 `-b minimap2` 调整为 `-b kma`，`--cgmlst-mode` 只保留兼容意义。
 

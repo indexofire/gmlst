@@ -125,14 +125,14 @@ For FASTA assemblies, `gmlst` uses a fast allele-to-genome path with optional ex
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fasta
 
 # Explicit minimap2 backend with a chew-compatible mode
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-fast sample.fasta
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode fast sample.fasta
 
 # FASTQ typing with minimap2 candidate generation and targeted validation
 gmlst typing mlst -s saureus_1 -b minimap2 reads/sample_R1.fastq.gz reads/sample_R2.fastq.gz
 
 # Ultrafast large-scale cgMLST tuning
 GMLST_MINIMAP2_FASTA_SPEED_PROFILE=ultrafast \
-gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode chew-ultrafast samples/*.fasta -o cgmlst.tsv
+gmlst typing cgmlst -s vparahaemolyticus_3 -b minimap2 --cgmlst-mode ultrafast samples/*.fasta -o cgmlst.tsv
 ```
 
 ### FASTA path
@@ -167,10 +167,9 @@ Related knobs:
 
 | Mode | Typical role |
 | --- | --- |
-| `standard` | Conservative default behavior |
-| `chew-fast` | Faster chew-style pipeline with exact-hash, hash prefilter, refinement, and fallback |
-| `chew-ultrafast` | Most aggressive FASTA-oriented throughput mode with representative alignment and second-pass rescue |
-| `chew-balanced` | Middle ground between speed and confirmation |
+| `fast` | Faster chew-style pipeline with exact-hash, hash prefilter, refinement, and fallback |
+| `ultrafast` | Most aggressive FASTA-oriented throughput mode with representative alignment and second-pass rescue |
+| `balanced` | Middle ground between speed and confirmation |
 
 Important: these chew-style optimizations are FASTA-oriented. For FASTQ inputs, `typing cgmlst` auto-switches `-b minimap2` to `-b kma`, and `--cgmlst-mode` becomes compatibility-only behavior.
 
@@ -190,7 +189,7 @@ This is useful when you want minimap2 to handle the main throughput path but sti
 ### When to use
 
 - Distant or divergent assemblies
-- Non-standard organisms or exploratory work
+- Non-fast organisms or exploratory work
 - Cross-species comparison where exact reference behavior matters less than sensitive matching
 
 ### Example commands

@@ -302,7 +302,7 @@ gmlst typing mlst -s saureus_1 -b kma sample_R1.fastq.gz sample_R2.fastq.gz
 
 ### 为什么 `typing cgmlst` 会把我的 FASTQ 任务切到 KMA？
 
-这是预期设计。对于 FASTQ 输入，CLI 会执行 KMA-first 策略。如果你在 cgMLST FASTQ 场景里请求 `-b minimap2`，`gmlst` 会自动切到 `kma`，并把 `--cgmlst-mode` 当成兼容参数处理，也就是等效为 `standard`。
+这是预期设计。对于 FASTQ 输入，CLI 会执行 KMA-first 策略。如果你在 cgMLST FASTQ 场景里请求 `-b minimap2`，`gmlst` 会自动切到 `kma`，并把 `--cgmlst-mode` 当成兼容参数处理，也就是等效为 `fast`。
 
 这个行为在 [../en/architecture.md](../en/architecture.md) 和 [commands.md](commands.md) 里都有说明。
 
@@ -310,17 +310,16 @@ gmlst typing mlst -s saureus_1 -b kma sample_R1.fastq.gz sample_R2.fastq.gz
 
 可以从这些起点开始：
 
-- `standard`，适合想要最保守默认行为时
-- `chew-fast`，适合常见 FASTA cgMLST 场景
-- `chew-ultrafast`，适合更大的 FASTA 批量任务
-- `chew-balanced`，适合想保留更多 fallback 复核时
+- `fast`，适合常见 FASTA cgMLST 场景
+- `ultrafast`，适合更大的 FASTA 批量任务
+- `balanced`，适合想保留更多 fallback 复核时
 
 示例：
 
 ```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode ultrafast sample.fna
 ```
 
 ### 大型 cgMLST 方案运行特别慢

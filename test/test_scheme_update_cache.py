@@ -244,7 +244,7 @@ def test_ensure_scheme_force_clears_existing_directory(tmp_path: Path) -> None:
             )
         )
 
-    cache._download = fake_download  # type: ignore[method-assign]
+    cache._download = fake_download  # type: ignore[method-assign]  # monkeypatch private method for test fixture
 
     cache.ensure_scheme("demo", provider="pubmlst", force=True)
 

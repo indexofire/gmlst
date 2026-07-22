@@ -20,7 +20,7 @@ For batch processing of multiple genomes:
         --output /path/to/output_dir
 
 The script will:
-1. Run gmlst typing cgmlst (chew-fast mode)
+1. Run gmlst typing cgmlst (fast mode)
 2. Run chewBBACA AlleleCall
 3. Compare results locus by locus
 4. For each difference, BLAST verify against the allele database
@@ -91,7 +91,7 @@ def run_gmlst(
     gmlst_env: str = "pixi",
     gmlst_project: Path | None = None,
     gmlst_prefix: Path | None = None,
-    mode: str = "chew-fast",
+    mode: str = "fast",
 ) -> tuple[bool, float]:
     cmd = ["gmlst", "typing", "cgmlst", "-s", scheme]
     cmd += ["--cgmlst-mode", mode]
@@ -630,7 +630,7 @@ def process_genome(
     # --- Step 1: Run gmlst ---
     gmlst_tsv = sample_dir / "gmlst_result.tsv"
     if not gmlst_tsv.exists() or args_force:
-        logger.info("  Running gmlst chew-fast ...")
+        logger.info("  Running gmlst fast ...")
         ok, gmlst_time = run_gmlst(
             genome,
             scheme,
@@ -952,7 +952,7 @@ def main():
         "--chewbbaca-prefix",
         type=Path,
         default=None,
-        help="Direct path to chewBBACA conda env (e.g. ~/.mamba/envs/chewbbaca). Bypasses conda run.",
+        help="Direct path to chewBBACA conda env. Bypasses conda run.",
     )
     parser.add_argument(
         "--gmlst-prefix",
@@ -961,7 +961,7 @@ def main():
         help="Direct path to gmlst conda/pixi env bin dir. Bypasses conda run.",
     )
     parser.add_argument(
-        "--mode", default="chew-fast", help="gmlst cgmlst mode (default: chew-fast)"
+        "--mode", default="fast", help="gmlst cgmlst mode (default: fast)"
     )
     parser.add_argument("--skip-gmlst", action="store_true", help="Skip running gmlst")
     parser.add_argument(
@@ -1020,9 +1020,12 @@ def main():
     print(f"\n{'=' * 100}")
     print(f"Benchmark Summary: {len(all_stats)} genomes")
     print(f"{'=' * 100}")
-    print(
-        f"{'Sample':<28} {'Loci':>5} {'Cons%':>6} {'Diff':>5} {'gmlst(s)':>8} {'chew(s)':>8} {'Spd':>5} {'g✓':>4} {'c✓':>4} {'cdsΔ':>5} {'NIPH✓':>6} {'NIPH?':>6} {'len→g':>5} {'sub→g':>5}"
+    _hdr = (
+        f"{'Sample':<28} {'Loci':>5} {'Cons%':>6} {'Diff':>5} "
+        f"{'gmlst(s)':>8} {'chew(s)':>8} {'Spd':>5} {'g✓':>4} {'c✓':>4} "
+        f"{'cdsΔ':>5} {'NIPH✓':>6} {'NIPH?':>6} {'len→g':>5} {'sub→g':>5}"
     )
+    print(_hdr)
     print("-" * 125)
     for s in all_stats:
         if "error" in s:
@@ -1080,11 +1083,9 @@ def main():
         total_gmlst_correct = sum(s.get("gmlst_correct", 0) for s in valid)
         total_chew_correct = sum(s.get("chew_correct", 0) for s in valid)
         total_cds_diff = sum(s.get("cds_boundary_diff", 0) for s in valid)
-        total_bsr_bug = sum(s.get("chew_inf_bsr_bug", 0) for s in valid)
         total_niph_v = sum(s.get("chew_niph_verified", 0) for s in valid)
         total_niph_u = sum(s.get("chew_niph_unverified", 0) for s in valid)
         total_prob_g = sum(s.get("probable_gmlst", 0) for s in valid)
-        total_prob_c = sum(s.get("probable_chew", 0) for s in valid)
         total_sub_g = sum(s.get("gmlst_contains_chew", 0) for s in valid)
         print(
             f"{'TOTAL':<28} {'':>5} {avg_pct:>5.1f}% "

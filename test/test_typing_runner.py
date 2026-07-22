@@ -32,7 +32,7 @@ def test_execute_typing_run_parallel_preserves_input_order(
         backend="kma",
         provider="pubmlst",
         scheme_type="cgmlst",
-        cgmlst_mode="standard",
+        cgmlst_mode="fast",
         cache_root=None,
         min_identity=95.0,
         min_coverage=0.95,

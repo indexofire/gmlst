@@ -269,11 +269,11 @@ def test_cgmlst_fastq_auto_switches_minimap2_to_kma(
         novel_allele=False,
         novel_profile=False,
         output_dir=None,
-        cgmlst_mode="chew-ultrafast",
+        cgmlst_mode="ultrafast",
     )
 
     assert captured["backend"] == "kma"
-    assert captured["cgmlst_mode"] == "standard"
+    assert captured["cgmlst_mode"] == "fast"
     assert captured["threads"] >= 1
 
 
@@ -407,7 +407,7 @@ def test_cgmlst_rejects_unsupported_call_policy(monkeypatch, tmp_path: Path) -> 
         )
 
 
-def test_cgmlst_fastq_kma_forces_standard_mode_without_bumping_explicit_threads(
+def test_cgmlst_fastq_kma_forces_fast_mode_without_bumping_explicit_threads(
     monkeypatch, tmp_path: Path
 ) -> None:
     sample = tmp_path / "sample_R1.fastq"
@@ -457,11 +457,11 @@ def test_cgmlst_fastq_kma_forces_standard_mode_without_bumping_explicit_threads(
         novel_allele=False,
         novel_profile=False,
         output_dir=None,
-        cgmlst_mode="chew-fast",
+        cgmlst_mode="fast",
     )
 
     assert captured["backend"] == "kma"
-    assert captured["cgmlst_mode"] == "standard"
+    assert captured["cgmlst_mode"] == "fast"
     assert captured["threads"] == 4
 
 

@@ -382,7 +382,7 @@ Typing commands are implemented in `gmlst/commands/typing.py`. This module handl
 
 ### FASTQ cgMLST policy at the command layer
 
-The command layer owns one important policy decision. For cgMLST runs with FASTQ input, the backend is KMA-first. If the user selects `minimap2`, `gmlst/commands/typing.py` detects FASTQ samples and switches to `kma`, then forces `cgmlst_mode=standard`.
+The command layer owns one important policy decision. For cgMLST runs with FASTQ input, the backend is KMA-first. If the user selects `minimap2`, `gmlst/commands/typing.py` detects FASTQ samples and switches to `kma`, then forces `cgmlst_mode=fast`.
 
 This keeps FASTQ cgMLST behavior explicit and avoids pretending that FASTA-only chew-style optimization branches apply to raw reads.
 
@@ -457,10 +457,9 @@ cgMLST mode configuration is driven by `gmlst/core_config.py` plus override logi
 
 The user-visible modes are:
 
-- `standard`
-- `chew-fast`
-- `chew-ultrafast`
-- `chew-balanced`
+- `fast`
+- `ultrafast`
+- `balanced`
 
 These modes mainly affect FASTA-oriented minimap2 and refinement behavior, for example:
 
@@ -480,7 +479,7 @@ Relevant files:
 - `gmlst/core/adapters_cds.py`
 - `gmlst/core/adapters_exact_hash.py`
 
-For FASTQ cgMLST, `gmlst/commands/typing.py` forces these mode choices back to `standard`.
+For FASTQ cgMLST, `gmlst/commands/typing.py` forces these mode choices back to `fast`.
 
 ## Novel allele workflow
 

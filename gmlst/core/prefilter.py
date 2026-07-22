@@ -121,21 +121,7 @@ def cgmlst_mode_overrides_impl(
         )
 
     mode = cgmlst_mode.strip().lower()
-    if mode == "standard":
-        return CgmlstModeOverrides(
-            exact_hash_prefilter=False,
-            minimap2_hash_prefilter=False,
-            minimap2_hash_locus_top_n=None,
-            minimap2_hash_refine_max_loci=None,
-            minimap2_fasta_emit_cigar=None,
-            minimap2_fasta_speed_profile=None,
-            minimap2_representative_main_alignment=None,
-            minimap2_bsr_confirm_max_loci=None,
-            minimap2_ultrafast_second_pass_max_loci=None,
-            evidence_fallback_backend=None,
-            evidence_fallback_max_loci=None,
-        )
-    if mode == "chew-fast":
+    if mode == "fast":
         return CgmlstModeOverrides(
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
@@ -149,7 +135,7 @@ def cgmlst_mode_overrides_impl(
             evidence_fallback_backend="blastn",
             evidence_fallback_max_loci=500,
         )
-    if mode == "chew-ultrafast":
+    if mode == "ultrafast":
         return CgmlstModeOverrides(
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
@@ -163,7 +149,7 @@ def cgmlst_mode_overrides_impl(
             evidence_fallback_backend="none",
             evidence_fallback_max_loci=0,
         )
-    if mode == "chew-balanced":
+    if mode == "balanced":
         return CgmlstModeOverrides(
             exact_hash_prefilter=True,
             minimap2_hash_prefilter=True,
@@ -178,17 +164,17 @@ def cgmlst_mode_overrides_impl(
             evidence_fallback_max_loci=300,
         )
 
-    logger.warning("Unknown cgMLST mode %r; using 'standard'", cgmlst_mode)
+    logger.warning("Unknown cgMLST mode %r; using 'fast'", cgmlst_mode)
     return CgmlstModeOverrides(
-        exact_hash_prefilter=False,
-        minimap2_hash_prefilter=False,
+        exact_hash_prefilter=True,
+        minimap2_hash_prefilter=True,
         minimap2_hash_locus_top_n=None,
-        minimap2_hash_refine_max_loci=None,
-        minimap2_fasta_emit_cigar=None,
-        minimap2_fasta_speed_profile=None,
-        minimap2_representative_main_alignment=None,
+        minimap2_hash_refine_max_loci=500,
+        minimap2_fasta_emit_cigar=True,
+        minimap2_fasta_speed_profile="default",
+        minimap2_representative_main_alignment=False,
         minimap2_bsr_confirm_max_loci=None,
         minimap2_ultrafast_second_pass_max_loci=None,
-        evidence_fallback_backend=None,
-        evidence_fallback_max_loci=None,
+        evidence_fallback_backend="blastn",
+        evidence_fallback_max_loci=500,
     )

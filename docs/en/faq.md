@@ -302,7 +302,7 @@ gmlst typing mlst -s saureus_1 -b kma sample_R1.fastq.gz sample_R2.fastq.gz
 
 ### Why did `typing cgmlst` switch my FASTQ run to KMA?
 
-This is expected. For FASTQ input, the CLI enforces a KMA-first policy. If you request `-b minimap2` for cgMLST FASTQ, `gmlst` switches to `kma` and treats `--cgmlst-mode` as compatibility-only, effectively `standard`.
+This is expected. For FASTQ input, the CLI enforces a KMA-first policy. If you request `-b minimap2` for cgMLST FASTQ, `gmlst` switches to `kma` and treats `--cgmlst-mode` as compatibility-only, effectively `fast`.
 
 This behavior is documented in [architecture.md](architecture.md) and [commands.md](commands.md).
 
@@ -310,17 +310,16 @@ This behavior is documented in [architecture.md](architecture.md) and [commands.
 
 Start with:
 
-- `standard` if you want the most conservative default behavior
-- `chew-fast` for common FASTA cgMLST work
-- `chew-ultrafast` for larger FASTA batches where speed matters more
-- `chew-balanced` if you want more fallback review
+- `fast` for common FASTA cgMLST work
+- `ultrafast` for larger FASTA batches where speed matters more
+- `balanced` if you want more fallback review
 
 Examples:
 
 ```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode ultrafast sample.fna
 ```
 
 ### Large cgMLST schemes run very slowly

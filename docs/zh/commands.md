@@ -70,7 +70,7 @@ gmlst typing tgmlst sample.fna
 
 `cgmlst` 预过滤选项：
 
-- `--cgmlst-mode [standard|chew-fast|chew-ultrafast|chew-balanced]`
+- `--cgmlst-mode [fast|ultrafast|balanced]`
 - `--prefilter-k INTEGER`
 - `--prefilter-top-n INTEGER`
 - `--prefilter-min-loci-fraction FLOAT`
@@ -82,10 +82,9 @@ cgMLST 默认值与性能说明：
 
 - `typing cgmlst` 的默认 backend 是 `minimap2`。
 - FASTQ 输入自动切换到 KMA（精度更高）。
-- `--cgmlst-mode standard`：保守行为，不强制 chew 风格覆盖。
-- `--cgmlst-mode chew-fast`：启用 exact-hash + minimap2 hash 预过滤 + 缺失 locus 的 minimap2 精炼 + blastn 证据回退。
-- `--cgmlst-mode chew-ultrafast`：在 `chew-fast` 基础上使用更激进的速度配置 + 严格低置信度补救 + 自适应二轮精炼。
-- `--cgmlst-mode chew-balanced`：启用 exact-hash + minimap2 hash 预过滤 + blastn 定向回退。
+- `--cgmlst-mode fast`：启用 exact-hash + minimap2 hash 预过滤 + 缺失 locus 的 minimap2 精炼 + blastn 证据回退。
+- `--cgmlst-mode ultrafast`：在 `fast` 基础上使用更激进的速度配置 + 严格低置信度补救 + 自适应二轮精炼。
+- `--cgmlst-mode balanced`：启用 exact-hash + minimap2 hash 预过滤 + blastn 定向回退。
 
 tgmlst 选项（无方案分型）：
 

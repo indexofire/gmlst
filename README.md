@@ -14,7 +14,7 @@ English | [简体中文](README_ZH.md)
 - ⚡ **Multiple backends**: use BLAST+, KMA, minimap2, MUMmer4, with built-in exact-hash pre-resolution for cgMLST workflows.
 - 🧫 **FASTA and FASTQ input**: type assembled genomes and paired-end raw reads with backend-aware handling.
 - 🗂️ **Multiple providers**: work with PubMLST, Pasteur BIGSdb, Enterobase, cgmlst.org, and local custom schemes.
-- 🧠 **Smart cgMLST modes**: choose `standard`, `chew-fast`, `chew-ultrafast`, or `chew-balanced` depending on speed and evidence needs.
+- 🧠 **Smart cgMLST modes**: choose `fast`, `ultrafast`, or `balanced` depending on speed and evidence needs.
 - 🆕 **Novel allele workflow**: detect novel alleles, extract novel profiles, and build custom laboratory databases.
 - 🔍 **Scheme-free typing**: run `tgmlst` for de novo allele discovery without a preselected public scheme.
 - 📦 **Rich outputs**: export `tsv`, `json`, `pretty`, and GrapeTree-compatible tables.
@@ -79,7 +79,7 @@ gmlst typing mlst -s saureus_1 sample_R1.fastq.gz sample_R2.fastq.gz
 gmlst typing mlst -s saureus_1 sample*.fastq.gz
 
 # cgMLST on an assembly
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
 ```
 
 ### 3. Batch processing
@@ -181,18 +181,16 @@ gmlst utils extract -i typing_results.tsv -s saureus_1 --novel-allele --novel-pr
 
 | Mode | What it does | Good default |
 | --- | --- | --- |
-| `standard` | Conservative baseline behavior | Start here if you want predictable generic settings |
-| `chew-fast` | Exact-hash plus minimap2 prefilter with targeted rescue | Fast everyday assembly typing |
-| `chew-ultrafast` | More aggressive speed profile with bounded second-pass rescue | Large batches where turnaround matters most |
-| `chew-balanced` | Hash-first path with targeted `blastn` fallback | Balance speed with stronger low-confidence review |
+| `fast` | Exact-hash plus minimap2 prefilter with targeted rescue | Fast everyday assembly typing |
+| `ultrafast` | More aggressive speed profile with bounded second-pass rescue | Large batches where turnaround matters most |
+| `balanced` | Hash-first path with targeted `blastn` fallback | Balance speed with stronger low-confidence review |
 
 Examples:
 
 ```bash
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode standard sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-fast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-ultrafast sample.fna
-gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode chew-balanced sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode ultrafast sample.fna
+gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode balanced sample.fna
 ```
 
 ## Scheme-free Typing (`tgmlst`)

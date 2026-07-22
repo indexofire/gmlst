@@ -492,9 +492,7 @@ def _setup_typing_config(
     cache = core.DatabaseCache(cache_root)
     normalized_policy = call_policy.strip().lower()
     if normalized_policy not in {"default", "chewbbaca", "chew-exact"}:
-        raise ValueError(
-            f"Unknown call policy '{call_policy}'."
-        )
+        raise ValueError(f"Unknown call policy '{call_policy}'.")
 
     chew_exact_mode = normalized_policy == "chew-exact"
     if chew_exact_mode:
@@ -672,9 +670,7 @@ def _setup_typing_config(
     cds_closed_ends = core._cgmlst_cds_closed_ends()
     if chew_exact_mode:
         cds_prediction_mode = "single"
-        logger.info(
-            "chew-exact policy: forcing CDS prediction to single mode"
-        )
+        logger.info("chew-exact policy: forcing CDS prediction to single mode")
     cds_training_file = core._resolve_cgmlst_cds_training_file(
         allele_files=scheme.allele_files,
         sample_paths=[sample.path for sample in samples],
@@ -760,7 +756,7 @@ def run_typing_impl(
     *,
     provider: str = "pubmlst",
     scheme_type: str = "mlst",
-    cgmlst_mode: str = "standard",
+    cgmlst_mode: str = "fast",
     cache_root: Path | None = None,
     min_identity: float = 95.0,
     min_coverage: float = 0.95,
