@@ -24,6 +24,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0.1.x` remains focused on basic functionality verification and stability.
 - The compression + incremental-update work is deferred to `0.2.0`.
 
+## [0.1.4] - 2026-07-21
+
+### Added
+
+#### cgMLST: `--call-policy chew-exact`
+- New call policy that forces Prodigal single mode + CDS gate + chewBBACA-style classification
+- Produces all chewBBACA-compatible labels: EXC, INF-N, LNF, NIPH, NIPHEM, LOTSC, PLOT3, PLOT5, ASM, ALM
+- Designed for maximum compatibility with chewBBACA databases
+
+#### Benchmark script (`scripts/cgmlst_benchmark.py`)
+- Automated gmlst vs chewBBACA comparison with BLAST verification
+- Verdict system: gmlst_correct, chew_correct, cds_boundary_diff, NIPH verified/unverified
+- Length-based allele evaluation (which allele is longer / substring relationship)
+- Multi-copy (NIPH) BLAST verification
+- Runtime comparison with speedup calculation
+
+### Changed
+
+#### cgMLST: Removed protein hash pre-resolution
+- `chew-bsr` cgMLST mode removed (was the only consumer of protein hash)
+- Protein hash index, translation, and CODON_TABLE code removed from `exact_hash.py`
+- DNA hash matching retained as the sole pre-resolution mechanism
+- 4 cgMLST modes remain: standard, chew-fast, chew-ultrafast, chew-balanced
+
+#### cgMLST: Call policy is now orthogonal to mode
+- `--cgmlst-mode` (speed/alignment strategy) and `--call-policy` (output format/classification) can be combined freely
+- `--call-policy chewbbaca --no-chew-cds-gate` for format conversion without CDS gate
+- `--call-policy chew-exact` for full chewBBACA-compatible behavior
+
+### Documentation
+- `dev/cgmlst_modes.md` updated with call policy section, classification type table, benchmark usage
+- `dev/cgmlst_diff_analysis.md` created with gmlst vs chewBBACA difference analysis report
+- `docs/en/cgmlst_guide.md` and `docs/zh/cgmlst_guide.md` updated with chew-exact policy section
+
 ## [0.1.3] - 2026-07-16
 
 ### Fixed
@@ -149,12 +183,33 @@ gmlst scheme export -s custom_0 --format grapetree -o mst.tsv
 - Magic numbers extracted to named constants in allele.py, blastn.py, gene_predictor.py,
   assembly_engine.py
 
+### cgMLST Improvements
+
+#### New: `--call-policy chew-exact`
+- Forces Prodigal single mode + CDS gate + chewBBACA-style classification
+- Produces all chewBBACA-compatible labels: EXC, INF-N, LNF, NIPH, NIPHEM, LOTSC, PLOT3, PLOT5, ASM, ALM
+- Use case: maximum compatibility with chewBBACA databases
+
+#### Removed: protein hash pre-resolution
+- `chew-bsr` cgMLST mode removed (was the only consumer of protein hash)
+- Protein hash index, translation, and CODON_TABLE code removed from `exact_hash.py`
+- DNA hash matching retained as the sole pre-resolution mechanism
+
+#### Benchmark script (`scripts/cgmlst_benchmark.py`)
+- Automated gmlst vs chewBBACA comparison with BLAST verification
+- Verdict system: gmlst_correct, chew_correct, cds_boundary_diff, NIPH verified/unverified
+- Length-based allele evaluation (which allele is longer / substring relationship)
+- Multi-copy (NIPH) BLAST verification
+- Runtime comparison with speedup calculation
+
 #### Documentation
 - AGENTS.md module structure tree updated with all new split files
 - `docs/en/architecture.md` and `docs/zh/architecture.md` module trees synchronized
 - `docs/en/configuration.md` and `docs/zh/configuration.md` updated with `config init` usage
 - README.md updated with `config init` workflow
 - `dev/code_quality_audit.md` created with full evaluation report
+- `dev/cgmlst_modes.md` updated with call policy section and benchmark usage
+- `dev/cgmlst_diff_analysis.md` created with gmlst vs chewBBACA difference analysis
 - `dev/remain.md` created tracking deferred items for v0.2.0
 
 ## [0.1.2] - 2026-07-08

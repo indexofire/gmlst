@@ -646,10 +646,14 @@ def cmd_typing_mlst(
 )
 @click.option(
     "--call-policy",
-    type=click.Choice(["default", "chewbbaca"], case_sensitive=False),
+    type=click.Choice(["default", "chewbbaca", "chew-exact"], case_sensitive=False),
     default="default",
     show_default=True,
-    help="Allele decision policy for output classification.",
+    help=(
+        "Allele decision policy. "
+        "chewbbaca: chewBBACA labels. "
+        "chew-exact: forces single mode + CDS gate."
+    ),
 )
 @click.option(
     "--chew-cds-gate/--no-chew-cds-gate",
@@ -928,16 +932,21 @@ def _run_mlst_like_typing(
     )
     ensure_scheme_type = effective_scheme_type(mode=mode, resolved_type=scheme_type)
     normalized_policy = call_policy.strip().lower()
-    if normalized_policy not in {"default", "chewbbaca"}:
+    if normalized_policy not in {"default", "chewbbaca", "chew-exact"}:
         err_console.print(
             f"[red]Error:[/red] Unsupported --call-policy '{call_policy}'."
         )
         sys.exit(1)
     if mode != "cgmlst" and normalized_policy != "default":
         err_console.print(
-            "[red]Error:[/red] --call-policy chewbbaca is only supported for cgMLST."
+            "[red]Error:[/red] call-policy is only for cgMLST."
         )
         sys.exit(1)
+
+    if normalized_policy == "chew-exact":
+        output_policy = "chewbbaca"
+    else:
+        output_policy = normalized_policy
 
     prepared_samples = _prepare_sample_paths_for_pairing(samples)
     if max_fastq_depth > 0:
@@ -1058,7 +1067,7 @@ def _run_mlst_like_typing(
             fmt=fmt,
             loci=scheme_obj.loci,
             count_same_copy=count_same_copy,
-            call_policy=normalized_policy,
+            call_policy=output_policy,
             format_st_for_tsv_fn=_format_st_for_tsv,
             format_tsv_row_fn=_format_tsv_row,
             stream_file=stream_file,
@@ -1102,7 +1111,7 @@ def _run_mlst_like_typing(
                     prefilter_top_n=prefilter_top_n,
                     prefilter_min_loci_fraction=prefilter_min_loci_fraction,
                     cds_coordinates_out=cds_coordinates_out,
-                    call_policy=normalized_policy,
+                    call_policy=output_policy,
                     chew_cds_gate=chew_cds_gate,
                     max_workers=max_workers,
                     on_result=_on_result,

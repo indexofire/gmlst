@@ -30,6 +30,7 @@ Thumbs.db
 htmlcov/
 .tox/
 tracecov/
+tmp/
 
 # Build artifacts
 /dist/

@@ -231,6 +231,21 @@ Important limits:
 - raw calls stay unchanged, but output uses chew-style per-locus class labels
 - CDS-gated classification is enabled by default
 
+### chew-exact policy
+
+```bash
+gmlst typing cgmlst -s vparahaemolyticus_3 \
+  --call-policy chew-exact sample.fna
+```
+
+`chew-exact` is designed for maximum compatibility with chewBBACA databases:
+
+- Forces CDS prediction to **single mode** with the scheme's training file
+- Forces **CDS gate** on (cannot be disabled)
+- Produces all chewBBACA classification types: EXC, INF-N, LNF, NIPH, NIPHEM, LOTSC, PLOT3, PLOT5, ASM, ALM
+
+Use `chew-exact` when you need allele numbering consistent with chewBBACA results.
+
 ## CDS Gating
 
 CDS gating decides whether chewBBACA-style classification should only consider matched sequence context that passes the CDS prediction filter.

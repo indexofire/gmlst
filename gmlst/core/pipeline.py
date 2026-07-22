@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,8 @@ from gmlst.aligners.base import AlignmentResult, AlleleMatch
 from gmlst.calling.st_lookup import STResult
 from gmlst.core.types import TypingContext
 from gmlst.readers.sample import SampleInput
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_exact_matches(
@@ -488,10 +491,15 @@ def _setup_typing_config(
 ) -> tuple[TypingContext, list[SampleInput]]:
     cache = core.DatabaseCache(cache_root)
     normalized_policy = call_policy.strip().lower()
-    if normalized_policy not in {"default", "chewbbaca"}:
+    if normalized_policy not in {"default", "chewbbaca", "chew-exact"}:
         raise ValueError(
-            f"Unknown call policy '{call_policy}'. Supported: default, chewbbaca."
+            f"Unknown call policy '{call_policy}'."
         )
+
+    chew_exact_mode = normalized_policy == "chew-exact"
+    if chew_exact_mode:
+        normalized_policy = "chewbbaca"
+        chew_cds_gate = True
 
     scheme = cache.ensure_scheme(
         scheme_name,
@@ -662,6 +670,11 @@ def _setup_typing_config(
 
     cds_prediction_mode = core._cgmlst_cds_prediction_mode()
     cds_closed_ends = core._cgmlst_cds_closed_ends()
+    if chew_exact_mode:
+        cds_prediction_mode = "single"
+        logger.info(
+            "chew-exact policy: forcing CDS prediction to single mode"
+        )
     cds_training_file = core._resolve_cgmlst_cds_training_file(
         allele_files=scheme.allele_files,
         sample_paths=[sample.path for sample in samples],

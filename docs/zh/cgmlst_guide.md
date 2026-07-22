@@ -229,6 +229,21 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 - 原始 allele call 不会改变，但输出会显示 chew 风格 per-locus class label
 - 默认启用 CDS gate
 
+### chew-exact 策略
+
+```bash
+gmlst typing cgmlst -s vparahaemolyticus_3 \
+  --call-policy chew-exact sample.fna
+```
+
+`chew-exact` 为需要与 chewBBACA 数据库最大程度兼容的场景设计：
+
+- 强制 CDS 预测为 **single 模式**（使用 scheme 的 training file）
+- 强制启用 **CDS gate**（不可关闭）
+- 产出全部 chewBBACA 分类类型：EXC, INF-N, LNF, NIPH, NIPHEM, LOTSC, PLOT3, PLOT5, ASM, ALM
+
+当需要与 chewBBACA 结果的 allele 编号一致时使用 `chew-exact`。
+
 ## CDS Gate
 
 CDS gate 用于决定 chewBBACA 风格分类是否只能基于通过 CDS 预测过滤的匹配序列上下文。
