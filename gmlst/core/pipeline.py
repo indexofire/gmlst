@@ -253,10 +253,21 @@ def _run_prefilter_phase(
                         candidate_top_n,
                     )
                 else:
-                    candidate_fastas = core_mod._select_candidate_locus_fastas(
-                        scheme.allele_files,
-                        candidate_loci,
-                    )
+                    max_alleles = core_mod._candidate_max_alleles_per_locus()
+                    if max_alleles > 0 and ctx.allele_sequence_cache is not None:
+                        cap_dir = tmp / "capped"
+                        cap_dir.mkdir(parents=True, exist_ok=True)
+                        candidate_fastas = core_mod._write_capped_candidate_fastas(
+                            ctx.allele_sequence_cache,
+                            candidate_loci,
+                            cap_dir,
+                            max_alleles,
+                        )
+                    else:
+                        candidate_fastas = core_mod._select_candidate_locus_fastas(
+                            scheme.allele_files,
+                            candidate_loci,
+                        )
         else:
             if exact_matches:
                 candidates = {
@@ -631,7 +642,10 @@ def _setup_typing_config(
         allele_sequence_cache = None
     else:
         allele_sequence_cache = (
-            core._load_scheme_allele_sequences(scheme.allele_files)
+            core._load_scheme_allele_sequences(
+                scheme.allele_files,
+                max_per_locus=core._candidate_max_alleles_per_locus(),
+            )
             if (use_prefilter or use_exact_hash_prefilter)
             else None
         )

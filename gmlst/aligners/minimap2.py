@@ -3,7 +3,7 @@
 Strategy
 --------
 FASTA input (assembled genome):
-    Preset ``asm20`` — for ~5–10 % divergence between alleles and assembly.
+    Preset ``asm5`` — for <5% divergence (typical for same-species cgMLST alleles).
     Query  = allele sequences (merged FASTA)
     Target = genome assembly
     Output = PAF
@@ -41,7 +41,7 @@ from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger(__name__)
 
-_FASTA_PRESET = "asm20"
+_FASTA_PRESET = os.getenv("GMLST_MINIMAP2_FASTA_PRESET", "asm5")
 _FASTA_SPEED_PROFILES: dict[str, list[str]] = {
     "default": [],
     "fast": ["-w", "15", "-e", "1000", "-K", "1G"],
@@ -121,7 +121,7 @@ class Minimap2Aligner:
         if not merged.exists():
             merge_fasta_files(allele_fastas, merged)
 
-        mmi = index_dir / "alleles.asm20.mmi"
+        mmi = index_dir / "alleles.asm5.mmi"
         if not mmi.exists():
             logger.info("Building minimap2 index (%s) at %s …", _FASTA_PRESET, mmi)
             run_cmd(
@@ -169,7 +169,7 @@ class Minimap2Aligner:
     def _align_fasta(
         self, genome: Path, index_dir: Path, loci: list[str]
     ) -> list[AlleleMatch]:
-        """allele sequences → genome assembly (asm20 preset)."""
+        """allele sequences → genome assembly (asm5 preset)."""
         alleles_fasta = index_dir / "alleles.fasta"
         with temp_dir("gmlst_mm2_") as tmp:
             paf = tmp / "hits.paf"

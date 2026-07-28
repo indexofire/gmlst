@@ -54,6 +54,11 @@ def minimap2_hash_locus_top_n() -> int:
     return _env_int("GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N", 0)
 
 
+def candidate_max_alleles_per_locus() -> int:
+    """Max alleles per locus written to candidate FASTA (0 = all alleles)."""
+    return _env_int("GMLST_CGMLST_CANDIDATE_MAX_ALLELES", 0)
+
+
 def minimap2_bsr_confirm_max_loci() -> int:
     return _env_int("GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI", 0)
 

@@ -17,6 +17,9 @@ from gmlst.calling.chew_policy import (
 )
 from gmlst.calling.st_lookup import STResult
 from gmlst.calling.st_lookup import lookup_st as lookup_st
+from gmlst.core.config import (
+    _candidate_max_alleles_per_locus as _candidate_max_alleles_per_locus,
+)
 from gmlst.core.config import _cgmlst_cds_closed_ends as _cgmlst_cds_closed_ends
 from gmlst.core.config import _cgmlst_cds_coordinates_out as _cgmlst_cds_coordinates_out
 from gmlst.core.config import _cgmlst_cds_prediction_mode as _cgmlst_cds_prediction_mode
@@ -148,6 +151,8 @@ _load_or_build_minimap2_representative_index = (
 )
 _representative_fingerprint = _adapters_index_prefilter.representative_fingerprint_impl
 _write_candidate_fastas = _adapters_index_prefilter.write_candidate_fastas_impl
+_write_capped_candidate_fastas = _sequences.write_capped_candidate_fastas_impl
+
 _representative_alleles = _adapters_index_prefilter.representative_alleles_impl
 _minimap2_representative_prefilter_candidates = (
     _adapters_index_prefilter.minimap2_representative_prefilter_candidates_impl

@@ -403,7 +403,7 @@ def test_run_typing_ultrafast_uses_representative_main_alignment(
 
         def index(self, _allele_fastas, index_dir):
             (index_dir / "alleles.fasta").write_text("")
-            (index_dir / "alleles.asm20.mmi").write_text("mmi")
+            (index_dir / "alleles.asm5.mmi").write_text("mmi")
             return index_dir
 
         def align(self, _sample_path, _index_path, _loci, _input_type):
@@ -1019,7 +1019,7 @@ def test_load_or_build_minimap2_representative_index_reuses_cache(
             source = allele_fastas[0]
             merged = index_dir / "alleles.fasta"
             merged.write_text(source.read_text())
-            (index_dir / "alleles.asm20.mmi").write_text("index")
+            (index_dir / "alleles.asm5.mmi").write_text("index")
             return index_dir
 
     aligner = DummyAligner()
@@ -1723,7 +1723,7 @@ def test_is_index_stale_true_when_alleles_newer(tmp_path: Path) -> None:
     index_dir.mkdir()
     index_file = index_dir / "alleles.fasta"
     index_file.write_text(">a_1\nATGC\n")
-    mmi = index_dir / "alleles.asm20.mmi"
+    mmi = index_dir / "alleles.asm5.mmi"
     mmi.write_text("dummy")
 
     old = time.time() - 100
@@ -1751,7 +1751,7 @@ def test_ensure_full_index_rebuilds_when_stale(tmp_path: Path) -> None:
 
     index_dir = tmp_path / "idx"
     index_dir.mkdir()
-    stale_mmi = index_dir / "alleles.asm20.mmi"
+    stale_mmi = index_dir / "alleles.asm5.mmi"
     stale_mmi.write_text("dummy")
 
     old = time.time() - 100
@@ -1765,7 +1765,7 @@ def test_ensure_full_index_rebuilds_when_stale(tmp_path: Path) -> None:
         def index(self, allele_fastas, out_dir):
             calls["count"] += 1
             (out_dir / "alleles.fasta").write_text("merged")
-            (out_dir / "alleles.asm20.mmi").write_text("mmi")
+            (out_dir / "alleles.asm5.mmi").write_text("mmi")
             return out_dir
 
     out = core._ensure_full_index(
@@ -1791,7 +1791,7 @@ def test_ensure_full_index_purges_stale_minimap2_artifacts_before_rebuild(
     index_dir.mkdir()
     stale_merged = index_dir / "alleles.fasta"
     stale_merged.write_text("stale")
-    stale_mmi = index_dir / "alleles.asm20.mmi"
+    stale_mmi = index_dir / "alleles.asm5.mmi"
     stale_mmi.write_text("stale")
 
     old = time.time() - 100
@@ -1805,10 +1805,10 @@ def test_ensure_full_index_purges_stale_minimap2_artifacts_before_rebuild(
     class DummyAligner:
         def index(self, _allele_fastas, out_dir):
             calls["count"] += 1
-            assert not (out_dir / "alleles.asm20.mmi").exists()
+            assert not (out_dir / "alleles.asm5.mmi").exists()
             assert not (out_dir / "alleles.fasta").exists()
             (out_dir / "alleles.fasta").write_text("merged")
-            (out_dir / "alleles.asm20.mmi").write_text("mmi")
+            (out_dir / "alleles.asm5.mmi").write_text("mmi")
             return out_dir
 
     out = core._ensure_full_index(
@@ -1832,7 +1832,7 @@ def test_is_index_stale_true_when_merged_fasta_size_mismatch(tmp_path: Path) -> 
     index_dir.mkdir()
     merged = index_dir / "alleles.fasta"
     merged.write_text(">a_1\nATG\n")
-    mmi = index_dir / "alleles.asm20.mmi"
+    mmi = index_dir / "alleles.asm5.mmi"
     mmi.write_text("dummy")
 
     assert core._is_index_stale(

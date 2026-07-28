@@ -21,13 +21,16 @@ def load_scheme_allele_sequences_impl(
     allele_files: dict[str, Path],
     *,
     split_allele_header_fn,
+    max_per_locus: int = 0,
 ) -> dict[str, dict[str, str]]:
     sequences: dict[str, dict[str, str]] = {}
     for locus, path in allele_files.items():
         locus_seqs: dict[str, str] = {}
-        for header, sequence in iter_fasta_records(path):
+        for count, (header, sequence) in enumerate(iter_fasta_records(path)):
             _, allele_id = split_allele_header_fn(header)
             locus_seqs[allele_id] = sequence
+            if max_per_locus > 0 and count + 1 >= max_per_locus:
+                break
         sequences[locus] = locus_seqs
     return sequences
 
@@ -89,6 +92,36 @@ def write_candidate_fastas_impl(
             seq = locus_alleles.get(allele_id)
             if not seq:
                 continue
+            lines.append(f">{locus}_{allele_id}")
+            lines.append(seq)
+        if not lines:
+            continue
+        path = out_dir / f"{locus}.tfa"
+        path.write_text("\n".join(lines) + "\n")
+        paths.append(path)
+    return paths
+
+
+def write_capped_candidate_fastas_impl(
+    allele_sequences: dict[str, dict[str, str]],
+    candidate_loci: set[str],
+    out_dir: Path,
+    max_per_locus: int,
+) -> list[Path]:
+    """Write FASTA files with at most *max_per_locus* alleles per locus.
+
+    Alleles are taken in insertion order (= allele ID order for cgMLST scheme
+    files), so the lowest-numbered (most common/reference) alleles are kept.
+    """
+    paths: list[Path] = []
+    for locus in sorted(candidate_loci):
+        locus_alleles = allele_sequences.get(locus)
+        if not locus_alleles:
+            continue
+        lines: list[str] = []
+        for i, (allele_id, seq) in enumerate(locus_alleles.items()):
+            if i >= max_per_locus:
+                break
             lines.append(f">{locus}_{allele_id}")
             lines.append(seq)
         if not lines:

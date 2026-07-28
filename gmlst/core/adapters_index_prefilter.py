@@ -39,10 +39,12 @@ def ensure_full_index_impl(
 
 def load_scheme_allele_sequences_impl(
     allele_files: dict[str, Path],
+    max_per_locus: int = 0,
 ) -> dict[str, dict[str, str]]:
     return _sequences.load_scheme_allele_sequences_impl(
         allele_files,
         split_allele_header_fn=_sequences.split_allele_header_impl,
+        max_per_locus=max_per_locus,
     )
 
 

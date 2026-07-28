@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from gmlst.core_config import (
+    candidate_max_alleles_per_locus as _candidate_max_alleles_per_locus,
+)
 from gmlst.core_config import cgmlst_cds_closed_ends as _cgmlst_cds_closed_ends
 from gmlst.core_config import cgmlst_cds_coordinates_out as _cgmlst_cds_coordinates_out
 from gmlst.core_config import cgmlst_cds_prediction_mode as _cgmlst_cds_prediction_mode
@@ -62,4 +65,5 @@ __all__ = [
     "_minimap2_hash_refine_max_loci",
     "_minimap2_representative_main_alignment",
     "_minimap2_ultrafast_second_pass_max_loci",
+    "_candidate_max_alleles_per_locus",
 ]

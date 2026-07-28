@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import time
 from collections.abc import Callable
@@ -601,6 +602,72 @@ def _refine_evidence_fallback(
                     )
 
 
+def _refine_capped_non_exact_loci(
+    *,
+    locus_calls: dict[str, LocusCall],
+    aln: AlignmentResult,
+    aligner,
+    sample: SampleInput,
+    sample_source: Path | tuple[Path, Path],
+    scheme,
+    backend: str,
+    min_identity: float,
+    min_coverage: float,
+    effective_min_depth: float,
+    align_targeted_loci_fn,
+    merge_calls_from_alignment_fn,
+    select_candidate_locus_fastas_fn,
+    logger: Logger,
+) -> None:
+    """Stage 2: re-align non-exact loci with FULL alleles.
+
+    Only triggers when GMLST_CGMLST_CANDIDATE_MAX_ALLELES > 0.
+    Finds loci that received a "closest" or "partial" call (not exact, not
+    missing) and re-aligns them against the complete allele database.
+    Updates locus_calls in place.
+    """
+    candidate_max = int(os.getenv("GMLST_CGMLST_CANDIDATE_MAX_ALLELES", "0"))
+    if candidate_max <= 0 or backend != "minimap2":
+        return
+
+    non_exact_loci = sorted(
+        locus
+        for locus, call in locus_calls.items()
+        if call.call_type in ("closest", "partial")
+    )
+    if not non_exact_loci:
+        return
+
+    refine_fastas = select_candidate_locus_fastas_fn(
+        scheme.allele_files,
+        set(non_exact_loci),
+    )
+    refine_aln, refine_elapsed = align_targeted_loci_fn(
+        aligner=aligner,
+        sample_source=sample_source,
+        sample_id=aln.sample_id,
+        sample_input_type=sample.input_type,
+        loci=non_exact_loci,
+        targeted_fastas=refine_fastas,
+        temp_prefix="gmlst_stage2_",
+    )
+    logger.info(
+        "Stage 2 refinement (full alleles) completed in %.3fs for %s "
+        "(%d non-exact loci)",
+        refine_elapsed,
+        sample.path.name,
+        len(non_exact_loci),
+    )
+    merge_calls_from_alignment_fn(
+        base_calls=locus_calls,
+        alignment=refine_aln,
+        loci=non_exact_loci,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        min_depth=effective_min_depth,
+    )
+
+
 def _apply_post_alignment_refinements_impl(
     *,
     locus_calls: dict[str, LocusCall],
@@ -754,6 +821,23 @@ def _apply_post_alignment_refinements_impl(
         get_aligner_fn=get_aligner_fn,
         align_evidence_fallback_loci_fn=align_evidence_fallback_loci_fn,
         merge_calls_from_alignment_fn=merge_calls_from_alignment_fn,
+        logger=logger,
+    )
+
+    _refine_capped_non_exact_loci(
+        locus_calls=locus_calls,
+        aln=aln,
+        aligner=aligner,
+        sample=sample,
+        sample_source=sample_source,
+        scheme=scheme,
+        backend=backend,
+        min_identity=min_identity,
+        min_coverage=min_coverage,
+        effective_min_depth=effective_min_depth,
+        align_targeted_loci_fn=align_targeted_loci_fn,
+        merge_calls_from_alignment_fn=merge_calls_from_alignment_fn,
+        select_candidate_locus_fastas_fn=select_candidate_locus_fastas_fn,
         logger=logger,
     )
 
