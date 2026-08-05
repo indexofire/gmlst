@@ -8,17 +8,21 @@ from pathlib import Path
 
 import click
 
-from gmlst.commands.common import console, emit_output_json, err_console
-from gmlst.commands.scheme_common import (
+from gmlst.commands.common import (
     HELP_SETTINGS,
+    cache_dir_option,
+    console,
+    emit_output_json,
+    err_console,
+)
+from gmlst.commands.scheme_common import (
     _exit_no_novel_data,
     _exit_validation_errors,
     _find_catalog_scheme_matches,
     _locked_local_catalog,
-    _write_wrapped_sequence,
 )
 from gmlst.database.cache import DatabaseCache
-from gmlst.fasta_io import utc_now_iso
+from gmlst.fasta_io import utc_now_iso, write_wrapped_sequence
 from gmlst.novel.service import (
     build_custom_scheme_metadata,
     merge_custom_scheme_update_metadata,
@@ -53,9 +57,7 @@ from gmlst.novel.service import (
     default="",
     help="Description for the custom scheme.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_create(
     scheme_type: str,
     source: str,
@@ -136,7 +138,7 @@ def cmd_create(
                     for allele in novel_alleles[locus]:
                         samples_str = " ".join(allele.samples)
                         out.write(f">{locus}_{allele.allele_id} sample={samples_str}\n")
-                        _write_wrapped_sequence(out, allele.sequence)
+                        write_wrapped_sequence(out, allele.sequence)
 
         # Merge profiles
         source_profile = source_scheme.profile_file
@@ -193,7 +195,7 @@ def cmd_create(
 
 def _get_next_custom_id(cache: DatabaseCache) -> int:
     """Get the next available custom scheme ID."""
-    catalog_path = cache._catalog_path("local")
+    catalog_path = cache.local_catalog_path()
 
     if not catalog_path.exists():
         return 1
@@ -228,7 +230,7 @@ def _update_local_catalog(
     n_loci: int,
 ) -> None:
     """Add custom scheme to local catalog."""
-    catalog_path = cache._catalog_path("local")
+    catalog_path = cache.local_catalog_path()
 
     schemes: list[dict[str, object]] = []
     if catalog_path.exists():
@@ -291,9 +293,7 @@ def _update_local_catalog(
     type=click.Path(exists=True, file_okay=False, path_type=Path),
     help="Directory containing new *_novel.fasta and profiles_novel.txt.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_update_custom(
     scheme: str | None,
     scheme_opt: str | None,
@@ -386,7 +386,7 @@ def cmd_update_custom(
             for allele in novel_alleles[locus]:
                 samples_str = " ".join(allele.samples)
                 f.write(f">{locus}_{allele.allele_id} sample={samples_str}\n")
-                _write_wrapped_sequence(f, allele.sequence)
+                write_wrapped_sequence(f, allele.sequence)
 
     # Renumber new profiles and append
     profile_file = scheme_dir / f"{scheme}.txt"

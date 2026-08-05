@@ -131,3 +131,60 @@ def _render_scheme_show_text(payload: dict[str, object]) -> str:
         lines.append("Status: Not downloaded")
         lines.append(f"Run: gmlst scheme download {payload.get('scheme_name', '')}")
     return "\n".join(lines)
+
+
+def render_scheme_show_table(
+    payload: dict[str, object],
+    scheme: str,
+    locus_stats: list[dict[str, int | str]],
+) -> Table:
+    """Build rich Table for `scheme show` output."""
+    table = Table(title=str(payload["display_name"]), show_lines=False, padding=(0, 1))
+    table.add_column("Field", style="cyan", no_wrap=True)
+    table.add_column("Value", style="green")
+    table.add_row("Name", str(payload["scheme_name"]))
+    table.add_row("Organism", str(payload["organism"]))
+    table.add_row("Type", str(payload["scheme_type"]))
+    table.add_row("Loci", str(payload["n_loci"]))
+    n_profiles = payload.get("n_profiles")
+    if n_profiles is not None:
+        table.add_row("Profiles", str(n_profiles))
+    table.add_row("Provider", str(payload["provider"]))
+    downloaded_at = str(payload.get("downloaded_at", ""))
+    updated_at = str(payload.get("updated_at", ""))
+    if downloaded_at:
+        table.add_row("Downloaded", downloaded_at)
+    if updated_at:
+        table.add_row("Updated", updated_at)
+    is_downloaded = bool(payload.get("downloaded"))
+    scheme_dir = str(payload.get("scheme_dir") or "")
+    if is_downloaded and scheme_dir:
+        table.add_row("Status", f"Downloaded -> {scheme_dir}")
+    else:
+        table.add_row("Status", "Not downloaded")
+        table.add_row("Run", f"gmlst scheme download {scheme}")
+    return table
+
+
+def render_locus_stats_table(locus_stats: list[dict[str, int | str]]) -> Table:
+    """Build rich Table for per-locus allele statistics."""
+    locus_table = Table(
+        title="Allele Statistics",
+        box=box.MINIMAL_HEAVY_HEAD,
+        expand=True,
+        padding=(0, 1),
+    )
+    locus_table.add_column("Locus", style="cyan", no_wrap=True)
+    locus_table.add_column("Alleles", justify="right", style="green")
+    locus_table.add_column("Min bp", justify="right", style="dim")
+    locus_table.add_column("Max bp", justify="right", style="dim")
+    locus_table.add_column("Avg bp", justify="right", style="dim")
+    for stat in locus_stats:
+        locus_table.add_row(
+            str(stat["locus"]),
+            str(stat["alleles"]),
+            str(stat["min_len"]),
+            str(stat["max_len"]),
+            str(stat["avg_len"]),
+        )
+    return locus_table

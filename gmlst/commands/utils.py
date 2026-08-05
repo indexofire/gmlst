@@ -8,6 +8,8 @@ import click
 
 from gmlst.aligners import AVAILABLE_BACKENDS, get_aligner
 from gmlst.commands.common import (
+    HELP_SETTINGS,
+    cache_dir_option,
     emit_output_table,
     emit_output_text,
     emit_output_tsv,
@@ -32,8 +34,6 @@ from gmlst.core import run_typing as run_typing
 from gmlst.database.cache import DatabaseCache as DatabaseCache
 from gmlst.readers.fasta import FastaReader
 from gmlst.readers.sample import prepare_sample_inputs
-
-HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 
 @click.group(
@@ -107,9 +107,7 @@ def cmd_check(backend: str) -> None:
     type=click.Path(exists=True, file_okay=False, path_type=Path),
     help="Directory containing sample files for TSV novel-allele extraction.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_extract(
     input_path: Path,
     scheme: str | None,
@@ -248,9 +246,7 @@ def cmd_concat(input_path: Path, output: Path | None) -> None:
     type=click.Path(path_type=Path),
     help="Write benchmark output to file.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 @click.option("--force-reindex", is_flag=True, help="Rebuild aligner indexes.")
 def cmd_benchmark(
     samples: tuple[Path, ...],

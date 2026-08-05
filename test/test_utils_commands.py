@@ -123,7 +123,7 @@ def test_utils_extract_allele_mode_outputs_fasta(monkeypatch, tmp_path: Path) ->
             )
         ]
 
-    monkeypatch.setattr("gmlst.commands.utils.run_typing", _fake_run_typing)
+    monkeypatch.setattr("gmlst.core.run_typing", _fake_run_typing)
     monkeypatch.setattr(
         "gmlst.commands.utils.DatabaseCache.ensure_scheme",
         _fake_ensure_scheme,
@@ -262,7 +262,7 @@ def test_utils_extract_novel_from_tsv_with_samples_dir(
             )
         ]
 
-    monkeypatch.setattr("gmlst.commands.utils.run_typing", _fake_run_typing)
+    monkeypatch.setattr("gmlst.core.run_typing", _fake_run_typing)
     monkeypatch.setattr(
         "gmlst.commands.utils.DatabaseCache.ensure_scheme",
         _fake_ensure_scheme,

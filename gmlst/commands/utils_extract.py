@@ -25,7 +25,7 @@ def _extract_alleles_from_sample(
         provider = "pubmlst"
 
     scheme_obj = cache.ensure_scheme(scheme_name, provider=provider)
-    from gmlst.commands.utils import run_typing
+    from gmlst.core import run_typing
 
     results = run_typing(
         sample_paths=[sample_path],
@@ -264,7 +264,7 @@ def _extract_novel_from_tsv_with_retyping(
     chosen_provider = provider or "pubmlst"
     cache = DatabaseCache(cache_dir)
     scheme_obj = cache.ensure_scheme(scheme_name, provider=chosen_provider)
-    from gmlst.commands.utils import run_typing
+    from gmlst.core import run_typing
     from gmlst.readers.sample import SampleInput
 
     typing_paths: list[Path | SampleInput] = list(sample_paths)
@@ -277,8 +277,16 @@ def _extract_novel_from_tsv_with_retyping(
     )
 
     loci = scheme_obj.loci
-    allele_writer = NovelAlleleWriter(data_dir)
-    profile_writer = NovelProfileWriter(data_dir, loci) if novel_profile else None
+    from gmlst.novel.service import create_novel_writers
+
+    allele_writer, profile_writer = create_novel_writers(
+        novel_allele=True,
+        novel_profile=novel_profile,
+        output_dir=data_dir,
+        loci=loci,
+        allele_writer_cls=NovelAlleleWriter,
+        profile_writer_cls=NovelProfileWriter,
+    )
     for result in results:
         allele_calls: dict[str, str] = {}
         for locus in loci:

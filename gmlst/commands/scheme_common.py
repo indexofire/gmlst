@@ -7,23 +7,26 @@ import fcntl
 import json
 import logging
 import sys
-from collections.abc import Iterator
-from typing import Any, TextIO
+from collections.abc import Callable, Iterator
+from typing import Any
 
 from gmlst.commands.common import (
     _DictSchemeInfo,
     _load_blocked_schemes,
+    emit_output_csv,
+    emit_output_json,
+    emit_output_text,
+    emit_output_tsv,
     err_console,
 )
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.download import DownloadTool
 from gmlst.database.providers import AVAILABLE_PROVIDERS
-from gmlst.fasta_io import write_wrapped_sequence
 
 
 @contextlib.contextmanager
 def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
-    catalog_path = cache._catalog_path("local")
+    catalog_path = cache.local_catalog_path()
     catalog_path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = catalog_path.with_suffix(".lock")
     with open(lock_path, "w") as lock_file:
@@ -33,8 +36,6 @@ def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
         finally:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
-
-HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 logger = logging.getLogger(__name__)
 
@@ -147,10 +148,6 @@ def _exit_validation_errors(errors: list[str]) -> None:
     sys.exit(1)
 
 
-def _write_wrapped_sequence(handle: TextIO, sequence: str, *, width: int = 60) -> None:
-    write_wrapped_sequence(handle, sequence, width=width)
-
-
 def _load_schemes(
     cache: DatabaseCache,
     provider: str,
@@ -184,3 +181,56 @@ def _load_schemes(
         ]
 
     return all_schemes
+
+
+def emit_scheme_format(
+    fmt: str,
+    json_payload: object,
+    rows: list[dict],
+    columns: list[str],
+    text_fn: Callable[[list[dict]], str],
+) -> bool:
+    """Dispatch non-table output formats for scheme commands.
+
+    Returns True if the format was handled (caller should return).
+    Returns False for table format (caller should render table).
+    """
+    mode = fmt.lower()
+    if mode == "json":
+        emit_output_json(json_payload, None)
+    elif mode == "tsv":
+        emit_output_tsv(rows, columns, None)
+    elif mode == "csv":
+        emit_output_csv(rows, columns, None)
+    elif mode == "text":
+        emit_output_text(text_fn(rows), None)
+    else:
+        return False
+    return True
+
+
+def resolve_scheme_or_exit(
+    cache: DatabaseCache,
+    scheme: str,
+    *,
+    include_local: bool = False,
+) -> tuple[str, _DictSchemeInfo]:
+    """Find scheme in catalogs, exit on not found or blocked."""
+    matches = _find_catalog_scheme_matches(cache, scheme, include_local=include_local)
+    if not matches:
+        _exit_scheme_not_found(scheme)
+    provider, match_info = matches[0]
+    _reject_if_blocked(scheme, match_info, provider)
+    return provider, match_info
+
+
+def refresh_all_catalogs(
+    cache: DatabaseCache,
+    token: str | None = None,
+) -> None:
+    """Refresh all provider catalogs, ignoring individual failures."""
+    for prov in _catalog_providers():
+        try:
+            cache.update_catalog(prov, scheme_type="all", token=token)
+        except (OSError, ValueError):
+            continue

@@ -85,7 +85,7 @@ def run_benchmark(
         for run_index in range(repeats):
             t_wall_start = time.perf_counter()
             try:
-                from gmlst.commands.utils import run_typing
+                from gmlst.core import run_typing
 
                 backend_results = run_typing(
                     sample_paths=sample_paths,
@@ -241,7 +241,7 @@ def run_cgmlst_gate(
     cache_root: Path | None = None,
     force_reindex: bool = False,
 ) -> dict[str, Any]:
-    from gmlst.commands.utils import run_typing
+    from gmlst.core import run_typing
 
     on_results = run_typing(
         sample_paths=sample_paths,

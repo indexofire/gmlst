@@ -13,7 +13,7 @@ from rich.box import MINIMAL_HEAVY_HEAD
 from rich.console import Console
 from rich.table import Table
 
-HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
+from gmlst.commands.common import HELP_SETTINGS
 
 console = Console()
 err_console = Console(stderr=True)

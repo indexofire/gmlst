@@ -2,11 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gmlst.commands.typing import (
-    _extract_fastq_pair_info,
-    _prepare_sample_paths_for_pairing,
-)
-from gmlst.readers.sample import SampleInput
+from gmlst.commands.typing_fastq import prepare_sample_paths_for_pairing
+from gmlst.readers.sample import SampleInput, _extract_fastq_pair_info
 
 
 def test_extract_fastq_pair_info_patterns() -> None:
@@ -21,7 +18,7 @@ def test_extract_fastq_pair_info_patterns() -> None:
     assert _extract_fastq_pair_info(Path("sample.fasta")) is None
 
 
-def test_prepare_sample_paths_for_pairing_groups_detected_pairs(tmp_path: Path) -> None:
+def testprepare_sample_paths_for_pairing_groups_detected_pairs(tmp_path: Path) -> None:
     r1 = tmp_path / "abc_R1.fastq"
     r2 = tmp_path / "abc_R2.fastq"
     single = tmp_path / "single.fastq"
@@ -30,7 +27,7 @@ def test_prepare_sample_paths_for_pairing_groups_detected_pairs(tmp_path: Path) 
     r2.write_text("@r2\nTTTT\n+\n####\n")
     single.write_text("@s\nCCCC\n+\n####\n")
 
-    prepared = _prepare_sample_paths_for_pairing((r1, r2, single))
+    prepared = prepare_sample_paths_for_pairing((r1, r2, single))
     assert len(prepared) == 2
     pair = prepared[0]
     assert isinstance(pair, SampleInput)

@@ -265,7 +265,7 @@ def test_run_cgmlst_gate_emits_detailed_diff(monkeypatch, tmp_path: Path) -> Non
     def _fake_run_typing(**_kwargs):
         return sequence.pop(0)
 
-    monkeypatch.setattr("gmlst.commands.utils.run_typing", _fake_run_typing)
+    monkeypatch.setattr("gmlst.core.run_typing", _fake_run_typing)
 
     from gmlst.commands.utils import run_cgmlst_gate
 

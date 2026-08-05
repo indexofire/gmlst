@@ -488,6 +488,9 @@ class DatabaseCache:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
+    def local_catalog_path(self) -> Path:
+        return self._catalog_path("local")
+
     def _catalog_path(self, provider: str) -> Path:
         """Path to cached catalog JSON for a provider."""
         return self._catalog_dir() / f"{provider}.json"

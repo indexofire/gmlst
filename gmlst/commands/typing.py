@@ -3,22 +3,27 @@
 from __future__ import annotations
 
 import logging
-import os
 import sys
-from collections.abc import Generator
-from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import click
-from rich.console import Console
 
 from gmlst.aligners import AVAILABLE_BACKENDS
 from gmlst.commands.common import (
+    HELP_SETTINGS,
+    cache_dir_option,
     console,
     emit_output_json,
     emit_output_text,
     err_console,
+)
+from gmlst.commands.typing_fastq import (
+    contains_fastq_samples,
+    fastq_kma_auto_threads,
+    maybe_subsample_fastq,
+    prepare_sample_paths_for_pairing,
+    temp_root_from_output,
 )
 from gmlst.commands.typing_output import (
     announce_stream_output_written,
@@ -31,22 +36,19 @@ from gmlst.commands.typing_output import (
 from gmlst.commands.typing_runner import execute_typing_run
 from gmlst.commands.typing_runtime import normalize_cgmlst_fastq_runtime
 from gmlst.commands.typing_scheme import (
-    detect_provider,
     effective_scheme_type,
     resolve_scheme_type,
     validate_scheme_mode,
 )
+from gmlst.commands.typing_schemefree_exit import (
+    count_errors_by_stage,
+    schemefree_exit_decision,
+)
 from gmlst.core import run_typing
 from gmlst.database.cache import DatabaseCache
+from gmlst.database.schema import Scheme
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
 from gmlst.novel.service import create_novel_writers, finalize_novel_typing_outputs
-from gmlst.readers.sample import (
-    SampleInput,
-    prepare_sample_inputs,
-)
-from gmlst.readers.sample import (
-    _extract_fastq_pair_info as _sample_extract_fastq_pair_info,
-)
 from gmlst.schemefree import (
     SchemaFreeConfig,
     SchemeFreeTyper,
@@ -59,308 +61,18 @@ from gmlst.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
-HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 if TYPE_CHECKING:
     from gmlst.calling.st_lookup import STResult
 
 
-class TypingGroup(click.Group):
-    def list_commands(self, ctx: click.Context) -> list[str]:
-        preferred = ["mlst", "cgmlst", "tgmlst"]
-        existing = [name for name in preferred if name in self.commands]
-        remaining = sorted(
-            name
-            for name in self.commands
-            if name not in preferred and not name.startswith("_")
-        )
-        return existing + remaining
-
-    def resolve_command(
-        self,
-        ctx: click.Context,
-        args: list[str],
-    ) -> tuple[str | None, click.Command | None, list[str]]:
-        if args and args[0] not in self.commands:
-            legacy_cmd = self.commands.get("_legacy")
-            if legacy_cmd is not None:
-                return ("_legacy", legacy_cmd, args)
-        return super().resolve_command(ctx, args)
-
-
 @click.group(
     "typing",
-    cls=TypingGroup,
-    context_settings={**HELP_SETTINGS, "allow_extra_args": True},
-    invoke_without_command=True,
+    context_settings=HELP_SETTINGS,
     no_args_is_help=True,
 )
-@click.option(
-    "--scheme",
-    "-s",
-    required=False,
-    hidden=True,
-    help="MLST scheme name, e.g. 'saureus_1', 'ecoli_1'.",
-)
-@click.option(
-    "--backend",
-    "-b",
-    default="blastn",
-    show_default=True,
-    type=click.Choice(AVAILABLE_BACKENDS, case_sensitive=False),
-    hidden=True,
-    help="Alignment backend to use.",
-)
-@click.option(
-    "--min-id",
-    default=95.0,
-    show_default=True,
-    hidden=True,
-    help="Minimum percent identity.",
-)
-@click.option(
-    "--min-cov",
-    default=0.95,
-    show_default=True,
-    hidden=True,
-    help="Minimum allele coverage (0-1).",
-)
-@click.option(
-    "--min-depth",
-    default=10.0,
-    show_default=True,
-    hidden=True,
-    help="Min read depth (FASTQ only).",
-)
-@click.option(
-    "--format",
-    "fmt",
-    default="tsv",
-    show_default=True,
-    type=click.Choice(["tsv", "json", "pretty"]),
-    hidden=True,
-    help="Output format.",
-)
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Write output to file.",
-)
-@click.option(
-    "--cache-dir",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Override cache directory.",
-)
-@click.option(
-    "--force-reindex", is_flag=True, hidden=True, help="Rebuild aligner index."
-)
-@click.option("--no-header", is_flag=True, hidden=True, help="Suppress TSV header line")
-@click.option(
-    "--threads",
-    "-t",
-    default=1,
-    show_default=True,
-    hidden=True,
-    help="Number of alignment threads (backend-dependent).",
-)
-@click.option(
-    "--count-same-copy",
-    is_flag=True,
-    hidden=True,
-    help=(
-        "Count same-allele multicopy hits (currently blastn) "
-        "and show notation like 1,1."
-    ),
-)
-@click.option(
-    "--quiet", "-q", is_flag=True, hidden=True, help="Suppress non-error logging."
-)
-@click.option(
-    "--novel-allele",
-    is_flag=True,
-    hidden=True,
-    help="Save novel allele sequences to {locus}_novel.fasta files.",
-)
-@click.option(
-    "--novel-profile",
-    is_flag=True,
-    hidden=True,
-    help="Save novel ST profiles to profiles_novel.txt (requires --novel-allele).",
-)
-@click.option(
-    "--data-dir",
-    "--output-dir",
-    "output_dir",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Directory for novel allele/profile output files (default: cwd).",
-)
-@click.option(
-    "--hash-strategy",
-    default="safe",
-    show_default=True,
-    hidden=True,
-    type=click.Choice(
-        ["safe", "fast", "ultra", "strict", "blast"], case_sensitive=False
-    ),
-    help="Hash strategy for allele identification (schemefree mode).",
-)
-@click.option(
-    "--schemefree-save-scheme",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Write discovered schemefree scheme JSON.",
-)
-@click.option(
-    "--schemefree-load-scheme",
-    type=click.Path(exists=True, path_type=Path),
-    hidden=True,
-    help="Load an existing schemefree scheme JSON before typing.",
-)
-@click.option(
-    "--schemefree-stats",
-    is_flag=True,
-    hidden=True,
-    help="Print schemefree pipeline timing and count stats.",
-)
-@click.option(
-    "--schemefree-max-workers",
-    type=int,
-    hidden=True,
-    help="Override schemefree max parallel samples.",
-)
-@click.option(
-    "--schemefree-assemble-timeout",
-    type=float,
-    hidden=True,
-    help="Override schemefree assembly timeout seconds.",
-)
-@click.option(
-    "--schemefree-error-report",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Write per-sample schemefree errors to JSON.",
-)
-@click.option(
-    "--schemefree-fail-on-error",
-    is_flag=True,
-    hidden=True,
-    help="Return non-zero if any schemefree sample fails.",
-)
-@click.option(
-    "--schemefree-summary-report",
-    type=click.Path(path_type=Path),
-    hidden=True,
-    help="Write machine-readable schemefree run summary JSON.",
-)
-@click.pass_context
-def cmd_typing(
-    ctx: click.Context,
-    scheme: str | None,
-    backend: str,
-    min_id: float,
-    min_cov: float,
-    min_depth: float,
-    fmt: str,
-    output: Path | None,
-    cache_dir: Path | None,
-    force_reindex: bool,
-    no_header: bool,
-    threads: int,
-    count_same_copy: bool,
-    quiet: bool,
-    novel_allele: bool,
-    novel_profile: bool,
-    output_dir: Path | None,
-    hash_strategy: str,
-    schemefree_save_scheme: Path | None,
-    schemefree_load_scheme: Path | None,
-    schemefree_stats: bool,
-    schemefree_max_workers: int | None,
-    schemefree_assemble_timeout: float | None,
-    schemefree_error_report: Path | None,
-    schemefree_fail_on_error: bool,
-    schemefree_summary_report: Path | None,
-) -> None:
+def cmd_typing() -> None:
     """Typing command group: mlst, cgmlst, and tgmlst modes."""
-    if ctx.invoked_subcommand is not None:
-        return
-
-    click.echo(ctx.get_help())
-
-
-@cmd_typing.command("_legacy", hidden=True)
-@click.argument(
-    "samples",
-    nargs=-1,
-    type=click.Path(exists=True, path_type=Path),
-    required=True,
-)
-@click.pass_context
-def cmd_typing_legacy(ctx: click.Context, samples: tuple[Path, ...]) -> None:
-    parent = ctx.parent
-    if parent is None:
-        raise click.UsageError("Legacy typing context missing")
-
-    params = parent.params
-    scheme = params.get("scheme")
-    if not isinstance(scheme, str) or not scheme:
-        raise click.UsageError("Legacy typing requires -s/--scheme")
-
-    quiet = bool(params.get("quiet", False))
-    if quiet:
-        setup_logging(verbose=False, quiet=True)
-
-    if scheme.lower() == "schemefree":
-        exit_code = _run_schemefree_typing(
-            samples=list(samples),
-            hash_strategy=str(params.get("hash_strategy", "safe")),
-            fmt=str(params.get("fmt", "tsv")),
-            output=params.get("output"),
-            no_header=bool(params.get("no_header", False)),
-            save_scheme_path=params.get("schemefree_save_scheme"),
-            load_scheme_path=params.get("schemefree_load_scheme"),
-            show_stats=bool(params.get("schemefree_stats", False)),
-            max_workers=params.get("schemefree_max_workers"),
-            threads=int(params.get("threads", 1)),
-            assemble_timeout=params.get("schemefree_assemble_timeout"),
-            error_report_path=params.get("schemefree_error_report"),
-            fail_on_error=bool(params.get("schemefree_fail_on_error", False)),
-            summary_report_path=params.get("schemefree_summary_report"),
-        )
-        if exit_code != 0:
-            sys.exit(exit_code)
-        return
-
-    legacy_mode = _infer_typing_mode(
-        scheme=scheme,
-        provider=params.get("provider"),
-        cache_dir=params.get("cache_dir"),
-    )
-    _run_mlst_like_typing(
-        mode=legacy_mode,
-        samples=samples,
-        scheme=scheme,
-        backend=str(params.get("backend", "blastn")),
-        min_id=float(params.get("min_id", 95.0)),
-        min_cov=float(params.get("min_cov", 0.95)),
-        min_depth=float(params.get("min_depth", 10.0)),
-        fmt=str(params.get("fmt", "tsv")),
-        output=params.get("output"),
-        cache_dir=params.get("cache_dir"),
-        force_reindex=bool(params.get("force_reindex", False)),
-        no_header=bool(params.get("no_header", False)),
-        threads=int(params.get("threads", 1)),
-        max_workers=int(params.get("max_workers", 1)),
-        count_same_copy=bool(params.get("count_same_copy", False)),
-        provider=params.get("provider"),
-        novel_allele=bool(params.get("novel_allele", False)),
-        novel_profile=bool(params.get("novel_profile", False)),
-        output_dir=params.get("output_dir"),
-    )
 
 
 @cmd_typing.command("mlst", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -404,9 +116,7 @@ def cmd_typing_legacy(ctx: click.Context, samples: tuple[Path, ...]) -> None:
 @click.option(
     "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 @click.option("--force-reindex", is_flag=True, help="Rebuild aligner index.")
 @click.option("--no-header", is_flag=True, help="Suppress TSV header line")
 @click.option(
@@ -567,9 +277,7 @@ def cmd_typing_mlst(
 @click.option(
     "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 @click.option("--force-reindex", is_flag=True, help="Rebuild aligner index.")
 @click.option("--no-header", is_flag=True, help="Suppress TSV header line")
 @click.option(
@@ -883,6 +591,68 @@ def cmd_typing_tgmlst(
         sys.exit(exit_code)
 
 
+def _resolve_scheme_with_fallback(
+    cache: DatabaseCache,
+    scheme: str,
+    provider: str | None,
+    provider_specified: bool,
+    mode: str,
+    ensure_scheme_type: str,
+) -> tuple[Scheme, str, str]:
+    if provider is None:
+        provider = "pubmlst"
+    try:
+        scheme_obj = cache.ensure_scheme(
+            scheme, provider=provider, scheme_type=ensure_scheme_type
+        )
+    except Exception as exc:
+        if provider_specified:
+            err_console.print(
+                f"[red]Error:[/red] Could not load scheme '{scheme}' "
+                f"from provider '{provider}': {exc}"
+            )
+            sys.exit(1)
+
+        detected_provider = cache.detect_provider(scheme)
+        if not detected_provider:
+            err_console.print(
+                f"[red]Error:[/red] Scheme '[cyan]{scheme}[/cyan]' not found."
+            )
+            err_console.print(
+                "\nRun [bold]gmlst scheme list[/bold] to see available schemes."
+            )
+            sys.exit(1)
+
+        if detected_provider != provider:
+            logger.info("Provider fallback: %s -> %s", provider, detected_provider)
+        provider = detected_provider
+
+        scheme_type = resolve_scheme_type(cache, scheme, provider)
+        validate_scheme_mode(
+            scheme=scheme, scheme_type=scheme_type, mode=mode, err_console=err_console
+        )
+        ensure_scheme_type = effective_scheme_type(mode=mode, resolved_type=scheme_type)
+
+        try:
+            scheme_obj = cache.ensure_scheme(
+                scheme, provider=provider, scheme_type=ensure_scheme_type
+            )
+        except Exception as fallback_exc:
+            err_console.print(
+                f"[red]Error:[/red] Could not load scheme '{scheme}' "
+                f"from provider '{provider}': {fallback_exc}"
+            )
+            sys.exit(1)
+
+    if scheme_obj is None:
+        err_console.print(
+            f"[red]Error:[/red] Could not load scheme object for '{scheme}'."
+        )
+        sys.exit(1)
+
+    return scheme_obj, provider, ensure_scheme_type
+
+
 def _run_mlst_like_typing(
     *,
     mode: str,
@@ -920,7 +690,7 @@ def _run_mlst_like_typing(
 
     provider_specified = provider is not None
     if provider is None:
-        provider = detect_provider(cache=cache, scheme=scheme) or "pubmlst"
+        provider = cache.detect_provider(scheme) or "pubmlst"
 
     scheme_type = resolve_scheme_type(cache, scheme, provider)
     validate_scheme_mode(
@@ -945,9 +715,9 @@ def _run_mlst_like_typing(
     else:
         output_policy = normalized_policy
 
-    prepared_samples = _prepare_sample_paths_for_pairing(samples)
+    prepared_samples = prepare_sample_paths_for_pairing(samples)
     if max_fastq_depth > 0:
-        prepared_samples = _maybe_subsample_fastq(
+        prepared_samples = maybe_subsample_fastq(
             prepared_samples, max_fastq_depth, console
         )
     backend, cgmlst_mode, threads = normalize_cgmlst_fastq_runtime(
@@ -958,71 +728,20 @@ def _run_mlst_like_typing(
         cgmlst_mode=cgmlst_mode,
         max_workers=max_workers,
         threads=threads,
-        contains_fastq_samples_fn=_contains_fastq_samples,
-        fastq_kma_auto_threads_fn=_fastq_kma_auto_threads,
+        contains_fastq_samples_fn=contains_fastq_samples,
+        fastq_kma_auto_threads_fn=fastq_kma_auto_threads,
         console=console,
         err_console=err_console,
     )
 
-    try:
-        scheme_obj = cache.ensure_scheme(
-            scheme,
-            provider=provider,
-            scheme_type=ensure_scheme_type,
-        )
-    except Exception as exc:
-        if provider_specified:
-            err_console.print(
-                f"[red]Error:[/red] Could not load scheme '{scheme}' "
-                f"from provider '{provider}': {exc}"
-            )
-            sys.exit(1)
-
-        detected_provider = detect_provider(cache, scheme)
-        if not detected_provider:
-            err_console.print(
-                f"[red]Error:[/red] Scheme '[cyan]{scheme}[/cyan]' not found."
-            )
-            err_console.print(
-                "\nRun [bold]gmlst scheme list[/bold] to see available schemes."
-            )
-            sys.exit(1)
-
-        if detected_provider != provider:
-            logger.info(
-                "Provider fallback: %s -> %s",
-                provider,
-                detected_provider,
-            )
-        provider = detected_provider
-
-        scheme_type = resolve_scheme_type(cache, scheme, provider)
-        validate_scheme_mode(
-            scheme=scheme,
-            scheme_type=scheme_type,
-            mode=mode,
-            err_console=err_console,
-        )
-        ensure_scheme_type = effective_scheme_type(mode=mode, resolved_type=scheme_type)
-
-        try:
-            scheme_obj = cache.ensure_scheme(
-                scheme,
-                provider=provider,
-                scheme_type=ensure_scheme_type,
-            )
-        except Exception as fallback_exc:
-            err_console.print(
-                f"[red]Error:[/red] Could not load scheme '{scheme}' "
-                f"from provider '{provider}': {fallback_exc}"
-            )
-            sys.exit(1)
-
-    if scheme_obj is None:
-        err_console.print(
-            f"[red]Error:[/red] Could not load scheme object for '{scheme}'."
-        )
-        sys.exit(1)
+    scheme_obj, provider, ensure_scheme_type = _resolve_scheme_with_fallback(
+        cache=cache,
+        scheme=scheme,
+        provider=provider,
+        provider_specified=provider_specified,
+        mode=mode,
+        ensure_scheme_type=ensure_scheme_type,
+    )
 
     if backend.lower() == "nucmer" and threads > 1:
         console.print(
@@ -1087,7 +806,7 @@ def _run_mlst_like_typing(
     try:
         # run typing
         try:
-            with _temp_root_from_output(output):
+            with temp_root_from_output(output):
                 results = execute_typing_run(
                     run_typing_fn=run_typing,
                     prepared_samples=prepared_samples,
@@ -1143,71 +862,6 @@ def _run_mlst_like_typing(
 
     finally:
         close_stream_output(stream_file)
-
-
-def _prepare_sample_paths_for_pairing(
-    samples: tuple[Path, ...],
-) -> list[Path | SampleInput]:
-    return prepare_sample_inputs(list(samples))
-
-
-def _extract_fastq_pair_info(sample_path: Path) -> tuple[str, str] | None:
-    return _sample_extract_fastq_pair_info(sample_path)
-
-
-def _contains_fastq_samples(samples: list[Path | SampleInput]) -> bool:
-    for sample in samples:
-        if isinstance(sample, SampleInput):
-            if sample.input_type == "fastq":
-                return True
-            continue
-
-        name = sample.name.lower()
-        if name.endswith(".fastq") or name.endswith(".fq"):
-            return True
-        if name.endswith(".fastq.gz") or name.endswith(".fq.gz"):
-            return True
-    return False
-
-
-def _fastq_kma_auto_threads() -> int:
-    raw = os.getenv("GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS", "8").strip()
-    try:
-        configured = int(raw)
-    except ValueError:
-        configured = 8
-    if configured <= 1:
-        return 1
-    cpu_total = os.cpu_count() or configured
-    return max(2, min(configured, cpu_total))
-
-
-@contextmanager
-def _temp_root_from_output(output: Path | None) -> Generator[None, None, None]:
-    if output is None:
-        yield
-        return
-
-    output_parent = output.resolve().parent
-    previous = os.environ.get("GMLST_TMPDIR")
-    os.environ["GMLST_TMPDIR"] = str(output_parent)
-    try:
-        yield
-    finally:
-        if previous is None:
-            os.environ.pop("GMLST_TMPDIR", None)
-        else:
-            os.environ["GMLST_TMPDIR"] = previous
-
-
-def _infer_typing_mode(
-    scheme: str, provider: str | None, cache_dir: Path | None
-) -> str:
-    cache = DatabaseCache(cache_dir)
-    scheme_type = resolve_scheme_type(cache, scheme, provider)
-    if scheme_type in {"cgmlst", "wgmlst"}:
-        return "cgmlst"
-    return "mlst"
 
 
 def _run_schemefree_typing(
@@ -1271,7 +925,7 @@ def _run_schemefree_typing(
     if show_stats:
         emit_output_json(typer.last_run_stats, None)
 
-    exit_code, exit_reason, primary_failed_stage = _schemefree_exit_decision(
+    exit_code, exit_reason, primary_failed_stage = schemefree_exit_decision(
         success_count=len(profiles),
         failed_count=len(typer.last_run_errors),
         errors=typer.last_run_errors,
@@ -1284,7 +938,7 @@ def _run_schemefree_typing(
             "exit_code": exit_code,
             "exit_reason": exit_reason,
             "primary_failed_stage": primary_failed_stage,
-            "failed_by_stage": _count_errors_by_stage(typer.last_run_errors),
+            "failed_by_stage": count_errors_by_stage(typer.last_run_errors),
         }
         write_summary_report_json(summary_report_path, summary_payload)
         console.print(
@@ -1292,37 +946,6 @@ def _run_schemefree_typing(
         )
 
     return exit_code
-
-
-def _schemefree_exit_decision(
-    success_count: int,
-    failed_count: int,
-    errors: list[dict[str, str]],
-    fail_on_error: bool,
-) -> tuple[int, str, str | None]:
-    if failed_count == 0:
-        return 0, "all_succeeded", None
-
-    primary_stage = _primary_failed_stage(errors)
-    stage_exit = _stage_exit_code(primary_stage)
-
-    if success_count == 0:
-        return stage_exit, f"all_failed_{primary_stage}", primary_stage
-    if fail_on_error:
-        return (
-            stage_exit,
-            f"partial_failed_strict_{primary_stage}",
-            primary_stage,
-        )
-    return 0, "partial_failed_allowed", primary_stage
-
-
-def _count_errors_by_stage(errors: list[dict[str, str]]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for error in errors:
-        stage = error.get("stage", "unknown")
-        counts[stage] = counts.get(stage, 0) + 1
-    return counts
 
 
 def _format_st_for_tsv(result: STResult) -> str:
@@ -1346,110 +969,3 @@ def _format_tsv_row(
         call_policy=call_policy,
         detail=detail,
     )
-
-
-def _primary_failed_stage(errors: list[dict[str, str]]) -> str:
-    counts = _count_errors_by_stage(errors)
-    if not counts:
-        return "unknown"
-
-    priority = {"input": 0, "assembly": 1, "prediction": 2, "unknown": 3}
-    return sorted(
-        counts.items(),
-        key=lambda kv: (-kv[1], priority.get(kv[0], 99), kv[0]),
-    )[0][0]
-
-
-def _stage_exit_code(stage: str) -> int:
-    mapping = {
-        "input": 2,
-        "assembly": 3,
-        "prediction": 4,
-        "unknown": 5,
-    }
-    return mapping.get(stage, 5)
-
-
-_DEFAULT_GENOME_SIZE = 5_000_000
-_FASTQ_BYTES_PER_READ = 250
-
-
-def _maybe_subsample_fastq(
-    samples: list[Path | SampleInput],
-    max_depth: float,
-    console: Console,
-) -> list[Path | SampleInput]:
-    """Subsample FASTQ files when estimated depth exceeds max_depth."""
-
-    result: list[Path | SampleInput] = []
-    for sample in samples:
-        is_fastq = False
-        paths: list[Path] = []
-        if isinstance(sample, SampleInput):
-            if sample.input_type == "fastq":
-                is_fastq = True
-                paths = [sample.path]
-                if sample.mate_path:
-                    paths.append(sample.mate_path)
-        elif Path(str(sample)).suffix in (".fastq", ".fq", ".fastq.gz", ".fq.gz"):
-            is_fastq = True
-            paths = [Path(str(sample))]
-
-        if not is_fastq:
-            result.append(sample)
-            continue
-
-        total_reads = sum(
-            max(p.stat().st_size // _FASTQ_BYTES_PER_READ, 1) for p in paths
-        )
-        est_depth = total_reads * 150 / _DEFAULT_GENOME_SIZE
-        if est_depth <= max_depth:
-            result.append(sample)
-            continue
-
-        target_reads = int(max_depth * _DEFAULT_GENOME_SIZE / 150)
-        console.print(
-            f"[yellow]Subsample:[/yellow] "
-            f"{sample if isinstance(sample, Path) else sample.sample_id} "
-            f"~{est_depth:.0f}x depth → {max_depth:.0f}x "
-            f"(target {target_reads} reads)"
-        )
-
-        from gmlst.utils import temp_dir
-
-        with temp_dir("gmlst_sub_") as tmp:
-            new_paths: list[Path] = []
-            for i, p in enumerate(paths):
-                out = tmp / f"sub_{i}.fastq.gz"
-                _subsample_fastq_file(p, out, target_reads)
-                new_paths.append(out)
-
-            if isinstance(sample, SampleInput):
-                result.append(
-                    SampleInput(
-                        path=new_paths[0],
-                        mate_path=new_paths[1] if len(new_paths) > 1 else None,
-                        sample_id=sample.sample_id,
-                        input_type=sample.input_type,
-                    )
-                )
-            else:
-                result.append(new_paths[0])
-
-    return result
-
-
-def _subsample_fastq_file(
-    input_path: Path, output_path: Path, target_reads: int
-) -> None:
-    """Subsample FASTQ to first *target_reads* reads."""
-    import gzip as _gzip
-
-    opener = _gzip.open if input_path.suffix == ".gz" else open
-    lines_needed = target_reads * 4
-    with opener(input_path, "rb") as fin, _gzip.open(output_path, "wb") as fout:
-        for _ in range(lines_needed):
-            line = fin.readline()
-            if not line:
-                break
-            fout.write(line)

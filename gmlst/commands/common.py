@@ -4,14 +4,26 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import click
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from gmlst.database.cache import _load_blocked_schemes as _load_blocked_schemes
+
+HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 
 # Shared console instances
 console = Console()
@@ -123,3 +135,30 @@ def emit_output_table(
         return False
     output.write_text(render_text())
     return True
+
+
+def make_progress() -> Progress:
+    return Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+    )
+
+
+def cache_dir_option(f):
+    return click.option(
+        "--cache-dir",
+        type=click.Path(path_type=Path),
+        help="Override cache directory.",
+    )(f)
+
+
+def exit_with_error(msg: str, hint: str | None = None) -> None:
+    """Print error message and exit with code 1."""
+    err_console.print(f"[red]Error:[/red] {msg}")
+    if hint:
+        err_console.print(hint)
+    sys.exit(1)

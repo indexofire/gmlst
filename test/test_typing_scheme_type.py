@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 import gmlst.commands.typing as typing_cmd
+from gmlst.commands import typing_fastq
 
 
 def test_cgmlst_mode_forwards_scheme_type(monkeypatch, tmp_path: Path) -> None:
@@ -279,14 +280,14 @@ def test_cgmlst_fastq_auto_switches_minimap2_to_kma(
 
 def test_fastq_kma_auto_threads_uses_env_and_cpu(monkeypatch) -> None:
     monkeypatch.setenv("GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS", "16")
-    monkeypatch.setattr(typing_cmd.os, "cpu_count", lambda: 6)
-    assert typing_cmd._fastq_kma_auto_threads() == 6
+    monkeypatch.setattr(typing_fastq.os, "cpu_count", lambda: 6)
+    assert typing_fastq.fastq_kma_auto_threads() == 6
 
 
 def test_fastq_kma_auto_threads_can_disable(monkeypatch) -> None:
     monkeypatch.setenv("GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS", "1")
-    monkeypatch.setattr(typing_cmd.os, "cpu_count", lambda: 12)
-    assert typing_cmd._fastq_kma_auto_threads() == 1
+    monkeypatch.setattr(typing_fastq.os, "cpu_count", lambda: 12)
+    assert typing_fastq.fastq_kma_auto_threads() == 1
 
 
 def test_cgmlst_mode_falls_back_to_redetected_provider(
@@ -302,7 +303,7 @@ def test_cgmlst_mode_falls_back_to_redetected_provider(
 
     class DummyCache:
         def __init__(self, _root):
-            pass
+            self._detect_seq = iter(["pubmlst", "cgmlst"])
 
         def ensure_scheme(self, _name, provider, scheme_type="mlst"):
             captured["ensure_calls"].append((provider, scheme_type))
@@ -311,7 +312,7 @@ def test_cgmlst_mode_falls_back_to_redetected_provider(
             return DummyScheme()
 
         def detect_provider(self, _name):
-            return "pubmlst"
+            return next(self._detect_seq)
 
         def load_catalog(self, provider):
             if provider == "cgmlst":
@@ -323,19 +324,11 @@ def test_cgmlst_mode_falls_back_to_redetected_provider(
                 ]
             return []
 
-    detect_sequence = iter(["pubmlst", "cgmlst"])
-
-    def fake_detect_provider(cache, scheme):
-        _ = cache
-        _ = scheme
-        return next(detect_sequence)
-
     def fake_run_typing(**kwargs):
         captured.update(kwargs)
         return []
 
     monkeypatch.setattr(typing_cmd, "DatabaseCache", DummyCache)
-    monkeypatch.setattr(typing_cmd, "detect_provider", fake_detect_provider)
     monkeypatch.setattr(typing_cmd, "run_typing", fake_run_typing)
 
     typing_cmd._run_mlst_like_typing(

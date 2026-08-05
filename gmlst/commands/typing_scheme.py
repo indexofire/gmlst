@@ -2,29 +2,20 @@ from __future__ import annotations
 
 import sys
 
+from gmlst.commands.scheme_common import _find_catalog_scheme_matches
+
 
 def resolve_scheme_type(
     cache,
     scheme: str,
     provider: str | None,
 ) -> str | None:
-    if provider:
-        catalogs = [provider]
-    else:
-        from gmlst.database.providers import AVAILABLE_PROVIDERS
-
-        catalogs = AVAILABLE_PROVIDERS + ["local"]
-
-    for prov in catalogs:
-        scheme_dicts = cache.load_catalog(prov)
-        if not scheme_dicts:
-            continue
-        for item in scheme_dicts:
-            if item.get("scheme_name") == scheme:
-                stype = item.get("scheme_type")
-                if isinstance(stype, str):
-                    return stype.lower()
-                return None
+    matches = _find_catalog_scheme_matches(cache, scheme, include_local=True)
+    for prov, info in matches:
+        if provider is None or prov == provider:
+            stype = info.get("scheme_type")
+            if isinstance(stype, str):
+                return stype.lower()
     return None
 
 
@@ -64,7 +55,3 @@ def effective_scheme_type(mode: str, resolved_type: str | None) -> str:
     if resolved_type in {"mlst", "cgmlst", "wgmlst"}:
         return resolved_type
     return "cgmlst" if mode == "cgmlst" else "mlst"
-
-
-def detect_provider(cache, scheme: str) -> str | None:
-    return cache.detect_provider(scheme)

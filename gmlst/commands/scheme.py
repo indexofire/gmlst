@@ -18,27 +18,26 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-from rich.table import Table
 
 from gmlst.commands.common import (
+    HELP_SETTINGS,
     _natural_sort_key,
+    cache_dir_option,
     console,
-    emit_output_csv,
-    emit_output_json,
     emit_output_table,
-    emit_output_text,
-    emit_output_tsv,
     err_console,
 )
 from gmlst.commands.scheme_common import (
     DOWNLOAD_TOOL_CHOICES,
-    HELP_SETTINGS,
     _download_tool_choice,
     _exit_scheme_not_found,
     _find_catalog_scheme_matches,
     _load_schemes,
     _provider_choices,
     _reject_if_blocked,
+    emit_scheme_format,
+    refresh_all_catalogs,
+    resolve_scheme_or_exit,
 )
 from gmlst.commands.scheme_custom import cmd_create, cmd_update_custom
 from gmlst.commands.scheme_render import (
@@ -47,6 +46,8 @@ from gmlst.commands.scheme_render import (
     _build_scheme_list_table,
     _render_scheme_list_text,
     _render_scheme_show_text,
+    render_locus_stats_table,
+    render_scheme_show_table,
 )
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.providers import AVAILABLE_PROVIDERS
@@ -110,9 +111,7 @@ def scheme_group() -> None:
     is_flag=True,
     help="Send output through a pager (less).",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_list(
     provider: str,
     scheme_type: str,
@@ -170,21 +169,9 @@ def cmd_list(
         for s in all_schemes
     ]
 
-    output_mode = output_format.lower()
-    if output_mode == "json":
-        emit_output_json(payload, None)
-        return
-
-    if output_mode == "tsv":
-        emit_output_tsv(payload, _SCHEME_LIST_COLUMNS, None)
-        return
-
-    if output_mode == "csv":
-        emit_output_csv(payload, _SCHEME_LIST_COLUMNS, None)
-        return
-
-    if output_mode == "text":
-        emit_output_text(_render_scheme_list_text(payload), None)
+    if emit_scheme_format(
+        output_format, payload, payload, _SCHEME_LIST_COLUMNS, _render_scheme_list_text
+    ):
         return
 
     if not all_schemes:
@@ -250,9 +237,7 @@ def cmd_list(
     type=click.Choice(["mlst", "cgmlst", "wgmlst", "all"], case_sensitive=False),
     help="Filter by scheme type.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_search(
     pattern: str,
     provider: str,
@@ -294,6 +279,34 @@ def cmd_search(
     console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
 
 
+def _gather_locus_stats(
+    cache: DatabaseCache, scheme: str, provider: str
+) -> list[dict[str, int | str]]:
+    """Gather per-locus allele statistics for a downloaded scheme."""
+    from gmlst.fasta_io import iter_fasta_records
+
+    stats: list[dict[str, int | str]] = []
+    try:
+        loaded = cache.load_scheme(scheme, provider)
+        for locus, tfa_path in sorted(loaded.allele_files.items()):
+            lengths: list[int] = []
+            for _header, seq in iter_fasta_records(tfa_path):
+                lengths.append(len(seq))
+            if lengths:
+                stats.append(
+                    {
+                        "locus": locus,
+                        "alleles": len(lengths),
+                        "min_len": min(lengths),
+                        "max_len": max(lengths),
+                        "avg_len": round(sum(lengths) / len(lengths)),
+                    }
+                )
+    except (FileNotFoundError, OSError):
+        pass
+    return stats
+
+
 @scheme_group.command("show", context_settings=HELP_SETTINGS)
 @click.argument("scheme", required=False)
 @click.option(
@@ -319,9 +332,7 @@ def cmd_search(
     type=click.Choice(["text", "table", "csv", "tsv", "json"], case_sensitive=False),
     help="Output format.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 @click.pass_context
 def cmd_show(
     ctx: click.Context,
@@ -358,12 +369,7 @@ def cmd_show(
 
     cache = DatabaseCache(cache_dir)
 
-    matches = _find_catalog_scheme_matches(cache, scheme)
-    if not matches:
-        _exit_scheme_not_found(scheme)
-    _, scheme_info = matches[0]
-
-    _reject_if_blocked(scheme, scheme_info, str(scheme_info.get("provider", "")))
+    _, scheme_info = resolve_scheme_or_exit(cache, scheme)
 
     is_downloaded = cache.is_downloaded(scheme, scheme_info.provider)
     scheme_dir = (
@@ -396,68 +402,19 @@ def cmd_show(
 
     locus_stats: list[dict[str, int | str]] = []
     if show_all and is_downloaded:
-        try:
-            loaded = cache.load_scheme(scheme, scheme_info.provider)
-            from gmlst.fasta_io import iter_fasta_records
+        locus_stats = _gather_locus_stats(cache, scheme, scheme_info.provider)
+        if locus_stats:
+            payload["locus_stats"] = locus_stats
 
-            for locus, tfa_path in sorted(loaded.allele_files.items()):
-                lengths: list[int] = []
-                for _header, seq in iter_fasta_records(tfa_path):
-                    lengths.append(len(seq))
-                if lengths:
-                    locus_stats.append(
-                        {
-                            "locus": locus,
-                            "alleles": len(lengths),
-                            "min_len": min(lengths),
-                            "max_len": max(lengths),
-                            "avg_len": round(sum(lengths) / len(lengths)),
-                        }
-                    )
-        except (FileNotFoundError, OSError):
-            # scheme not fully downloaded — skip locus stats
-            pass
-        payload["locus_stats"] = locus_stats
-
-    output_mode = output_format.lower()
-    if output_mode == "json":
-        emit_output_json(payload, None)
+    if emit_scheme_format(
+        output_format,
+        payload,
+        [payload],
+        _SCHEME_SHOW_COLUMNS,
+        lambda rows: _render_scheme_show_text(rows[0]),
+    ):
         return
-
-    if output_mode == "tsv":
-        emit_output_tsv([payload], _SCHEME_SHOW_COLUMNS, None)
-        return
-
-    if output_mode == "csv":
-        emit_output_csv([payload], _SCHEME_SHOW_COLUMNS, None)
-        return
-
-    if output_mode == "text":
-        emit_output_text(_render_scheme_show_text(payload), None)
-        return
-    table = Table(title=scheme_info.display_name, show_lines=False, padding=(0, 1))
-    table.add_column("Field", style="cyan", no_wrap=True)
-    table.add_column("Value", style="green")
-    table.add_row("Name", str(payload["scheme_name"]))
-    table.add_row("Organism", str(payload["organism"]))
-    table.add_row("Type", str(payload["scheme_type"]))
-    table.add_row("Loci", str(payload["n_loci"]))
-    n_profiles = payload.get("n_profiles")
-    if n_profiles is not None:
-        table.add_row("Profiles", str(n_profiles))
-    table.add_row("Provider", str(payload["provider"]))
-    downloaded_at = str(payload.get("downloaded_at", ""))
-    updated_at = str(payload.get("updated_at", ""))
-    if downloaded_at:
-        table.add_row("Downloaded", downloaded_at)
-    if updated_at:
-        table.add_row("Updated", updated_at)
-    if is_downloaded and scheme_dir is not None:
-        table.add_row("Status", f"Downloaded -> {scheme_dir}")
-    else:
-        table.add_row("Status", "Not downloaded")
-        table.add_row("Run", f"gmlst scheme download {scheme}")
-
+    table = render_scheme_show_table(payload, scheme, locus_stats)
     emit_output_table(
         output=None,
         render_text=lambda: _render_scheme_show_text(payload),
@@ -475,30 +432,8 @@ def cmd_show(
             console.print("\n[dim]No allele files found.[/dim]")
             return
 
-        from rich.box import MINIMAL_HEAVY_HEAD as _MINIMAL
-
-        locus_table = Table(
-            title="Allele Statistics",
-            box=_MINIMAL,
-            expand=True,
-            padding=(0, 1),
-        )
-        locus_table.add_column("Locus", style="cyan", no_wrap=True)
-        locus_table.add_column("Alleles", justify="right", style="green")
-        locus_table.add_column("Min bp", justify="right", style="dim")
-        locus_table.add_column("Max bp", justify="right", style="dim")
-        locus_table.add_column("Avg bp", justify="right", style="dim")
-
-        total_alleles = 0
-        for stat in locus_stats:
-            locus_table.add_row(
-                str(stat["locus"]),
-                str(stat["alleles"]),
-                str(stat["min_len"]),
-                str(stat["max_len"]),
-                str(stat["avg_len"]),
-            )
-            total_alleles += int(stat["alleles"])
+        locus_table = render_locus_stats_table(locus_stats)
+        total_alleles = sum(int(s["alleles"]) for s in locus_stats)
 
         console.print(locus_table)
         console.print(f"\nTotal: {len(locus_stats)} loci, {total_alleles} alleles")
@@ -532,9 +467,7 @@ def cmd_show(
     help="Maximum concurrent downloads for scheme download.",
 )
 @click.option("--token", envvar="ENTEROBASE_TOKEN", help="API token (Enterobase only).")
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_download(
     scheme: str | None,
     scheme_opt: str | None,
@@ -627,9 +560,7 @@ def cmd_download(
     default=4,
     help="Maximum concurrent downloads for scheme update.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_update(
     scheme: str | None,
     update_all_schemes: bool,
@@ -650,23 +581,10 @@ def cmd_update(
     if scheme:
         if force:
             console.print("Refreshing provider catalogs before scheme update ...")
-            for prov in AVAILABLE_PROVIDERS:
-                try:
-                    cache.update_catalog(prov, scheme_type="all", token=token)
-                except (OSError, ValueError):
-                    continue
+            refresh_all_catalogs(cache, token=token)
 
-        matches = _find_catalog_scheme_matches(cache, scheme)
-        if not matches:
-            err_console.print(
-                f"[red]Error:[/red] Could not determine provider for '{scheme}'. "
-                "Scheme may not exist in any catalog."
-            )
-            sys.exit(1)
-        provider, match_info = matches[0]
+        provider, match_info = resolve_scheme_or_exit(cache, scheme)
         scheme_type = str(match_info.get("scheme_type", "mlst"))
-
-        _reject_if_blocked(scheme, match_info, provider)
 
         console.print(
             f"Checking updates for [cyan]{scheme}[/cyan] "
@@ -707,11 +625,7 @@ def cmd_update(
             console.print(
                 "Refreshing provider catalogs before updating cached schemes ..."
             )
-            for prov in AVAILABLE_PROVIDERS:
-                try:
-                    cache.update_catalog(prov, scheme_type="all", token=token)
-                except (OSError, ValueError):
-                    continue
+            refresh_all_catalogs(cache, token=token)
 
         console.print(f"Updating {len(cached_schemes)} cached scheme database(s) ...")
         changed_count = 0
@@ -815,9 +729,7 @@ def cmd_update(
     type=click.Path(path_type=Path),
     help="Output file path.",
 )
-@click.option(
-    "--cache-dir", type=click.Path(path_type=Path), help="Override cache directory."
-)
+@cache_dir_option
 def cmd_export(
     scheme: str | None,
     scheme_opt: str | None,

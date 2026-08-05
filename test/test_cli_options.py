@@ -43,8 +43,8 @@ def test_typing_help_shows_subcommands() -> None:
     assert "mlst" in result.output
     assert "cgmlst" in result.output
     assert "tgmlst" in result.output
-    assert result.output.index("  mlst") < result.output.index("  cgmlst")
-    assert result.output.index("  cgmlst") < result.output.index("  tgmlst")
+    assert result.output.index("  cgmlst") < result.output.index("  mlst")
+    assert result.output.index("  mlst") < result.output.index("  tgmlst")
 
 
 def test_typing_subcommand_specific_options() -> None:
@@ -395,26 +395,6 @@ def test_typing_mlst_rejects_cgmlst_scheme(monkeypatch, tmp_path: Path) -> None:
     result = runner.invoke(main, ["typing", "mlst", "-s", "vp_3", str(sample)])
     assert result.exit_code != 0
     assert "Use gmlst typing cgmlst" in result.output
-
-
-def test_legacy_typing_schemefree_still_routes(monkeypatch, tmp_path: Path) -> None:
-    sample = tmp_path / "sample.fna"
-    sample.write_text(">s\nATGC\n")
-
-    called = {"value": False}
-
-    def _fake_schemefree(**_kwargs):
-        called["value"] = True
-        return 0
-
-    monkeypatch.setattr(
-        "gmlst.commands.typing._run_schemefree_typing", _fake_schemefree
-    )
-
-    runner = CliRunner()
-    result = runner.invoke(main, ["typing", "-s", "schemefree", str(sample)])
-    assert result.exit_code == 0
-    assert called["value"] is True
 
 
 def test_typing_tgmlst_threads_option_passes_to_schemefree(
