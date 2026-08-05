@@ -11,17 +11,15 @@ from gmlst.visual.mst_shared import (
     is_missing,
     normalize_allele,
 )
-
-
-def _edge_sort_key(edge: DirectedEdge) -> tuple[float, int, str, str, int, int]:
-    return (
-        edge.combined_weight,
-        edge.asymmetric_weight,
-        edge.source_label.lower(),
-        edge.target_label.lower(),
-        edge.source,
-        edge.target,
-    )
+from gmlst.visual.mst_shared import (
+    build_children_map as _build_children_map,
+)
+from gmlst.visual.mst_shared import (
+    collect_descendants as _collect_descendants,
+)
+from gmlst.visual.mst_shared import (
+    edge_sort_key as _edge_sort_key,
+)
 
 
 def _normalized_asymmetric_distance(
@@ -146,25 +144,6 @@ def _build_gt_v2_edge_lookup(
                 asymmetric_mismatch_loci=tuple(asymmetric_loci),
             )
     return edge_lookup
-
-
-def _build_children_map(edges: list[DirectedEdge]) -> dict[int, list[int]]:
-    children: dict[int, list[int]] = {}
-    for edge in edges:
-        children.setdefault(edge.source, []).append(edge.target)
-    return children
-
-
-def _collect_descendants(children: dict[int, list[int]], node: int) -> set[int]:
-    descendants = {node}
-    stack = list(children.get(node, []))
-    while stack:
-        current = stack.pop()
-        if current in descendants:
-            continue
-        descendants.add(current)
-        stack.extend(children.get(current, []))
-    return descendants
 
 
 def _contemporary(

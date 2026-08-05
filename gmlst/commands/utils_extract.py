@@ -277,16 +277,9 @@ def _extract_novel_from_tsv_with_retyping(
     )
 
     loci = scheme_obj.loci
-    from gmlst.novel.service import create_novel_writers
 
-    allele_writer, profile_writer = create_novel_writers(
-        novel_allele=True,
-        novel_profile=novel_profile,
-        output_dir=data_dir,
-        loci=loci,
-        allele_writer_cls=NovelAlleleWriter,
-        profile_writer_cls=NovelProfileWriter,
-    )
+    allele_writer = NovelAlleleWriter(data_dir)
+    profile_writer = NovelProfileWriter(data_dir, loci) if novel_profile else None
     for result in results:
         allele_calls: dict[str, str] = {}
         for locus in loci:

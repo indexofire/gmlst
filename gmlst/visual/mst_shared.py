@@ -397,13 +397,19 @@ def _restore_duplicate_leaves(
     loci: list[str],
     *,
     include_missing: bool,
+    method: str = "edmonds",
 ) -> tuple[list[MstNode], list[dict[str, object]]]:
-    from gmlst.visual.mst_edmonds import build_edmonds_mst
+    if method == "grapetree_v2":
+        from gmlst.visual.mst_grapetree import build_grapetree_v2_mst as build_fn
+    elif method == "grapetree_classic":
+        from gmlst.visual.mst_grapetree import build_grapetree_classic_mst as build_fn
+    else:
+        from gmlst.visual.mst_edmonds import build_edmonds_mst as build_fn
 
     grouped_profiles = _group_profiles(nodes)
     representative_nodes = [members[0] for members in grouped_profiles]
 
-    representative_edges = build_edmonds_mst(
+    representative_edges = build_fn(
         representative_nodes,
         loci,
         include_missing=include_missing,
@@ -525,3 +531,33 @@ def _validate_mst(
 
     if len(visited) != node_count:
         raise ValueError("MST must connect all nodes")
+
+
+def edge_sort_key(edge: DirectedEdge) -> tuple[float, int, str, str, int, int]:
+    return (
+        edge.combined_weight,
+        edge.asymmetric_weight,
+        edge.source_label.lower(),
+        edge.target_label.lower(),
+        edge.source,
+        edge.target,
+    )
+
+
+def build_children_map(edges: list[DirectedEdge]) -> dict[int, list[int]]:
+    children: dict[int, list[int]] = {}
+    for edge in edges:
+        children.setdefault(edge.source, []).append(edge.target)
+    return children
+
+
+def collect_descendants(children: dict[int, list[int]], node: int) -> set[int]:
+    descendants = {node}
+    stack = list(children.get(node, []))
+    while stack:
+        current = stack.pop()
+        if current in descendants:
+            continue
+        descendants.add(current)
+        stack.extend(children.get(current, []))
+    return descendants

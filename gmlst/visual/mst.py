@@ -5,7 +5,10 @@ import io
 from typing import Any, Literal, TypedDict, cast
 
 from gmlst.visual.mst_edmonds import build_edmonds_mst
-from gmlst.visual.mst_grapetree import build_grapetree_v2_mst
+from gmlst.visual.mst_grapetree import (
+    build_grapetree_classic_mst,
+    build_grapetree_v2_mst,
+)
 from gmlst.visual.mst_shared import (
     META_COLUMNS,
     _aggregate_profiles,
@@ -54,28 +57,18 @@ def build_mst_from_tsv(
     meta_breakdowns = None
     if aggregate_profiles:
         nodes, meta_breakdowns = _aggregate_profiles(nodes)
-
-    if aggregate_profiles:
         payload_mst_nodes = nodes
         if method == "edmonds":
             edges = build_edmonds_mst(
-                payload_mst_nodes,
-                loci,
-                include_missing=include_missing,
+                payload_mst_nodes, loci, include_missing=include_missing
             )
         elif method == "grapetree_v2":
             edges = build_grapetree_v2_mst(
-                payload_mst_nodes,
-                loci,
-                include_missing=include_missing,
+                payload_mst_nodes, loci, include_missing=include_missing
             )
         elif method == "grapetree_classic":
-            from gmlst.visual.mst_grapetree import build_grapetree_classic_mst
-
             edges = build_grapetree_classic_mst(
-                payload_mst_nodes,
-                loci,
-                include_missing=include_missing,
+                payload_mst_nodes, loci, include_missing=include_missing
             )
         else:
             raise ValueError(
@@ -83,9 +76,7 @@ def build_mst_from_tsv(
             )
     else:
         payload_mst_nodes, edges = _restore_duplicate_leaves(
-            nodes,
-            loci,
-            include_missing=include_missing,
+            nodes, loci, include_missing=include_missing, method=method
         )
 
     payload_nodes = _build_payload(payload_mst_nodes, meta_breakdowns)

@@ -75,6 +75,11 @@ s4\tvpa\t-\t1\t1\t1\t2
 
 METHODS: list[MstMethod] = ["edmonds", "grapetree_v2", "grapetree_classic"]
 
+# grapetree_classic uses Kruskal on raw Hamming distance, so its output
+# should match edmonds on weight/topology. grapetree_v2 uses a composite
+# metric (harmonic weights + branch recrafting) and intentionally differs.
+EDMONDS_COMPATIBLE: list[MstMethod] = ["edmonds", "grapetree_classic"]
+
 DATASETS = [
     ("linear", LINEAR_CHAIN_TSV),
     ("duplicates", DUPLICATE_PROFILES_TSV),
@@ -259,7 +264,7 @@ class TestMstStructuralProperties:
             f"{method} on {tsv_name}: graph contains a cycle"
         )
 
-    @pytest.mark.parametrize("method", METHODS)
+    @pytest.mark.parametrize("method", EDMONDS_COMPATIBLE)
     @pytest.mark.parametrize(("tsv_name", "tsv"), DATASETS)
     def test_total_weight_is_minimal(
         self, method: MstMethod, tsv_name: str, tsv: str
@@ -273,7 +278,7 @@ class TestMstStructuralProperties:
             f"{method} on {tsv_name}: total weight is not minimal"
         )
 
-    @pytest.mark.parametrize("method", METHODS)
+    @pytest.mark.parametrize("method", EDMONDS_COMPATIBLE)
     def test_linear_chain_known_topology(self, method: MstMethod) -> None:
         _, edges, _ = build_mst_from_tsv(
             LINEAR_CHAIN_TSV,
@@ -298,7 +303,7 @@ class TestMstStructuralProperties:
         edge_set = _extract_edge_set(edges)
         assert any(weight == 0 for _, _, weight in edge_set)
 
-    @pytest.mark.parametrize("method", METHODS)
+    @pytest.mark.parametrize("method", EDMONDS_COMPATIBLE)
     def test_star_topology_minimum_weight(self, method: MstMethod) -> None:
         _, edges, _ = build_mst_from_tsv(
             STAR_TOPOLOGY_TSV,
@@ -318,45 +323,83 @@ class TestMstStructuralProperties:
 
 
 class TestMstCrossMethodComparison:
-    """Compare all 3 methods on the same datasets."""
+    """Compare MST methods on the same datasets."""
+
+    ALL_DATASETS = [
+        ("linear", LINEAR_CHAIN_TSV),
+        ("duplicates", DUPLICATE_PROFILES_TSV),
+        ("missing", MISSING_DATA_TSV),
+        ("subtree", SUBTREE_RECRAFTING_TSV),
+        ("identical", ALL_IDENTICAL_TSV),
+        ("star", STAR_TOPOLOGY_TSV),
+        ("medium", MEDIUM_DATASET_TSV),
+        ("ties", WEIGHTED_TIE_TSV),
+    ]
+
+    UNIQUE_MST_DATASETS = [
+        ("linear", LINEAR_CHAIN_TSV),
+        ("identical", ALL_IDENTICAL_TSV),
+        ("star", STAR_TOPOLOGY_TSV),
+    ]
+
+    @pytest.mark.parametrize(("tsv_name", "tsv"), ALL_DATASETS)
+    def test_edmonds_and_classic_match_weight(self, tsv_name: str, tsv: str) -> None:
+        _, edm_edges, _ = build_mst_from_tsv(
+            tsv, include_missing=False, method="edmonds"
+        )
+        _, cls_edges, _ = build_mst_from_tsv(
+            tsv, include_missing=False, method="grapetree_classic"
+        )
+        assert _total_weight(edm_edges) == _total_weight(cls_edges), (
+            f"{tsv_name}: edmonds {_total_weight(edm_edges)} != "
+            f"classic {_total_weight(cls_edges)}"
+        )
+
+    @pytest.mark.parametrize(("tsv_name", "tsv"), UNIQUE_MST_DATASETS)
+    def test_edmonds_and_classic_match_topology(self, tsv_name: str, tsv: str) -> None:
+        _, edm_edges, _ = build_mst_from_tsv(
+            tsv, include_missing=False, method="edmonds"
+        )
+        _, cls_edges, _ = build_mst_from_tsv(
+            tsv, include_missing=False, method="grapetree_classic"
+        )
+        assert _extract_edge_set(edm_edges) == _extract_edge_set(cls_edges), (
+            f"{tsv_name}: topology differs between edmonds and classic"
+        )
+
+    @pytest.mark.parametrize(("tsv_name", "tsv"), ALL_DATASETS)
+    def test_v2_weight_within_bounds(self, tsv_name: str, tsv: str) -> None:
+        minimum = _minimum_possible_total_weight(tsv)
+        _, v2_edges, _ = build_mst_from_tsv(
+            tsv, include_missing=False, method="grapetree_v2"
+        )
+        v2_weight = _total_weight(v2_edges)
+        assert v2_weight <= minimum * 2, (
+            f"{tsv_name}: grapetree_v2 weight {v2_weight} exceeds 2x minimum {minimum}"
+        )
 
     @pytest.mark.parametrize(
         ("tsv_name", "tsv"),
         [
-            ("linear", LINEAR_CHAIN_TSV),
             ("duplicates", DUPLICATE_PROFILES_TSV),
-            ("missing", MISSING_DATA_TSV),
-            ("subtree", SUBTREE_RECRAFTING_TSV),
             ("identical", ALL_IDENTICAL_TSV),
-            ("star", STAR_TOPOLOGY_TSV),
-            ("medium", MEDIUM_DATASET_TSV),
         ],
     )
-    def test_total_weights_match_across_methods(self, tsv_name: str, tsv: str) -> None:
-        results: dict[str, int] = {}
+    def test_all_methods_preserve_zero_weight_edges(
+        self, tsv_name: str, tsv: str
+    ) -> None:
         for method in METHODS:
             _, edges, _ = build_mst_from_tsv(tsv, include_missing=False, method=method)
-            results[method] = _total_weight(edges)
-
-        values = list(results.values())
-        assert len(set(values)) == 1, f"{tsv_name}: total weights differ: {results}"
-
-    @pytest.mark.parametrize(
-        ("tsv_name", "tsv"),
-        [
-            ("linear", LINEAR_CHAIN_TSV),
-            ("identical", ALL_IDENTICAL_TSV),
-            ("star", STAR_TOPOLOGY_TSV),
-        ],
-    )
-    def test_topology_matches_when_no_ties(self, tsv_name: str, tsv: str) -> None:
-        edge_sets: dict[str, set[tuple[str, str, int]]] = {}
-        for method in METHODS:
-            _, edges, _ = build_mst_from_tsv(tsv, include_missing=False, method=method)
-            edge_sets[method] = _extract_edge_set(edges)
-
-        reference = edge_sets[METHODS[0]]
-        for method in METHODS[1:]:
-            assert edge_sets[method] == reference, (
-                f"{tsv_name}: {method} topology differs from {METHODS[0]}"
+            assert any(cast(int, e["weight"]) == 0 for e in edges), (
+                f"{tsv_name}/{method}: expected at least one zero-weight edge"
             )
+
+    @pytest.mark.parametrize(("tsv_name", "tsv"), ALL_DATASETS)
+    def test_all_methods_produce_same_node_count(self, tsv_name: str, tsv: str) -> None:
+        counts: dict[str, int] = {}
+        for method in METHODS:
+            nodes, _, _ = build_mst_from_tsv(tsv, include_missing=False, method=method)
+            counts[method] = len(nodes)
+        assert len(set(counts.values())) == 1, (
+            f"{tsv_name}: node counts differ across methods: {counts}"
+        )

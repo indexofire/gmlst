@@ -242,13 +242,62 @@ def _build_table_rows(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+def _cluster_by_adjacency(
+    nodes: list[dict[str, Any]],
+    adjacency: dict[int, list[int]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    nodes_by_id = {int(node["id"]): node for node in nodes}
+    cluster_by_node: dict[int, int] = {}
+    cluster_summary: list[dict[str, Any]] = []
+    next_cluster_id = 0
+    for node in nodes:
+        node_id = int(node["id"])
+        if node_id in cluster_by_node:
+            continue
+        stack = [node_id]
+        members: list[dict[str, Any]] = []
+        while stack:
+            current = stack.pop()
+            if current in cluster_by_node:
+                continue
+            cluster_by_node[current] = next_cluster_id
+            current_node = nodes_by_id[current]
+            members.append(current_node)
+            stack.extend(
+                neighbor
+                for neighbor in adjacency[current]
+                if neighbor not in cluster_by_node
+            )
+
+        member_names = [
+            str(member)
+            for node_entry in members
+            for member in node_entry.get("members", [])
+        ]
+        cluster_summary.append(
+            {
+                "cluster_id": next_cluster_id,
+                "node_count": len(members),
+                "sample_count": len(member_names),
+                "members": member_names,
+            }
+        )
+        next_cluster_id += 1
+
+    clustered_nodes = []
+    for node in nodes:
+        clustered_node = dict(node)
+        clustered_node["cluster_id"] = cluster_by_node[int(node["id"])]
+        clustered_nodes.append(clustered_node)
+    return clustered_nodes, cluster_summary
+
+
 def _cluster_nodes(
     nodes: list[dict[str, Any]],
     edges: list[dict[str, Any]],
     *,
     threshold: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    nodes_by_id = {int(node["id"]): node for node in nodes}
     adjacency = {int(node["id"]): [] for node in nodes}
     for edge in edges:
         weight = int(edge["weight"])
@@ -258,50 +307,7 @@ def _cluster_nodes(
         target = int(edge["target"])
         adjacency[source].append(target)
         adjacency[target].append(source)
-
-    cluster_by_node: dict[int, int] = {}
-    cluster_summary: list[dict[str, Any]] = []
-    next_cluster_id = 0
-    for node in nodes:
-        node_id = int(node["id"])
-        if node_id in cluster_by_node:
-            continue
-        stack = [node_id]
-        members: list[dict[str, Any]] = []
-        while stack:
-            current = stack.pop()
-            if current in cluster_by_node:
-                continue
-            cluster_by_node[current] = next_cluster_id
-            current_node = nodes_by_id[current]
-            members.append(current_node)
-            stack.extend(
-                neighbor
-                for neighbor in adjacency[current]
-                if neighbor not in cluster_by_node
-            )
-
-        member_names = [
-            str(member)
-            for node_entry in members
-            for member in node_entry.get("members", [])
-        ]
-        cluster_summary.append(
-            {
-                "cluster_id": next_cluster_id,
-                "node_count": len(members),
-                "sample_count": len(member_names),
-                "members": member_names,
-            }
-        )
-        next_cluster_id += 1
-
-    clustered_nodes = []
-    for node in nodes:
-        clustered_node = dict(node)
-        clustered_node["cluster_id"] = cluster_by_node[int(node["id"])]
-        clustered_nodes.append(clustered_node)
-    return clustered_nodes, cluster_summary
+    return _cluster_by_adjacency(nodes, adjacency)
 
 
 def _cluster_nodes_by_matrix(
@@ -310,57 +316,13 @@ def _cluster_nodes_by_matrix(
     *,
     threshold: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    nodes_by_id = {int(node["id"]): node for node in nodes}
     adjacency = {int(node["id"]): [] for node in nodes}
     for row_index, row in enumerate(matrix):
         for col_index, value in enumerate(row):
             if row_index == col_index or value > threshold:
                 continue
             adjacency[row_index].append(col_index)
-
-    cluster_by_node: dict[int, int] = {}
-    cluster_summary: list[dict[str, Any]] = []
-    next_cluster_id = 0
-    for node in nodes:
-        node_id = int(node["id"])
-        if node_id in cluster_by_node:
-            continue
-        stack = [node_id]
-        members: list[dict[str, Any]] = []
-        while stack:
-            current = stack.pop()
-            if current in cluster_by_node:
-                continue
-            cluster_by_node[current] = next_cluster_id
-            current_node = nodes_by_id[current]
-            members.append(current_node)
-            stack.extend(
-                neighbor
-                for neighbor in adjacency[current]
-                if neighbor not in cluster_by_node
-            )
-
-        member_names = [
-            str(member)
-            for node_entry in members
-            for member in node_entry.get("members", [])
-        ]
-        cluster_summary.append(
-            {
-                "cluster_id": next_cluster_id,
-                "node_count": len(members),
-                "sample_count": len(member_names),
-                "members": member_names,
-            }
-        )
-        next_cluster_id += 1
-
-    clustered_nodes = []
-    for node in nodes:
-        clustered_node = dict(node)
-        clustered_node["cluster_id"] = cluster_by_node[int(node["id"])]
-        clustered_nodes.append(clustered_node)
-    return clustered_nodes, cluster_summary
+    return _cluster_by_adjacency(nodes, adjacency)
 
 
 def create_visual_app(*, title: str) -> Flask:

@@ -94,6 +94,20 @@ Why MST matters here:
 - it works well for cgMLST profile tables where pairwise differences are the main signal
 - it lets you explore clusters before moving to a larger phylogenetic workflow
 
+### MST Methods
+
+Three MST algorithms are available:
+
+| Method | Algorithm | Optimizes | Best for |
+|---|---|---|---|
+| `edmonds` | Edmonds arborescence + subtree recraft | Minimum total Hamming distance | Deterministic results, strict distance minimization |
+| `grapetree_v2` | Edmonds + branch recrafting (harmonic/eBurst weights) | Composite population-structure metric | **Matching GrapeTree software output** (default in GrapeTree) |
+| `grapetree_classic` | Kruskal MST on Hamming distance | Minimum total Hamming distance | Fast computation on large datasets |
+
+**grapetree_v2** uses a branch recrafting heuristic that trades total Hamming distance for better-resolved subtree structure. This means grapetree_v2 may produce a tree with higher total edge weight than edmonds or grapetree_classic, but with a topology that better reflects population clustering. In testing, grapetree_v2's total weight stays within 2× of the theoretical minimum.
+
+On simple datasets (≤6 samples, no weight ties), all three methods produce identical trees. On larger or more polymorphic datasets, grapetree_v2 diverges from the others due to its composite optimization target.
+
 ## Layout Options
 
 The web UI supports two layouts:

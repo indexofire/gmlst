@@ -11,17 +11,15 @@ from gmlst.visual.mst_shared import (
     asymmetric_profile_distance,
     profile_distance,
 )
-
-
-def _edge_sort_key(edge: DirectedEdge) -> tuple[float, int, str, str, int, int]:
-    return (
-        edge.combined_weight,
-        edge.asymmetric_weight,
-        edge.source_label.lower(),
-        edge.target_label.lower(),
-        edge.source,
-        edge.target,
-    )
+from gmlst.visual.mst_shared import (
+    build_children_map as _build_children_map,
+)
+from gmlst.visual.mst_shared import (
+    collect_descendants as _collect_descendants,
+)
+from gmlst.visual.mst_shared import (
+    edge_sort_key as _edge_sort_key,
+)
 
 
 def _build_directed_edges(
@@ -63,25 +61,6 @@ def _build_directed_edges(
                 )
             )
     return edges
-
-
-def _build_children_map(edges: list[DirectedEdge]) -> dict[int, list[int]]:
-    children: dict[int, list[int]] = {}
-    for edge in edges:
-        children.setdefault(edge.source, []).append(edge.target)
-    return children
-
-
-def _collect_descendants(children: dict[int, list[int]], node: int) -> set[int]:
-    descendants = {node}
-    stack = list(children.get(node, []))
-    while stack:
-        current = stack.pop()
-        if current in descendants:
-            continue
-        descendants.add(current)
-        stack.extend(children.get(current, []))
-    return descendants
 
 
 def _build_parent_map(edges: list[DirectedEdge]) -> dict[int, int]:
@@ -449,7 +428,8 @@ def _build_mst_edges(
             best_score = candidate_score
             best_edges = candidate_edges
 
-    assert best_edges is not None
+    if best_edges is None:
+        raise RuntimeError("Edmonds algorithm produced no valid arborescence")
     best_edges = _recraft_branching(
         nodes,
         directed_edges,
@@ -504,7 +484,7 @@ def build_edmonds_mst_rootless(
                 target=i,
                 weight=0,
                 asymmetric_weight=0,
-                combined_weight=-1.0,
+                combined_weight=float("inf"),  # prefer real edges over super-root
                 source_label="__super_root__",
                 target_label=nodes[i].label,
                 mismatch_loci=(),
