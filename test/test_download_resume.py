@@ -98,7 +98,20 @@ def test_fetch_json_retries_on_invalid_json_response(
                 raise ValueError("invalid json")
             return {"ok": True}
 
-    monkeypatch.setattr("requests.get", lambda *_args, **_kwargs: _FakeResponse())
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.headers = {}
+
+        def get(self, *_args: object, **_kwargs: object) -> object:
+            return _FakeResponse()
+
+        def __enter__(self) -> _FakeSession:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    monkeypatch.setattr(dl, "_public_session", _FakeSession)
     monkeypatch.setattr(dl.time, "sleep", lambda _seconds: None)
 
     assert dl.fetch_json("https://example.com/api", retries=2, retry_delay=0) == {

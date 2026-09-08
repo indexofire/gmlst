@@ -104,7 +104,20 @@ class TestGetJsonRetry:
             mock_resp.json = lambda: {"databases": []}
             return mock_resp
 
-        monkeypatch.setattr("requests.get", flaky_get)
+        class _FakeSession:
+            def __init__(self) -> None:
+                self.headers = {}
+
+            def get(self, url: str, **kwargs: object) -> object:
+                return flaky_get(url, **kwargs)
+
+            def __enter__(self) -> _FakeSession:
+                return self
+
+            def __exit__(self, *_args: object) -> None:
+                return None
+
+        monkeypatch.setattr("gmlst.database.download._public_session", _FakeSession)
 
         result = bigsdb._get_json("https://rest.pubmlst.org/db")
 
@@ -123,7 +136,20 @@ class TestGetJsonRetry:
         def always_fail(url: str, **kwargs: object) -> object:
             raise requests.ConnectionError("persistent network failure")
 
-        monkeypatch.setattr("requests.get", always_fail)
+        class _FakeSession:
+            def __init__(self) -> None:
+                self.headers = {}
+
+            def get(self, url: str, **kwargs: object) -> object:
+                return always_fail(url, **kwargs)
+
+            def __enter__(self) -> _FakeSession:
+                return self
+
+            def __exit__(self, *_args: object) -> None:
+                return None
+
+        monkeypatch.setattr("gmlst.database.download._public_session", _FakeSession)
 
         with pytest.raises(RuntimeError, match="JSON fetch failed"):
             bigsdb._get_json("https://rest.pubmlst.org/db")

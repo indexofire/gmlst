@@ -58,6 +58,10 @@ class NovelAlleleWriter:
         Returns:
             Assigned allele ID (e.g., "n1", "n2") or None if not novel
         """
+        # Locus names become filenames ({locus}_novel.fasta); reject values
+        # that could escape the output directory (e.g. from untrusted JSON).
+        if not locus or "/" in locus or "\\" in locus or locus in (".", ".."):
+            return None
         if not sequence:
             return None
 

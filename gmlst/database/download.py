@@ -28,6 +28,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
+import requests
+
 from gmlst.database.url_guard import assert_public_url
 
 logger = logging.getLogger(__name__)
@@ -230,6 +232,12 @@ def download_file(
     connections = max_connections if max_connections is not None else 4
     req_headers = headers or {}
 
+    # Credential headers must not leak into the process argument list
+    # (visible to other local users via ps on shared machines), so skip
+    # the external-tool backends entirely when headers are present.
+    if req_headers and tool == "auto":
+        tool = "requests"
+
     backends: list[tuple[str, Callable[[], bool]]] = [
         (
             "aria2c",
@@ -293,6 +301,27 @@ def download_file(
     download_file_requests(url, dest, timeout=timeout, headers=req_headers or None)
 
 
+class _RedirectValidatingSession(requests.Session):
+    """Session that re-checks every redirect hop against the SSRF guard.
+
+    requests invokes ``rebuild_auth`` on each redirect hop (before the
+    redirected request is sent), making it a reliable per-hop hook. URLs
+    from untrusted API responses therefore stay guarded even after a
+    3xx redirect to a different host.
+    """
+
+    def rebuild_auth(
+        self,
+        prepared_request: requests.PreparedRequest,
+        response: requests.Response,
+    ) -> None:
+        assert_public_url(str(prepared_request.url))
+
+
+def _public_session() -> requests.Session:
+    return _RedirectValidatingSession()
+
+
 def download_file_requests(
     url: str,
     dest: Path,
@@ -310,8 +339,6 @@ def download_file_requests(
 
     Raises RuntimeError after exhausting retries.
     """
-    import requests
-
     assert_public_url(url)
 
     req_headers = headers or {}
@@ -320,11 +347,14 @@ def download_file_requests(
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.get(url, timeout=timeout, stream=True, headers=req_headers)
-            resp.raise_for_status()
-            with dest.open("wb") as fh:
-                for chunk in resp.iter_content(chunk_size=chunk_size):
-                    fh.write(chunk)
+            with _public_session() as session:
+                resp = session.get(
+                    url, timeout=timeout, stream=True, headers=req_headers
+                )
+                resp.raise_for_status()
+                with dest.open("wb") as fh:
+                    for chunk in resp.iter_content(chunk_size=chunk_size):
+                        fh.write(chunk)
             return
         except requests.RequestException as exc:
             if attempt == retries:
@@ -354,15 +384,14 @@ def fetch_json(
 
     Used by bigsdb (PubMLST/Pasteur) for API calls.
     """
-    import requests
-
     assert_public_url(url)
 
     req_headers = headers or {}
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.get(url, timeout=timeout, headers=req_headers)
+            with _public_session() as session:
+                resp = session.get(url, timeout=timeout, headers=req_headers)
             resp.raise_for_status()
             return resp.json()
         except (requests.RequestException, ValueError) as exc:

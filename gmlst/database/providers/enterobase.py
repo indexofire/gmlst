@@ -417,9 +417,9 @@ class EnterobaseProvider:
 
         loci = []
         for line in resp.text.split("\n"):
-            match = re.search(r'href="([^"]+)\.fasta\.gz"', line)
+            match = re.search(r'href="([^"/]+)\.fasta\.gz"', line)
             if match:
-                locus_name = match.group(1)
+                locus_name = Path(match.group(1)).name
                 if not locus_name.endswith("_ref") and not locus_name.endswith(".ref"):
                     loci.append(locus_name)
         return sorted(loci)

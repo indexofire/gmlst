@@ -7,6 +7,16 @@ The guard is applied at the HTTP chokepoints in :mod:`gmlst.database.download`
 external API response (e.g. BIGSdb JSON) is validated before any network
 access happens.
 
+Known limitations (accepted for a local CLI tool):
+
+- External download tools (aria2c/curl/wget) follow HTTP redirects without
+  re-validation; only the initial URL is guarded on those paths. The Python
+  ``requests`` backend validates every redirect hop via a session hook.
+- The guard resolves the hostname once via ``getaddrinfo`` and the HTTP
+  client resolves it again independently, so a DNS-rebinding attacker who
+  controls the provider's DNS could bypass the check. This requires a
+  compromised public DNS setup and is considered out of scope here.
+
 The check can be bypassed globally by setting the environment variable
 ``GMLST_ALLOW_PRIVATE_URLS=1`` (or ``true``/``yes``/``on``). This is intended
 for the documented ``GMLST_PRIVATE_BIGSDB_URL`` use case (e.g. a local

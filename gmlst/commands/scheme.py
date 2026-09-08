@@ -4,20 +4,12 @@ from __future__ import annotations
 
 import csv
 import re
+import shutil
 import sys
 from pathlib import Path
 
 import click
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    SpinnerColumn,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
 
 from gmlst.commands.common import (
     HELP_SETTINGS,
@@ -26,6 +18,7 @@ from gmlst.commands.common import (
     console,
     emit_output_table,
     err_console,
+    make_progress,
 )
 from gmlst.commands.scheme_common import (
     DOWNLOAD_TOOL_CHOICES,
@@ -148,9 +141,15 @@ def cmd_list(
             return
 
     # Sort schemes by name (natural sort: _1, _2, _10 instead of _1, _10, _2)
+    downloaded = {
+        s.scheme_name
+        for s in all_schemes
+        if cache.is_downloaded(s.scheme_name, s.provider)
+    }
+
     all_schemes.sort(
         key=lambda s: (
-            not cache.is_downloaded(s.scheme_name, s.provider),
+            s.scheme_name not in downloaded,
             _natural_sort_key(s.scheme_name),
         )
     )
@@ -164,7 +163,7 @@ def cmd_list(
             "provider": s.provider,
             "display_name": s.display_name,
             "extra": s.extra,
-            "downloaded": cache.is_downloaded(s.scheme_name, s.provider),
+            "downloaded": s.scheme_name in downloaded,
         }
         for s in all_schemes
     ]
@@ -630,15 +629,7 @@ def cmd_update(
         console.print(f"Updating {len(cached_schemes)} cached scheme database(s) ...")
         changed_count = 0
         failed_count = 0
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TaskProgressColumn(),
-            TimeElapsedColumn(),
-            transient=False,
-        )
+        progress = make_progress()
         with progress:
             task = progress.add_task("Updating schemes", total=len(cached_schemes))
             for item in cached_schemes:
@@ -683,14 +674,7 @@ def cmd_update(
             console.print("Updating all catalogs ...")
         total = 0
         providers_list = list(AVAILABLE_PROVIDERS)
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TaskProgressColumn(),
-            transient=False,
-        )
+        progress = make_progress()
         with progress:
             task = progress.add_task("Refreshing catalogs", total=len(providers_list))
             for prov in providers_list:
@@ -748,18 +732,20 @@ def cmd_export(
         raise click.UsageError("Scheme name is required.")
     cache = DatabaseCache(cache_dir)
 
-    # Try to find scheme in any provider
+    provider = next(
+        (
+            prov
+            for prov in [*AVAILABLE_PROVIDERS, "local"]
+            if cache.is_downloaded(scheme, prov)
+        ),
+        None,
+    )
     scheme_obj = None
-    provider = None
-
-    for prov in list(AVAILABLE_PROVIDERS) + ["local"]:
+    if provider is not None:
         try:
-            s = cache.load_scheme(scheme, provider=prov)
-            scheme_obj = s
-            provider = prov
-            break
+            scheme_obj = cache.load_scheme(scheme, provider=provider)
         except (OSError, ValueError, KeyError):
-            continue
+            scheme_obj = None
 
     if not scheme_obj:
         err_console.print(f"[red]Error:[/red] Scheme '{scheme}' not found.")
@@ -772,9 +758,6 @@ def cmd_export(
     console.print(f"Exporting [cyan]{scheme}[/cyan] to {format} format...")
 
     if format.lower() == "original":
-        # Simple copy
-        import shutil
-
         shutil.copy(scheme_obj.profile_file, output)
 
     elif format.lower() == "grapetree":

@@ -281,28 +281,29 @@ class BigSdbProvider:
                 continue
             url_dest_pairs.append((f"{locus_url}/alleles_fasta", dest_file))
 
-        if url_dest_pairs:
-            logger.info(
-                "[%s] Downloading %d locus FASTA files ...",
-                self._name,
-                len(url_dest_pairs),
-            )
-            download_required_files(
-                url_dest_pairs,
-                provider_name=self._name,
-                download_tool=download_tool,
-                max_connections=max_connections or 4,
-                headers=self._auth_headers(),
-            )
-        if profile_future is not None:
-            try:
-                profile_future.result()
-                profile_tmp.replace(profile_dest)
-            except (OSError, RuntimeError, ValueError):
-                profile_tmp.unlink(missing_ok=True)
-                raise
-            finally:
-                assert profile_executor is not None
+        try:
+            if url_dest_pairs:
+                logger.info(
+                    "[%s] Downloading %d locus FASTA files ...",
+                    self._name,
+                    len(url_dest_pairs),
+                )
+                download_required_files(
+                    url_dest_pairs,
+                    provider_name=self._name,
+                    download_tool=download_tool,
+                    max_connections=max_connections or 4,
+                    headers=self._auth_headers(),
+                )
+            if profile_future is not None:
+                try:
+                    profile_future.result()
+                    profile_tmp.replace(profile_dest)
+                except (OSError, RuntimeError, ValueError):
+                    profile_tmp.unlink(missing_ok=True)
+                    raise
+        finally:
+            if profile_executor is not None:
                 profile_executor.shutdown(wait=True)
 
         # Write metadata
