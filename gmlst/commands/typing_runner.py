@@ -1,3 +1,5 @@
+"""Typing execution driver — serial and sample-parallel run orchestration."""
+
 from __future__ import annotations
 
 import threading
@@ -62,6 +64,15 @@ def execute_typing_run(
     console,
     quiet: bool = False,
 ) -> list:
+    """Run typing over all prepared samples, returning results in input order.
+
+    With ``max_workers > 1`` (and more than one sample) samples run in a
+    thread pool: per-sample backend threads are forced to 1 (a warning is
+    printed if *threads* differed), kma/minimap2 get a warm-up call to build
+    shared indexes first, and *on_result* is invoked in original input order
+    via an ordered flush. Otherwise a single serial ``run_typing_fn`` call
+    handles the whole batch with *threads* backend threads.
+    """
     total = len(prepared_samples)
     progress = _make_progress(quiet and total > 1)
     show_progress = progress is not None and total > 1

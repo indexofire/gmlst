@@ -1,3 +1,5 @@
+"""Runtime normalization for cgMLST typing (backend, mode, and thread policy)."""
+
 from __future__ import annotations
 
 import sys
@@ -20,6 +22,13 @@ def normalize_cgmlst_fastq_runtime(
     console,
     err_console,
 ) -> tuple[str, str, int]:
+    """Apply FASTQ-aware runtime adjustments, returning (backend, mode, threads).
+
+    FASTQ input forces a switch to kma for assembly-only backends
+    (blastn/nucmer/minimap2). For cgMLST on FASTQ: chewbbaca call policy is
+    rejected (exits 1), cgmlst_mode is coerced to "fast", and single-threaded
+    serial kma runs may be bumped to the auto thread count.
+    """
     contains_fastq = contains_fastq_samples_fn(prepared_samples)
 
     if contains_fastq and backend.lower() in ("blastn", "nucmer", "minimap2"):

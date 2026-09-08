@@ -1,3 +1,5 @@
+"""Novel allele/profile extraction logic behind `gmlst utils extract`."""
+
 from __future__ import annotations
 
 import csv

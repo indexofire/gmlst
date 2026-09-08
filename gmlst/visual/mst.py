@@ -1,3 +1,5 @@
+"""Public MST builders — parse profile TSV into trees, matrices, and comparisons."""
+
 from __future__ import annotations
 
 import csv
@@ -41,6 +43,15 @@ def build_mst_from_tsv(
     aggregate_profiles: bool = False,
     method: MstMethod = "edmonds",
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str]]:
+    """Build a minimum spanning tree from profile TSV text.
+
+    Returns ``(nodes, edges, metadata_fields)``. With
+    ``aggregate_profiles=True`` identical profiles collapse into one MST
+    node and *method* selects the backend (edmonds, grapetree_v2,
+    grapetree_classic); otherwise *method* is ignored and duplicate leaves
+    are re-attached via :func:`_restore_duplicate_leaves`. A single-node
+    input yields an edgeless tree; the result is validated before return.
+    """
     if not tsv_text.strip():
         raise ValueError("No TSV content provided")
     if method not in VALID_MST_METHODS:
@@ -99,6 +110,11 @@ def build_distance_matrix_from_tsv(
     aggregate_profiles: bool = False,
     metadata_text: str | None = None,
 ) -> tuple[list[str], list[list[int]], list[dict[str, object]], list[str]]:
+    """Build the pairwise profile-distance matrix from profile TSV text.
+
+    Returns ``(labels, matrix, payload_nodes, metadata_fields)``; identical
+    profiles collapse into one row when ``aggregate_profiles=True``.
+    """
     if not tsv_text.strip():
         raise ValueError("No TSV content provided")
 
@@ -137,6 +153,13 @@ def build_locus_diff_from_tsv(
     include_missing: bool,
     metadata_text: str | None = None,
 ) -> dict[str, Any]:
+    """Compare two samples locus by locus.
+
+    Returns left/right labels, the profile distance, and per-locus
+    difference records typed as both_missing / left_missing /
+    right_missing / allele_difference. Raises ValueError when either
+    label is absent from the input.
+    """
     if not tsv_text.strip():
         raise ValueError("No TSV content provided")
 
@@ -199,6 +222,11 @@ def build_allele_heatmap_from_tsv(
 ) -> tuple[
     list[str], list[str], list[list[dict[str, str]]], list[dict[str, object]], list[str]
 ]:
+    """Build the per-sample x per-locus allele heatmap from profile TSV text.
+
+    Returns ``(labels, loci, cells, payload_nodes, metadata_fields)`` where
+    each cell carries its raw allele value and a missing/present state.
+    """
     if not tsv_text.strip():
         raise ValueError("No TSV content provided")
 
@@ -235,6 +263,12 @@ def build_result_comparison_from_tsv(
     left_tsv: str,
     right_tsv: str,
 ) -> dict[str, Any]:
+    """Compare two typing result tables sample by sample.
+
+    Matches samples by ID, then reports per-sample ST equality, differing
+    locus counts, and left/right-only samples in ``{"summary", "rows"}``.
+    Requires an ST column; duplicate sample IDs are rejected.
+    """
     if not left_tsv.strip() or not right_tsv.strip():
         raise ValueError("Both left_tsv and right_tsv are required")
 

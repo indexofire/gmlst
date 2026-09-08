@@ -1,3 +1,12 @@
+"""Gene prediction via Pyrodigal with Prodigal-CLI and heuristic fallbacks.
+
+Wraps Prodigal-style CDS prediction in three tiers: the Cython
+``pyrodigal`` module, the external ``prodigal`` binary, and a
+window-splitting heuristic used only when neither is available. Used by
+cgMLST exact-hash calling, chewBBACA-style policies, and scheme-free
+(tgmlst) allele discovery.
+"""
+
 from __future__ import annotations
 
 import shutil
@@ -18,6 +27,8 @@ _FALLBACK_WINDOW_SIZE = 900
 
 @dataclass(frozen=True)
 class PredictedGene:
+    """One predicted CDS with its sequence and genomic coordinates."""
+
     sample_id: str
     gene_id: str
     sequence: str
@@ -30,10 +41,16 @@ class PredictedGene:
 
     @property
     def key(self) -> str:
+        """Stable identity key combining sample and gene ID."""
         return f"{self.sample_id}|{self.gene_id}"
 
 
 def create_pyrodigal_training_file(sample_path: Path, output_path: Path) -> Path:
+    """Train Pyrodigal on *sample_path* contigs and dump a ``.trn`` file.
+
+    Raises ``ImportError`` when pyrodigal is missing and ``ValueError``
+    when the sample contains no sequences. Returns *output_path*.
+    """
     if pyrodigal is None:
         raise ImportError("pyrodigal is required to create training files")
     records = list(FastaReader(sample_path).records())
@@ -51,6 +68,13 @@ def create_pyrodigal_training_file(sample_path: Path, output_path: Path) -> Path
 
 
 class ProdigalPredictor:
+    """Predict CDS genes with pyrodigal, falling back to prodigal/CLI/heuristic.
+
+    Tiers: the ``pyrodigal`` module (meta or trained ``single`` mode with an
+    optional training file), the external ``prodigal`` binary, and a
+    window-splitting placeholder used only when neither tool is available.
+    """
+
     def __init__(
         self,
         tool: str = "pyrodigal",
@@ -74,6 +98,13 @@ class ProdigalPredictor:
         self.timeout_sec = timeout_sec
 
     def predict(self, sample_path: Path, sample_id: str) -> list[PredictedGene]:
+        """Predict genes for a sample, applying enabled fallbacks on failure.
+
+        On pyrodigal errors, retries meta mode when single-mode training was
+        the problem, then falls back to the prodigal CLI; when
+        *enable_fallback* is off the original error propagates. Genes
+        outside ``[min_gene_len, max_gene_len]`` are filtered out.
+        """
         if self.tool == "pyrodigal":
             try:
                 return self._predict_with_pyrodigal(sample_path, sample_id)

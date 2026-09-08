@@ -1,3 +1,12 @@
+"""CDS prediction support for cgMLST workflows.
+
+Coordinates Pyrodigal/Prodigal gene prediction used by exact-hash allele
+calling and chewBBACA-style classification: resolves the training file to
+use, runs prediction for a sample, and exports predicted CDS coordinates.
+All implementation functions take injected callables/loggers so the core
+package can wire them via adapter modules without import cycles.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -16,6 +25,18 @@ def resolve_cgmlst_cds_training_file_impl(
     scheme_precomputed_dir_fn,
     logger,
 ) -> Path | None:
+    """Resolve the Pyrodigal training file to use for CDS prediction.
+
+    Resolution order:
+    1. ``GMLST_CGMLST_CDS_TRAINING_FILE`` (via *configured_training_file_fn*)
+    2. ``<scheme>/pre_computed/pyrodigal_training.trn`` next to the allele
+       files, if it already exists
+    3. In ``"single"`` mode only: auto-create it by training on the first
+       existing sample file; other modes return ``None`` on a miss.
+
+    Returns ``None`` (never raises) when no training file can be resolved;
+    callers then fall back to meta mode or untrained prediction.
+    """
     configured = configured_training_file_fn()
     if configured is not None:
         target = configured
@@ -56,6 +77,13 @@ def predict_cds_genes_impl(
     cds_training_file: Path | None,
     cds_closed_ends: bool,
 ) -> list[Any]:
+    """Predict CDS genes for *sample_path* and return ``PredictedGene`` objects.
+
+    Uses a Pyrodigal-backed :class:`ProdigalPredictor` with fallback to the
+    external ``prodigal`` binary. *cds_prediction_mode* selects Prodigal's
+    ``meta``/``single`` strategy; *cds_closed_ends* suppresses partial genes
+    at contig edges.
+    """
     from gmlst.core.gene_predictor import ProdigalPredictor
 
     predictor = ProdigalPredictor(
@@ -78,6 +106,12 @@ def write_cds_coordinates_impl(
     predict_cds_genes_fn,
     logger,
 ) -> None:
+    """Write a TSV of predicted CDS coordinates for all FASTA-only samples.
+
+    Skips FASTQ samples and paired inputs (gene prediction requires an
+    assembly). Creates parent directories and writes one row per predicted
+    gene with coordinates, strand, partial flags, and run settings.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")

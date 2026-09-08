@@ -1,3 +1,5 @@
+"""Custom scheme commands — create and update local schemes from novel data."""
+
 from __future__ import annotations
 
 import csv
@@ -12,6 +14,7 @@ from gmlst.commands.common import (
     HELP_SETTINGS,
     cache_dir_option,
     console,
+    deprecated_scheme_option,
     emit_output_json,
     err_console,
 )
@@ -180,8 +183,7 @@ def cmd_create(
             novel_profiles=novel_profiles,
         )
 
-        meta_file = custom_dir / ".meta.json"
-        emit_output_json(meta, meta_file)
+        cache.write_scheme_metadata(custom_name, "local", meta)
 
         # Update local catalog
         _update_local_catalog(cache, custom_name, source, desc, len(source_scheme.loci))
@@ -278,13 +280,7 @@ def _update_local_catalog(
     no_args_is_help=True,
 )
 @click.argument("scheme", required=False)
-@click.option(
-    "--scheme",
-    "-s",
-    "scheme_opt",
-    hidden=True,
-    help="[deprecated] Use positional argument instead.",
-)
+@deprecated_scheme_option
 @click.option(
     "--data-dir",
     "--datadir",
@@ -327,14 +323,12 @@ def cmd_update_custom(
         sys.exit(1)
 
     # Load existing metadata
-    meta_file = scheme_dir / ".meta.json"
-    if not meta_file.exists():
+    meta = cache.get_scheme_metadata(scheme, "local")
+    if not meta:
         err_console.print(
             f"[red]Error:[/red] Scheme metadata not found for '{scheme}'."
         )
         sys.exit(1)
-
-    meta = json.loads(meta_file.read_text())
     loci = meta.get("loci", [])
 
     # Read new novel data
@@ -417,7 +411,7 @@ def cmd_update_custom(
         novel_alleles=novel_alleles,
         updated_at=utc_now_iso(),
     )
-    emit_output_json(meta, meta_file)
+    cache.write_scheme_metadata(scheme, "local", meta)
 
     console.print(f"[green]Updated custom scheme:[/green] {scheme}")
     console.print(f"  New alleles added: {sum(len(a) for a in novel_alleles.values())}")

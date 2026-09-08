@@ -20,6 +20,7 @@ scheme_type mapping:
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import json
 import logging
 import os
@@ -94,11 +95,16 @@ class BigSdbProvider:
 
     @property
     def name(self) -> str:
+        """Short identifier, e.g. ``"pubmlst"`` or ``"pasteur"``."""
         return self._name
 
     @property
     def label(self) -> str:
+        """Human-readable provider name, e.g. ``"PubMLST"``."""
         return self._label
+
+    # PubMLST rate-limits bursts (~10 rapid connections); stay below that.
+    _LOCUS_COUNT_WORKERS = 4
 
     def list_schemes(self, scheme_type: str = "mlst") -> list[SchemeInfo]:
         """Return all schemes of *scheme_type* available on this BIGSdb host."""
@@ -106,78 +112,88 @@ class BigSdbProvider:
             self._base_url, headers=self._auth_headers()
         )
 
-        # First pass: collect all schemes with their base names
+        # First pass: collect all schemes with their base names (sequential —
+        # order matters for stable scheme numbering).
         raw_schemes: list[dict[str, Any]] = []
+        seqdef_urls = [
+            (org, seqdef_info)
+            for org in orgs
+            for seqdef_info in _find_seqdef_databases(org)
+        ]
 
-        for org in orgs:
-            # Get all seqdef databases for this organism
-            seqdef_dbs = _find_seqdef_databases(org)
-            if not seqdef_dbs:
+        for index, (org, seqdef_info) in enumerate(seqdef_urls, 1):
+            _log_catalog_progress("Fetching scheme lists", index, len(seqdef_urls))
+            seqdef_url = seqdef_info["url"]
+            db_desc = seqdef_info.get("description", "")
+            org_name = org.get("name", "")
+            organism_name = _extract_organism_name(db_desc) or org.get(
+                "description", org_name
+            )
+
+            # Apply organism name mapping if available for this provider
+            provider_mappings = _ORGANISM_MAPPINGS.get(self._name, {})
+            if org_name in provider_mappings:
+                organism_name = provider_mappings[org_name]
+
+            # Generate short base name for scheme naming (e.g., "lmonocytogenes")
+            base_name = generate_scheme_base_name(organism_name)
+
+            try:
+                schemes = _fetch_schemes(seqdef_url)
+            except (RuntimeError, OSError) as exc:
+                logger.warning("Could not fetch schemes for %s: %s", seqdef_url, exc)
                 continue
 
-            org_name = org.get("name", "")
+            for scheme_entry in schemes:
+                s_url = scheme_entry.get("scheme", "")
+                s_desc = scheme_entry.get("description", "")
+                s_type = _classify_scheme_type(s_desc)
 
-            for seqdef_info in seqdef_dbs:
-                seqdef_url = seqdef_info["url"]
-                # Extract organism name from database description
-                db_desc = seqdef_info.get("description", "")
-                organism_name = _extract_organism_name(db_desc) or org.get(
-                    "description", org_name
-                )
-
-                # Apply organism name mapping if available for this provider
-                provider_mappings = _ORGANISM_MAPPINGS.get(self._name, {})
-                if org_name in provider_mappings:
-                    organism_name = provider_mappings[org_name]
-
-                # Generate short base name for scheme naming (e.g., "lmonocytogenes")
-                base_name = generate_scheme_base_name(organism_name)
-
-                try:
-                    schemes = _fetch_schemes(seqdef_url)
-                except (RuntimeError, OSError) as exc:
-                    logger.warning(
-                        "Could not fetch schemes for %s: %s", seqdef_url, exc
-                    )
+                if scheme_type != "all" and s_type != scheme_type:
+                    continue
+                if scheme_type == "all" and s_type == "other":
                     continue
 
-                for scheme_entry in schemes:
-                    s_url = scheme_entry.get("scheme", "")
-                    s_desc = scheme_entry.get("description", "")
-                    s_type = _classify_scheme_type(s_desc)
+                raw_schemes.append(
+                    {
+                        "base_name": base_name,
+                        "organism_name": organism_name,
+                        "s_desc": s_desc,
+                        "s_type": s_type,
+                        "n_loci": scheme_entry.get("locus_count", 0),
+                        "s_url": s_url,
+                        "seqdef_url": seqdef_url,
+                    }
+                )
 
-                    if scheme_type != "all" and s_type != scheme_type:
-                        continue
-                    if scheme_type == "all" and s_type == "other":
-                        continue
-
-                    # Fetch locus count
-                    n_loci = scheme_entry.get("locus_count", 0)
-                    if not n_loci and s_url:
-                        try:
-                            detail = _get_json(s_url, headers=self._auth_headers())
-                            if isinstance(detail, dict):
-                                n_loci = detail.get(
-                                    "locus_count", len(detail.get("loci", []))
-                                )
-                        except (OSError, ValueError) as exc:
-                            logger.warning(
-                                "Failed to fetch locus count for %s: %s", s_url, exc
-                            )
-
-                    raw_schemes.append(
-                        {
-                            "base_name": base_name,
-                            "organism_name": organism_name,
-                            "s_desc": s_desc,
-                            "s_type": s_type,
-                            "n_loci": n_loci,
-                            "s_url": s_url,
-                            "seqdef_url": seqdef_url,
-                        }
+        # Second pass: fetch missing locus counts concurrently (bounded pool
+        # keeps us under the server's burst rate limit).
+        pending = [raw for raw in raw_schemes if not raw["n_loci"] and raw["s_url"]]
+        if pending:
+            logger.info(
+                "[%s] Fetching locus counts for %d schemes (%d workers) …",
+                self._name,
+                len(pending),
+                self._LOCUS_COUNT_WORKERS,
+            )
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self._LOCUS_COUNT_WORKERS
+            ) as executor:
+                futures = {
+                    executor.submit(self._fetch_locus_count, raw["s_url"]): raw
+                    for raw in pending
+                }
+                for done_index, future in enumerate(
+                    concurrent.futures.as_completed(futures), 1
+                ):
+                    _log_catalog_progress(
+                        "Fetching locus counts", done_index, len(pending)
                     )
+                    raw = futures[future]
+                    with contextlib.suppress(OSError, ValueError, RuntimeError):
+                        raw["n_loci"] = future.result()
 
-        # Second pass: assign sequential numbers to each base_name group
+        # Third pass: assign sequential numbers to each base_name group
         from collections import defaultdict
 
         name_counters: dict[str, int] = defaultdict(int)
@@ -204,6 +220,16 @@ class BigSdbProvider:
             )
 
         return results
+
+    def _fetch_locus_count(self, scheme_url: str) -> int:
+        """Fetch locus_count for one scheme URL; 0 on failure (warns)."""
+        try:
+            detail = _get_json(scheme_url, headers=self._auth_headers())
+            if isinstance(detail, dict):
+                return int(detail.get("locus_count", len(detail.get("loci", []))))
+        except (OSError, ValueError, RuntimeError) as exc:
+            logger.warning("Failed to fetch locus count for %s: %s", scheme_url, exc)
+        return 0
 
     def _fetch_scheme_detail(
         self, scheme_name: str, scheme_type: str
@@ -340,6 +366,15 @@ class BigSdbProvider:
         max_connections: int | None = None,
         extra: dict[str, Any] | None = None,
     ) -> bool:
+        """Incrementally update a downloaded scheme, returning whether it changed.
+
+        Compares each locus's remote ``records``/``last_updated`` (and the
+        profile's) against the cached ``.meta.json``; only changed loci and
+        a changed ST profile are re-downloaded, via ``.tfa.tmp`` files that
+        replace the finals only after record counts verify. Metadata is
+        rewritten when anything changed or when the old meta lacks the
+        per-locus/per-profile counters.
+        """
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         meta_file = dest_dir / ".meta.json"
@@ -637,6 +672,14 @@ def _extract_organism_name(db_description: str) -> str | None:
         return None
 
     return name
+
+
+def _log_catalog_progress(label: str, current: int, total: int) -> None:
+    """Log catalog-fetch progress every 25 items (avoids log flooding)."""
+    if total <= 0:
+        return
+    if current == 1 or current == total or current % 25 == 0:
+        logger.info("%s: %d/%d", label, current, total)
 
 
 def _fetch_schemes(seqdef_url: str) -> list[dict[str, Any]]:

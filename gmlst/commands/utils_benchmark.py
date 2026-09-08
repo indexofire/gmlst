@@ -1,3 +1,5 @@
+"""Benchmark engine — compare alignment backends and gate cgMLST prefilter behavior."""
+
 from __future__ import annotations
 
 import json
@@ -20,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BackendMetrics:
+    """Per-backend timing, memory, and ST-outcome metrics across repeat runs."""
+
     backend: str
     n_samples: int = 0
     total_wall_time: float = 0.0
@@ -33,20 +37,24 @@ class BackendMetrics:
 
     @property
     def avg_time_per_sample(self) -> float:
+        """Average wall time per run divided by the sample count (seconds)."""
         return self.avg_time_per_run / self.n_samples if self.n_samples else 0.0
 
     @property
     def avg_time_per_run(self) -> float:
+        """Mean wall time per repeat run (seconds)."""
         return self.total_wall_time / self.n_repeats if self.n_repeats else 0.0
 
     @property
     def std_time_per_run(self) -> float:
+        """Population standard deviation of repeat wall times (0 for a single run)."""
         if len(self.repeat_wall_times) <= 1:
             return 0.0
         return statistics.pstdev(self.repeat_wall_times)
 
     @property
     def success_rate(self) -> float:
+        """Fraction of samples that produced an ST call (0.0-1.0)."""
         return (
             (self.n_samples - self.n_failed) / self.n_samples if self.n_samples else 0.0
         )
@@ -54,6 +62,8 @@ class BackendMetrics:
 
 @dataclass
 class BenchmarkResult:
+    """Benchmark outcome: the scheme, its samples, and metrics keyed by backend."""
+
     scheme: str
     samples: list[Path | SampleInput]
     metrics: dict[str, BackendMetrics] = field(default_factory=dict)
@@ -69,6 +79,13 @@ def run_benchmark(
     cache_root: Path | None = None,
     force_reindex: bool = False,
 ) -> BenchmarkResult:
+    """Type all samples with each backend, collecting timing and ST metrics.
+
+    Each backend runs *repeat* times against the resolved scheme; wall time
+    per run, exact/novel/failed ST counts (from the first successful run),
+    failed run count, and peak RSS (``ru_maxrss``, where available) are
+    recorded per backend.
+    """
     cache = DatabaseCache(cache_root)
     resolved_provider = provider or cache.detect_provider(scheme_name) or "pubmlst"
     cache.ensure_scheme(scheme_name, provider=resolved_provider)
@@ -139,10 +156,12 @@ def run_benchmark(
 
 
 def print_report(result: BenchmarkResult) -> None:
+    """Echo the human-readable benchmark report to stdout."""
     click.echo(render_report(result), nl=False)
 
 
 def render_report(result: BenchmarkResult) -> str:
+    """Render the benchmark report as a fixed-width text table."""
     lines = [
         f"\n{'=' * 70}",
         f"Benchmark results — scheme: {result.scheme}",
@@ -168,6 +187,7 @@ def render_report(result: BenchmarkResult) -> str:
 
 
 def to_tsv(result: BenchmarkResult) -> str:
+    """Render benchmark metrics as a TSV table (one row per backend)."""
     lines = [
         "\t".join(
             [
@@ -209,6 +229,7 @@ def to_tsv(result: BenchmarkResult) -> str:
 
 
 def to_json(result: BenchmarkResult) -> str:
+    """Render benchmark metrics as an indented JSON document."""
     payload = {
         "scheme": result.scheme,
         "n_samples": len(result.samples),
@@ -241,6 +262,13 @@ def run_cgmlst_gate(
     cache_root: Path | None = None,
     force_reindex: bool = False,
 ) -> dict[str, Any]:
+    """Run cgMLST typing with the prefilter on and off and diff the outcomes.
+
+    Returns a gate payload (scheme, backend, sample count, mismatch count,
+    and per-sample details with differing STs/loci). A sample counts as a
+    mismatch when it is missing from either run, its ST differs, or any
+    locus call differs.
+    """
     from gmlst.core import run_typing
 
     on_results = run_typing(

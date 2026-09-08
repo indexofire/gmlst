@@ -1,3 +1,11 @@
+"""Environment-driven configuration for the core typing pipeline.
+
+Re-exports the env-var readers from :mod:`gmlst.core_config` under
+underscore-prefixed names so pipeline modules share one config surface:
+prefilter toggles and budgets, minimap2/KMA tuning, CDS prediction
+settings, and evidence-fallback limits.
+"""
+
 from __future__ import annotations
 
 from gmlst.core_config import (

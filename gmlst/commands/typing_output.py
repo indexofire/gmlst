@@ -1,3 +1,9 @@
+"""Streaming and final output emission for typing commands.
+
+Supports per-sample streaming for tsv/pretty formats and a single final
+write for json.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,12 +11,18 @@ from typing import TextIO
 
 
 def open_stream_output(*, fmt: str, output: Path | None) -> TextIO | None:
+    """Open *output* for line-by-line streaming when the format supports it.
+
+    Only tsv/pretty stream; other formats (or stdout output) return None,
+    meaning lines go to stdout instead of a file.
+    """
     if fmt in {"tsv", "pretty"} and output is not None:
         return output.open("w")
     return None
 
 
 def stream_write(line: str, *, stream_file: TextIO | None) -> None:
+    """Write one result line to *stream_file* (or stdout when None), flushed."""
     if stream_file is not None:
         print(line, file=stream_file, flush=True)
         return
@@ -24,6 +36,7 @@ def stream_header_if_needed(
     loci: list[str],
     stream_file: TextIO | None,
 ) -> None:
+    """Emit the TSV header line for tsv output unless suppressed."""
     if fmt == "tsv" and not no_header:
         stream_write("FILE\tSCHEME\tST\t" + "\t".join(loci), stream_file=stream_file)
 
@@ -40,6 +53,11 @@ def emit_streamed_result(
     stream_file: TextIO | None,
     detail: bool = False,
 ) -> None:
+    """Emit one typed sample immediately (pretty summary line or TSV row).
+
+    Called per sample during streaming so results appear as they finish;
+    formats other than pretty/tsv emit nothing here.
+    """
     if fmt == "pretty":
         stream_write(
             f"{result.sample_id}: ST={format_st_for_tsv_fn(result)}",
@@ -67,6 +85,11 @@ def emit_final_typing_output(
     emit_output_json_fn,
     console,
 ) -> bool:
+    """Write the collected json payload after all samples finish.
+
+    Returns False for non-json formats (already streamed); True after the
+    json output (file or stdout) is written.
+    """
     if fmt != "json":
         return False
     output_data = [result.to_dict() for result in results]
@@ -77,10 +100,12 @@ def emit_final_typing_output(
 
 
 def announce_stream_output_written(*, output: Path | None, console) -> None:
+    """Print the "Results written to ..." confirmation when output went to a file."""
     if output is not None:
         console.print(f"Results written to [cyan]{output}[/cyan]")
 
 
 def close_stream_output(stream_file: TextIO | None) -> None:
+    """Close the streaming file handle if one was opened."""
     if stream_file is not None:
         stream_file.close()

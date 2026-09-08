@@ -1,3 +1,12 @@
+"""Exact-hash allele pre-resolution for cgMLST.
+
+Builds a scheme-level index mapping the SHA-256 digest of every known
+allele sequence to its ``(locus, allele_id)`` pairs, then matches the
+digests of a sample's predicted CDS sequences against it for zero-cost
+exact calls. Both scheme indexes and per-sample CDS predictions are
+cached on disk and invalidated by content fingerprints.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -16,6 +25,14 @@ def load_or_build_exact_hash_indexes_impl(
     build_allele_hash_index_fn,
     logger,
 ) -> dict[str, list[tuple[str, str]]]:
+    """Return the scheme DNA-hash index, rebuilding and persisting if stale.
+
+    Loads the cached index from the scheme's ``pre_computed`` directory when
+    its recorded fingerprint matches the current allele files; otherwise
+    rebuilds the index from *allele_sequences*, writes it (JSON plus a
+    legacy ``.pkl``-named copy for older readers), and records the new
+    fingerprint. Corrupt caches are logged and rebuilt rather than raised.
+    """
     precomputed_dir = scheme_precomputed_dir_fn(allele_files)
     meta_file = precomputed_dir / "exact_hash_meta.json"
     dna_file = precomputed_dir / "dna_hash_index.json"
@@ -57,6 +74,7 @@ def load_or_build_exact_hash_indexes_impl(
 
 
 def scheme_precomputed_dir_impl(allele_files: dict[str, Path]) -> Path:
+    """Return (creating) ``pre_computed`` dir beside the allele files."""
     first_file = next(iter(allele_files.values()))
     precomputed_dir = first_file.parent / "pre_computed"
     precomputed_dir.mkdir(parents=True, exist_ok=True)
@@ -64,6 +82,7 @@ def scheme_precomputed_dir_impl(allele_files: dict[str, Path]) -> Path:
 
 
 def allele_files_fingerprint_impl(allele_files: dict[str, Path]) -> str:
+    """Hash sorted locus names, file names, sizes, and mtimes of allele files."""
     hasher = hashlib.sha256()
     for locus, path in sorted(allele_files.items()):
         stat = path.stat()
@@ -81,6 +100,7 @@ def allele_files_fingerprint_impl(allele_files: dict[str, Path]) -> str:
 def build_allele_hash_index_impl(
     allele_sequences: dict[str, dict[str, str]],
 ) -> dict[str, list[tuple[str, str]]]:
+    """Map each allele sequence digest to its ``(locus, allele_id)`` hits."""
     index: dict[str, list[tuple[str, str]]] = {}
     for locus, alleles in allele_sequences.items():
         for allele_id, sequence in alleles.items():
@@ -100,6 +120,12 @@ def resolve_exact_cds_matches_impl(
     load_or_build_sample_cds_hashes_fn,
     allele_match_cls,
 ) -> dict[str, object]:
+    """Resolve loci whose CDS hashes match exactly one known allele.
+
+    Returns a ``locus -> AlleleMatch`` mapping scored at 100% identity and
+    full coverage. Loci with zero or multiple distinct matching alleles are
+    skipped (left for alignment-based calling).
+    """
     hashed_sequences = load_or_build_sample_cds_hashes_fn(
         sample_path,
         cache_root=sample_cache_root,
@@ -139,6 +165,7 @@ def predict_cds_sequences_impl(
     cds_closed_ends: bool,
     predict_cds_genes_fn,
 ) -> list[str]:
+    """Predict CDS genes for a sample and return uppercased sequences."""
     predicted = predict_cds_genes_fn(
         sample_path,
         cds_prediction_mode=cds_prediction_mode,
@@ -157,6 +184,7 @@ def load_or_build_sample_cds_hashes_impl(
     cds_closed_ends: bool,
     load_or_build_sample_cds_data_fn,
 ) -> list[str]:
+    """Return the cached-or-predicted CDS hash records for a sample."""
     records, _sequences = load_or_build_sample_cds_data_fn(
         sample_path,
         cache_root=cache_root,
@@ -176,6 +204,7 @@ def load_or_build_sample_cds_sequences_impl(
     cds_closed_ends: bool,
     load_or_build_sample_cds_data_fn,
 ) -> list[str]:
+    """Return the cached-or-predicted CDS sequences for a sample."""
     _records, sequences = load_or_build_sample_cds_data_fn(
         sample_path,
         cache_root=cache_root,
@@ -198,6 +227,14 @@ def load_or_build_sample_cds_data_impl(
     sample_cds_cache_config_fn,
     logger,
 ) -> tuple[list[str], list[str]]:
+    """Return ``(hash_records, sequences)`` for a sample's predicted CDSs.
+
+    When *cache_root* is ``None`` the prediction runs directly. Otherwise a
+    JSON cache under ``<cache_root>/_sample_cds_hashes/`` keyed by the
+    resolved sample path is reused while the file fingerprint (size+mtime)
+    and CDS config (mode, training file stat, closed-ends) are unchanged;
+    stale or corrupt caches trigger a fresh prediction and rewrite.
+    """
     if cache_root is None:
         sequences = predict_cds_sequences_fn(
             sample_path,
@@ -267,6 +304,11 @@ def sample_cds_cache_config_impl(
     cds_training_file: Path | None,
     cds_closed_ends: bool,
 ) -> str:
+    """Build the CDS cache-invalidation key from prediction settings.
+
+    Combines the prediction mode, closed-ends flag, and the training file's
+    resolved path/size/mtime so any change invalidates cached CDS hashes.
+    """
     training_marker = ""
     if cds_training_file is not None:
         if cds_training_file.exists() and cds_training_file.is_file():
@@ -280,5 +322,6 @@ def sample_cds_cache_config_impl(
 
 
 def hash_cds_impl(sequence: str) -> str:
+    """Return the SHA-256 hex digest of the uppercased CDS sequence."""
     dna = sequence.upper()
     return hashlib.sha256(dna.encode("ascii")).hexdigest()

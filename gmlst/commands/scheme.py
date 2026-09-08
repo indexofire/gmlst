@@ -16,6 +16,7 @@ from gmlst.commands.common import (
     _natural_sort_key,
     cache_dir_option,
     console,
+    deprecated_scheme_option,
     emit_output_table,
     err_console,
     make_progress,
@@ -308,13 +309,7 @@ def _gather_locus_stats(
 
 @scheme_group.command("show", context_settings=HELP_SETTINGS)
 @click.argument("scheme", required=False)
-@click.option(
-    "--scheme",
-    "-s",
-    "scheme_opt",
-    hidden=True,
-    help="[deprecated] Use positional argument instead.",
-)
+@deprecated_scheme_option
 @click.option(
     "-a",
     "--all",
@@ -440,13 +435,7 @@ def cmd_show(
 
 @scheme_group.command("download", context_settings=HELP_SETTINGS, no_args_is_help=True)
 @click.argument("scheme", required=False)
-@click.option(
-    "--scheme",
-    "-s",
-    "scheme_opt",
-    hidden=True,
-    help="[deprecated] Use positional argument instead.",
-)
+@deprecated_scheme_option
 @click.option("--force", is_flag=True, help="Re-download even if cached.")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
 @click.option(
@@ -494,7 +483,7 @@ def cmd_download(
         _exit_scheme_not_found(scheme)
 
     detected_provider, match_info = matches[0]
-    detected_type = str(match_info.get("scheme_type", "mlst"))
+    detected_type = match_info.scheme_type or "mlst"
 
     _reject_if_blocked(scheme, match_info, detected_provider)
 
@@ -583,7 +572,7 @@ def cmd_update(
             refresh_all_catalogs(cache, token=token)
 
         provider, match_info = resolve_scheme_or_exit(cache, scheme)
-        scheme_type = str(match_info.get("scheme_type", "mlst"))
+        scheme_type = match_info.scheme_type or "mlst"
 
         console.print(
             f"Checking updates for [cyan]{scheme}[/cyan] "
@@ -693,13 +682,7 @@ def cmd_update(
 
 @scheme_group.command("export", context_settings=HELP_SETTINGS, no_args_is_help=True)
 @click.argument("scheme", required=False)
-@click.option(
-    "--scheme",
-    "-s",
-    "scheme_opt",
-    hidden=True,
-    help="[deprecated] Use positional argument instead.",
-)
+@deprecated_scheme_option
 @click.option(
     "--format",
     required=True,

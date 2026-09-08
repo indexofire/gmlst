@@ -154,6 +154,8 @@ def _force_rmtree(path: Path, retries: int = 3, delay: float = 0.5) -> None:
 
 
 def get_temp_root() -> Path | None:
+    """Return the configured ``GMLST_TMPDIR`` root (created if missing), or
+    ``None`` when unset so callers fall back to the system default."""
     configured = os.getenv("GMLST_TMPDIR")
     if not configured:
         return None

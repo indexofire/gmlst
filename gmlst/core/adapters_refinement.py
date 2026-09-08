@@ -1,3 +1,11 @@
+"""Refinement adapter layer binding ``refinement.py`` to core collaborators.
+
+Thin wrappers that re-export the dependency-injected refinement
+implementations with the core calling/ranking helpers and config lookups
+wired in, breaking the import cycle between :mod:`gmlst.core` and
+:mod:`gmlst.core.refinement` for post-alignment rescue passes.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def write_merged_fasta_impl(fasta_paths: list[Path], out_path: Path) -> None:
+    """Concatenate FASTA files into *out_path* for index-free alignment."""
     _refinement._write_merged_fasta_impl(fasta_paths, out_path)
 
 
@@ -34,6 +43,11 @@ def align_targeted_loci_impl(
     merge_fasta_for_fasta: bool = True,
     force_build_index: bool = False,
 ) -> tuple[AlignmentResult, float]:
+    """Align only *targeted_fastas* in a temp dir; return (result, seconds).
+
+    FASTA samples reuse a merged FASTA in place of building a backend
+    index unless *force_build_index* is set (used by blastn fallback).
+    """
     return _refinement._align_targeted_loci_impl(
         aligner=aligner,
         sample_source=sample_source,
@@ -57,6 +71,7 @@ def merge_calls_from_alignment_impl(
     min_coverage: float,
     min_depth: float,
 ) -> None:
+    """Call *loci* from *alignment* and rank-merge into *base_calls* in place."""
     _refinement._merge_calls_from_alignment_impl(
         base_calls=base_calls,
         alignment=alignment,
@@ -78,6 +93,7 @@ def recompute_all_loci_with_additional_alignment_impl(
     min_coverage: float,
     min_depth: float,
 ) -> dict[str, LocusCall]:
+    """Re-call all loci from the merged base + additional alignments."""
     return _refinement._recompute_all_loci_with_additional_alignment_impl(
         base_alignment=base_alignment,
         additional_alignment=additional_alignment,
@@ -104,6 +120,12 @@ def confirm_loci_with_tuned_aligner_impl(
     min_coverage: float,
     min_depth: float,
 ) -> None:
+    """Re-align *candidate_loci* with a tuned aligner; merge better calls.
+
+    Builds a fresh aligner via ``get_aligner(backend, **aligner_kwargs)``,
+    aligns only the candidate loci's allele FASTAs, and rank-merges the
+    resulting calls into *base_calls* in place.
+    """
     _refinement._confirm_loci_with_tuned_aligner_impl(
         base_calls=base_calls,
         backend=backend,
@@ -139,6 +161,11 @@ def align_evidence_fallback_loci_impl(
     allele_fastas: list[Path],
     force_reindex: bool,
 ) -> tuple[AlignmentResult, float] | None:
+    """Align low-confidence loci with a fallback backend for more evidence.
+
+    blastn aligns a targeted temp index; other backends reuse a persistent
+    full index from the cache. Returns ``None`` when nothing to align.
+    """
     return _refinement._align_evidence_fallback_loci_impl(
         fallback_aligner=fallback_aligner,
         fallback_backend=fallback_backend,
@@ -183,6 +210,13 @@ def apply_post_alignment_refinements_impl(
     allele_fastas: list[Path],
     force_reindex: bool,
 ) -> dict[str, LocusCall]:
+    """Run all post-alignment refinement passes and return updated calls.
+
+    Chains hash-prefilter rescue, KMA FASTQ strict confirmation, BSR-like
+    minimap2 confirmation, ultrafast second pass, evidence fallback, and
+    capped non-exact re-alignment, gated by cgMLST mode overrides and
+    environment configuration.
+    """
     return _refinement._apply_post_alignment_refinements_impl(
         locus_calls=locus_calls,
         aln=aln,
@@ -236,6 +270,7 @@ def merge_fallback_calls_impl(
     base_calls: dict[str, LocusCall],
     fallback_calls: dict[str, LocusCall],
 ) -> None:
+    """Overwrite *base_calls* entries where the fallback call ranks higher."""
     for locus, fallback_call in fallback_calls.items():
         base_call = base_calls.get(locus)
         if base_call is None or _ranking._call_rank(

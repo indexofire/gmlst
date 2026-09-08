@@ -87,6 +87,7 @@ class SafeHashStrategy(HashStrategy):
         self.prefix_length = self.config.get("prefix_length", 50)
 
     def get_strategy_name(self) -> str:
+        """Return the "safe" strategy name."""
         return "safe"
 
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
@@ -159,6 +160,7 @@ class FastHashStrategy(HashStrategy):
         self.length_index: dict[int, set[str]] = {}
 
     def get_strategy_name(self) -> str:
+        """Return the "fast" strategy name."""
         return "fast"
 
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
@@ -225,6 +227,7 @@ class UltraHashStrategy(HashStrategy):
             raise ImportError("xxhash required for ultra strategy") from err
 
     def get_strategy_name(self) -> str:
+        """Return the "ultra" strategy name."""
         return "ultra"
 
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
@@ -254,6 +257,7 @@ class StrictHashStrategy(HashStrategy):
         self.store_full_sequences = self.config.get("store_full_sequences", False)
 
     def get_strategy_name(self) -> str:
+        """Return the "strict" strategy name."""
         return "strict"
 
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
@@ -297,6 +301,8 @@ class StrictHashStrategy(HashStrategy):
 
 
 class BlastHashStrategy(HashStrategy):
+    """BLAST-backed strategy: near-identical matches reuse an existing allele."""
+
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.min_identity = float(self.config.get("min_identity", 99.0))
@@ -315,9 +321,15 @@ class BlastHashStrategy(HashStrategy):
         self._allele_sequences: dict[int, str] = {}
 
     def get_strategy_name(self) -> str:
+        """Return the "blast" strategy name."""
         return "blast"
 
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
+        """Get allele ID via exact-sequence cache, then a BLAST match.
+
+        Sequences meeting the identity/coverage thresholds reuse the
+        matched allele id; otherwise a new allele is registered.
+        """
         self.total_sequences += 1
         clean_seq = self._normalize_sequence(sequence)
 

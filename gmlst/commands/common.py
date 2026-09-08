@@ -30,24 +30,6 @@ console = Console()
 err_console = Console(stderr=True)
 
 
-class _DictSchemeInfo:
-    """Wrapper to access dict keys as attributes."""
-
-    def __init__(self, data: dict[str, Any]) -> None:
-        self._data = data
-        # Ensure 'extra' key exists for consistency with SchemeInfo
-        if "extra" not in self._data:
-            self._data["extra"] = {}
-
-    def __getattr__(self, name: str) -> Any:
-        if name in self._data:
-            return self._data[name]
-        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
-
-    def get(self, key: str, default: Any = None) -> Any:
-        return self._data.get(key, default)
-
-
 def _natural_sort_key(scheme_name: str) -> tuple[str, int]:
     """Extract key for natural sorting.
 
@@ -68,6 +50,10 @@ def render_from_format[TFormat](
     output_format: str,
     renderers: dict[str, Callable[[], TFormat]],
 ) -> TFormat:
+    """Dispatch to the renderer registered for *output_format*.
+
+    Raises ``ValueError`` listing the supported formats when the key is unknown.
+    """
     renderer = renderers.get(output_format)
     if renderer is None:
         supported = ", ".join(sorted(renderers))
@@ -78,6 +64,11 @@ def render_from_format[TFormat](
 
 
 def emit_output_text(output_text: str, output: Path | None) -> bool:
+    """Write *output_text* to *output* (file) or stdout when *output* is None.
+
+    Ensures a trailing newline. Returns True when written to a file,
+    False when echoed to stdout.
+    """
     payload = output_text if output_text.endswith("\n") else output_text + "\n"
     if output is not None:
         output.write_text(payload)
@@ -87,6 +78,7 @@ def emit_output_text(output_text: str, output: Path | None) -> bool:
 
 
 def emit_output_json(data: Any, output: Path | None) -> bool:
+    """Serialize *data* as indented JSON and emit via :func:`emit_output_text`."""
     return emit_output_text(json.dumps(data, indent=2), output)
 
 
@@ -95,6 +87,10 @@ def render_delimited_rows(
     columns: list[str],
     delimiter: str,
 ) -> str:
+    """Render rows as delimited text with a header line.
+
+    Missing keys become empty cells and booleans are coerced to "1"/"0".
+    """
     lines = [delimiter.join(columns)]
     for row in rows:
         values: list[str] = []
@@ -113,6 +109,7 @@ def emit_output_tsv(
     columns: list[str],
     output: Path | None,
 ) -> bool:
+    """Render rows as TSV; see :func:`emit_output_text` for destination semantics."""
     return emit_output_text(render_delimited_rows(rows, columns, "\t"), output)
 
 
@@ -121,6 +118,7 @@ def emit_output_csv(
     columns: list[str],
     output: Path | None,
 ) -> bool:
+    """Render rows as CSV; see :func:`emit_output_text` for destination semantics."""
     return emit_output_text(render_delimited_rows(rows, columns, ","), output)
 
 
@@ -130,6 +128,10 @@ def emit_output_table(
     render_text: Callable[[], str],
     print_table: Callable[[], None],
 ) -> bool:
+    """Emit a table: pretty-print to stdout, or write plain text to *output*.
+
+    Returns True when written to a file, False when printed to stdout.
+    """
     if output is None:
         print_table()
         return False
@@ -138,6 +140,7 @@ def emit_output_table(
 
 
 def make_progress() -> Progress:
+    """Create the shared rich progress bar (spinner, bar, M/N, elapsed time)."""
     return Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -149,6 +152,7 @@ def make_progress() -> Progress:
 
 
 def cache_dir_option(f):
+    """Click decorator factory adding the shared ``--cache-dir`` option."""
     return click.option(
         "--cache-dir",
         type=click.Path(path_type=Path),
@@ -162,3 +166,14 @@ def exit_with_error(msg: str, hint: str | None = None) -> None:
     if hint:
         err_console.print(hint)
     sys.exit(1)
+
+
+def deprecated_scheme_option(f):
+    """Click decorator factory adding the hidden, deprecated ``--scheme`` option."""
+    return click.option(
+        "--scheme",
+        "-s",
+        "scheme_opt",
+        hidden=True,
+        help="[deprecated] Use positional argument instead.",
+    )(f)

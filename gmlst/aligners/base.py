@@ -82,6 +82,12 @@ class AlleleMatch:
 
     @property
     def is_exact(self) -> bool:
+        """True only for a perfect, full-length allele match.
+
+        Requires identity of exactly 100.0% and coverage of at least 1.0;
+        coverage above 1.0 (alignment longer than the allele) still
+        qualifies as exact.
+        """
         return self.identity == 100.0 and self.coverage >= 1.0
 
 

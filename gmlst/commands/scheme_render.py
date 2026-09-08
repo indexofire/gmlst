@@ -1,14 +1,16 @@
+"""Rendering helpers for `scheme list` / `scheme show` output (tables and text)."""
+
 from __future__ import annotations
 
 from rich import box
 from rich.table import Table
 
-from gmlst.commands.common import _DictSchemeInfo
 from gmlst.database.cache import DatabaseCache
+from gmlst.database.providers.base import SchemeInfo
 
 
 def _build_scheme_list_table(
-    schemes: list[_DictSchemeInfo],
+    schemes: list[SchemeInfo],
     cache: DatabaseCache,
     title: str,
     terminal_width: int,

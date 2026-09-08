@@ -19,10 +19,12 @@ class FastqRecord:
 
     @property
     def read_id(self) -> str:
+        """Read identifier without the leading ``@``."""
         return self.header.split()[0].lstrip("@")
 
     @property
     def length(self) -> int:
+        """Number of bases in the read."""
         return len(self.sequence)
 
 

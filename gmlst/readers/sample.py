@@ -80,6 +80,7 @@ class SampleInput:
     def from_fastq_pair(
         cls, r1_path: Path, r2_path: Path, sample_id: str
     ) -> SampleInput:
+        """Build a paired-end FASTQ input from R1/R2 paths under one sample id."""
         return cls(
             sample_id=sample_id, path=r1_path, input_type="fastq", mate_path=r2_path
         )
@@ -107,6 +108,13 @@ def _normalize_fastq_sample_id(sample_id: str) -> str:
 
 
 def prepare_sample_inputs(samples: list[Path]) -> list[Path | SampleInput]:
+    """Group paired FASTQ files (``R1/R2`` or ``1/2`` naming) into single
+    :class:`SampleInput` entries with ``mate_path`` set.
+
+    Only complete pairs are collapsed (at the R1 position, preserving
+    input order); unpaired files pass through unchanged as plain paths.
+    When no pairs are detected the original list is returned as-is.
+    """
     key_by_sample: dict[Path, tuple[str, str]] = {}
     mates_by_key: dict[str, dict[str, Path]] = {}
 

@@ -98,10 +98,12 @@ class EnterobaseProvider:
 
     @property
     def name(self) -> str:
+        """Short identifier: ``"enterobase"``."""
         return "enterobase"
 
     @property
     def label(self) -> str:
+        """Human-readable provider name: ``"Enterobase"``."""
         return "Enterobase"
 
     def _discover_remote_directories(self) -> list[str]:
@@ -295,6 +297,14 @@ class EnterobaseProvider:
         max_connections: int | None = None,
         extra: dict[str, Any] | None = None,
     ) -> bool:
+        """Re-download only the files whose remote headers changed.
+
+        Probes every locus ``.fasta.gz`` and the profiles archive with HEAD
+        requests (ETag / Last-Modified / Content-Length) plus FASTA
+        validity, re-downloads and decompresses only the changed or
+        missing ones, and rewrites ``.meta.json`` with the fresh headers.
+        Returns whether any locus, profile, or the locus set changed.
+        """
         dir_name = (extra or {}).get("directory")
         if not dir_name:
             resolved = _resolve_enterobase_scheme_name(scheme_name, scheme_type)

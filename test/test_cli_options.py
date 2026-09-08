@@ -7,9 +7,9 @@ from click.testing import CliRunner
 from rich.console import Console
 
 from gmlst.cli import main
-from gmlst.commands.common import _DictSchemeInfo
 from gmlst.commands.scheme import _build_scheme_list_table
 from gmlst.database.cache import DatabaseCache
+from gmlst.database.providers.base import SchemeInfo
 from gmlst.database.schema import Scheme
 
 
@@ -1168,18 +1168,16 @@ def test_scheme_list_text_output(monkeypatch) -> None:
     )
 
 
-def _sample_scheme_info() -> list[_DictSchemeInfo]:
+def _sample_scheme_info() -> list[SchemeInfo]:
     return [
-        _DictSchemeInfo(
-            {
-                "scheme_name": "very_long_ecoli_scheme_name_123",
-                "organism": "Escherichia coli with a deliberately long label",
-                "scheme_type": "mlst",
-                "n_loci": 7,
-                "provider": "pubmlst",
-                "display_name": "Achtman scheme with detailed description",
-                "extra": {"auth_required": True},
-            }
+        SchemeInfo(
+            scheme_name="very_long_ecoli_scheme_name_123",
+            organism="Escherichia coli with a deliberately long label",
+            scheme_type="mlst",
+            n_loci=7,
+            provider="pubmlst",
+            display_name="Achtman scheme with detailed description",
+            extra={"auth_required": True},
         )
     ]
 

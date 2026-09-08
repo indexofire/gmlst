@@ -18,10 +18,16 @@ _FASTQ_BYTES_PER_READ = 250
 def prepare_sample_paths_for_pairing(
     samples: tuple[Path, ...],
 ) -> list[Path | SampleInput]:
+    """Normalize raw CLI paths into plain paths or paired ``SampleInput`` entries.
+
+    Common mate naming patterns (``_R1/_R2``, ``_1/_2``, ``.1/.2``) are merged
+    into a single paired sample so each pair is typed once.
+    """
     return prepare_sample_inputs(list(samples))
 
 
 def contains_fastq_samples(samples: list[Path | SampleInput]) -> bool:
+    """Return True if any sample is FASTQ input (by type or file extension)."""
     for sample in samples:
         if isinstance(sample, SampleInput):
             if sample.input_type == "fastq":
@@ -37,6 +43,12 @@ def contains_fastq_samples(samples: list[Path | SampleInput]) -> bool:
 
 
 def fastq_kma_auto_threads() -> int:
+    """Resolve the KMA thread count for FASTQ typing.
+
+    Reads ``GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS`` (default 8; invalid values
+    fall back to 8). Values <= 1 disable threading (return 1); larger values
+    are clamped to the CPU count with a floor of 2.
+    """
     raw = os.getenv("GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS", "8").strip()
     try:
         configured = int(raw)
@@ -50,6 +62,12 @@ def fastq_kma_auto_threads() -> int:
 
 @contextmanager
 def temp_root_from_output(output: Path | None) -> Generator[None, None, None]:
+    """Point ``GMLST_TMPDIR`` at the output file's parent for the duration.
+
+    Keeps intermediate artifacts next to the final output. No-op when
+    *output* is None; the previous environment value is restored (or
+    removed) on exit.
+    """
     if output is None:
         yield
         return
@@ -71,6 +89,14 @@ def maybe_subsample_fastq(
     max_depth: float,
     console: Console,
 ) -> list[Path | SampleInput]:
+    """Subsample FASTQ samples whose estimated depth exceeds *max_depth*.
+
+    Depth is estimated from file size: ``reads ~ bytes / 250`` and
+    ``depth ~ reads * 150 / 5 Mb`` (assumed 150 bp reads, 5 Mb genome).
+    Over-depth samples are truncated (first ``max_depth * 5 Mb / 150`` reads
+    per pair) into gzipped copies in a temp dir; other samples pass through
+    unchanged.
+    """
     result: list[Path | SampleInput] = []
     for sample in samples:
         is_fastq = False

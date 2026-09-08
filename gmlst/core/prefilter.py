@@ -1,3 +1,11 @@
+"""Locus-candidate prefiltering for large cgMLST schemes.
+
+Narrows whole-scheme alignment down to plausible loci before the expensive
+full pass: k-mer candidate ranking, one representative allele per locus,
+minimap2 representative-index alignment, and the cgMLST mode override
+table that shapes the fast/ultrafast/balanced pipeline profiles.
+"""
+
 from __future__ import annotations
 
 import math
@@ -13,6 +21,11 @@ def prefilter_is_confident_impl(
     total_loci: int,
     min_loci_fraction: float,
 ) -> bool:
+    """Return True when enough loci have candidates to trust the prefilter.
+
+    The fraction is clamped to ``[0, 1]`` and at least one locus is
+    required; a failed check makes callers fall back to the full index.
+    """
     if total_loci <= 0:
         return False
     clamped_fraction = min(1.0, max(0.0, min_loci_fraction))
@@ -24,6 +37,7 @@ def prefilter_is_confident_impl(
 def flatten_allele_sequences_impl(
     allele_sequences: dict[str, dict[str, str]],
 ) -> dict[tuple[str, str], str]:
+    """Flatten a nested per-locus allele map to ``(locus, allele_id)`` keys."""
     return {
         (locus, allele_id): sequence
         for locus, allele_ids in allele_sequences.items()
@@ -36,6 +50,7 @@ def representative_alleles_impl(
     *,
     allele_order_key_fn,
 ) -> dict[tuple[str, str], str]:
+    """Keep only the lowest-ordered allele per locus from a flat map."""
     representatives: dict[tuple[str, str], str] = {}
     by_locus: dict[str, tuple[str, str]] = {}
     for locus, allele_id in allele_sequences:
@@ -50,6 +65,7 @@ def representative_alleles_impl(
 
 
 def allele_order_key_impl(allele_id: str) -> tuple[int, int | str]:
+    """Sort key ranking numeric allele IDs before non-numeric ones."""
     if allele_id.isdigit():
         return (0, int(allele_id))
     return (1, allele_id)
@@ -59,6 +75,7 @@ def select_candidate_locus_fastas_impl(
     allele_files: dict[str, Path],
     candidate_loci: set[str],
 ) -> list[Path]:
+    """Return the allele FASTA paths for *candidate_loci* only."""
     if not candidate_loci:
         return []
     return [path for locus, path in allele_files.items() if locus in candidate_loci]
@@ -74,6 +91,12 @@ def minimap2_representative_prefilter_candidates_impl(
     min_identity: float,
     min_coverage: float,
 ) -> tuple[dict[str, list[tuple[str, float]]], AlignmentResult | None]:
+    """Shortlist loci by aligning the sample against representative alleles.
+
+    Returns per-locus best ``(allele_id, identity * coverage)`` candidates
+    (passing the thresholds) plus the representative alignment, which the
+    ultrafast mode reuses directly as the main alignment.
+    """
     if not representatives:
         return {}, None
     if representative_index_path is None:
@@ -105,6 +128,12 @@ def cgmlst_mode_overrides_impl(
     backend: str,
     logger,
 ) -> CgmlstModeOverrides:
+    """Build the pipeline overrides table for a cgMLST mode.
+
+    Only cgMLST + minimap2 gets mode-specific overrides; every other
+    scheme/backend combination gets all-``None`` values so environment
+    defaults apply. Unknown modes warn and fall back to ``fast``.
+    """
     if scheme_type != "cgmlst" or backend != "minimap2":
         return CgmlstModeOverrides(
             exact_hash_prefilter=False,

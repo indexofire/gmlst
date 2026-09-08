@@ -143,9 +143,16 @@ class DatabaseCache:
         return self.root / provider / name
 
     def is_downloaded(self, name: str, provider: str = "pubmlst") -> bool:
+        """Return True when the scheme has a ``.meta.json`` in the cache."""
         return (self.scheme_dir(name, provider) / ".meta.json").exists()
 
     def detect_provider(self, name: str) -> str | None:
+        """Guess which provider owns *name*: downloaded cache first, then catalogs.
+
+        Scans available providers for a downloaded copy, then falls back to
+        cached catalogs listing the scheme name. Returns ``None`` when no
+        provider claims it.
+        """
         from gmlst.database.providers import AVAILABLE_PROVIDERS
 
         for provider in AVAILABLE_PROVIDERS:
@@ -210,6 +217,16 @@ class DatabaseCache:
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
     ) -> tuple[Scheme, bool]:
+        """Update a cached scheme in place, returning ``(scheme, changed)``.
+
+        When the scheme is not cached yet, downloads it and reports
+        ``changed=True``. Otherwise delegates change detection to the
+        provider's ``update_scheme`` (providers without one are fully
+        re-downloaded and always count as changed), records
+        ``updated_at`` while preserving the original ``downloaded_at``,
+        and returns the freshly loaded scheme plus whether any local
+        content actually changed.
+        """
         from gmlst.database.providers import get_provider
 
         resolved_scheme_type = scheme_type
@@ -443,6 +460,15 @@ class DatabaseCache:
             return {}
         return data if isinstance(data, dict) else {}
 
+    def write_scheme_metadata(
+        self,
+        name: str,
+        provider: str,
+        metadata: dict[str, Any],
+    ) -> None:
+        """Public writer for scheme ``.meta.json`` (atomic)."""
+        self._write_scheme_metadata(name, provider, metadata)
+
     def _write_scheme_metadata(
         self,
         name: str,
@@ -489,6 +515,7 @@ class DatabaseCache:
         return d
 
     def local_catalog_path(self) -> Path:
+        """Return the on-disk path of the ``local`` provider catalog."""
         return self._catalog_path("local")
 
     def _catalog_path(self, provider: str) -> Path:

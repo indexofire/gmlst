@@ -1,3 +1,12 @@
+"""Persistent aligner index management for typing backends.
+
+Covers locating, staleness-checking, purging, and (re)building backend
+indexes (blastn, minimap2, kma, nucmer) over scheme allele FASTAs, plus
+the minimap2 representative-allele index used by the cgMLST prefilter.
+Indexes are reused across runs and only rebuilt when allele inputs are
+newer than the index artifacts or a content fingerprint changes.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,12 +17,18 @@ from gmlst.metadata_io import read_json_metadata, write_json_metadata
 
 
 def index_is_empty_impl(index_dir: Path) -> bool:
+    """Return True when *index_dir* is missing or contains no entries."""
     if not index_dir.exists():
         return True
     return not any(index_dir.iterdir())
 
 
 def find_index_impl(index_dir: Path, backend: str) -> Path | None:
+    """Locate an existing index artifact for *backend* in *index_dir*.
+
+    Returns the backend-specific path (blastn prefix, nucmer FASTA, or the
+    directory itself for minimap2/kma), or ``None`` when no artifact exists.
+    """
     patterns = {
         "blastn": "*.nhr",
         "minimap2": "*.mmi",
@@ -32,6 +47,7 @@ def find_index_impl(index_dir: Path, backend: str) -> Path | None:
 
 
 def purge_backend_index_impl(*, index_dir: Path, backend: str) -> None:
+    """Delete all index artifacts (and merged FASTA) for *backend*."""
     patterns: dict[str, list[str]] = {
         "blastn": ["alleles.fasta", "*.n*"],
         "minimap2": ["alleles.fasta", "*.mmi"],
@@ -52,6 +68,12 @@ def is_index_stale_impl(
     index_dir: Path,
     allele_fastas: list[Path],
 ) -> bool:
+    """Return True when backend index artifacts are missing or outdated.
+
+    Checks artifact presence (including KMA's required multi-file set),
+    merged-FASTA size versus the summed allele FASTAs, and finally whether
+    any allele FASTA is newer than the newest index artifact.
+    """
     if not allele_fastas:
         return False
 
@@ -111,6 +133,12 @@ def ensure_full_index_impl(
     find_index_fn,
     is_index_stale_fn,
 ) -> Path:
+    """Return a usable full-scheme index path, rebuilding when necessary.
+
+    Rebuilds (after purging) when *force_reindex* is set, the index
+    directory is empty, no backend artifact is found, or the existing
+    index is stale relative to the allele FASTAs.
+    """
     if force_reindex or index_is_empty_fn(index_dir):
         if force_reindex:
             purge_backend_index_fn(index_dir=index_dir, backend=backend)
@@ -138,6 +166,7 @@ def representative_fingerprint_impl(
     allele_order_key_fn,
     hasher,
 ) -> str:
+    """Hash the deterministically ordered representative set as fingerprint."""
     for (locus, allele_id), sequence in sorted(
         representatives.items(),
         key=lambda item: (item[0][0], allele_order_key_fn(item[0][1])),
@@ -163,6 +192,12 @@ def load_or_build_minimap2_representative_index_impl(
     allele_order_key_fn,
     logger,
 ) -> Path:
+    """Load or rebuild the persistent minimap2 representative index.
+
+    Rebuilds when the recorded representative fingerprint changes, the
+    source FASTA or metadata is missing, the ``.mmi`` is stale, or
+    *force_reindex* is set; otherwise reuses the existing index directory.
+    """
     index_dir.mkdir(parents=True, exist_ok=True)
     source_fasta = index_dir / "representatives.fasta"
     meta_file = index_dir / "representative_meta.json"

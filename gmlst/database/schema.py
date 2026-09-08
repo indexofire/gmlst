@@ -29,6 +29,7 @@ class Allele:
 
     @property
     def length(self) -> int:
+        """Number of bases in the allele sequence."""
         return len(self.sequence)
 
 

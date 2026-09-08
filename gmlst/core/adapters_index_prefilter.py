@@ -1,3 +1,12 @@
+"""Index/prefilter adapter layer binding sequence and index implementations.
+
+Thin wrappers that re-export the dependency-injected implementations from
+:mod:`gmlst.core.indexing`, :mod:`gmlst.core.prefilter`, and
+:mod:`gmlst.core.sequences` with concrete ordering keys, hashers, and
+loggers wired in, so :mod:`gmlst.core` faces no import cycle when calling
+them during cgMLST index building and representative prefilters.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -22,6 +31,7 @@ def ensure_full_index_impl(
     index_dir: Path,
     force_reindex: bool,
 ) -> Path:
+    """Return a reusable full-scheme index, rebuilding only when stale."""
     return _indexing.ensure_full_index_impl(
         aligner=aligner,
         backend=backend,
@@ -41,6 +51,7 @@ def load_scheme_allele_sequences_impl(
     allele_files: dict[str, Path],
     max_per_locus: int = 0,
 ) -> dict[str, dict[str, str]]:
+    """Load per-locus allele sequences, optionally capped per locus."""
     return _sequences.load_scheme_allele_sequences_impl(
         allele_files,
         split_allele_header_fn=_sequences.split_allele_header_impl,
@@ -51,6 +62,7 @@ def load_scheme_allele_sequences_impl(
 def load_representative_allele_sequences_impl(
     allele_files: dict[str, Path],
 ) -> dict[tuple[str, str], str]:
+    """Stream allele FASTAs and keep the lowest-ordered allele per locus."""
     return _sequences.load_representative_allele_sequences_impl(
         allele_files,
         split_allele_header_fn=_sequences.split_allele_header_impl,
@@ -61,6 +73,7 @@ def load_representative_allele_sequences_impl(
 def representatives_from_nested_alleles_impl(
     allele_sequences: dict[str, dict[str, str]],
 ) -> dict[tuple[str, str], str]:
+    """Pick the lowest-ordered allele per locus from in-memory sequences."""
     return _sequences.representatives_from_nested_alleles_impl(
         allele_sequences,
         allele_order_key_fn=_prefilter.allele_order_key_impl,
@@ -74,6 +87,7 @@ def load_or_build_minimap2_representative_index_impl(
     representatives: dict[tuple[str, str], str],
     force_reindex: bool,
 ) -> Path:
+    """Load or rebuild the persistent minimap2 representative-allele index."""
     return _indexing.load_or_build_minimap2_representative_index_impl(
         aligner=aligner,
         index_dir=index_dir,
@@ -90,6 +104,7 @@ def load_or_build_minimap2_representative_index_impl(
 def representative_fingerprint_impl(
     representatives: dict[tuple[str, str], str],
 ) -> str:
+    """Hash the sorted representative set for index staleness checks."""
     return _indexing.representative_fingerprint_impl(
         representatives,
         allele_order_key_fn=_prefilter.allele_order_key_impl,
@@ -102,6 +117,7 @@ def write_candidate_fastas_impl(
     candidates: dict[str, list[tuple[str, float]]],
     out_dir: Path,
 ) -> list[Path]:
+    """Write one ``<locus>.tfa`` per locus containing its candidate alleles."""
     return _sequences.write_candidate_fastas_impl(
         allele_sequences,
         candidates,
@@ -112,6 +128,7 @@ def write_candidate_fastas_impl(
 def representative_alleles_impl(
     allele_sequences: dict[tuple[str, str], str],
 ) -> dict[tuple[str, str], str]:
+    """Keep one (lowest-ordered) allele per locus from a flat mapping."""
     return _prefilter.representative_alleles_impl(
         allele_sequences,
         allele_order_key_fn=_prefilter.allele_order_key_impl,
@@ -128,6 +145,12 @@ def minimap2_representative_prefilter_candidates_impl(
     min_identity: float,
     min_coverage: float,
 ) -> tuple[dict[str, list[tuple[str, float]]], AlignmentResult | None]:
+    """Align against the representative index to shortlist candidate loci.
+
+    Returns the per-locus best ``(allele_id, score)`` candidates plus the
+    representative alignment itself (reused as the main alignment in
+    ultrafast representative-only mode).
+    """
     return _prefilter.minimap2_representative_prefilter_candidates_impl(
         aligner=aligner,
         sample_path=sample_path,
@@ -145,6 +168,7 @@ def cgmlst_mode_overrides_impl(
     scheme_type: str,
     backend: str,
 ) -> CgmlstModeOverrides:
+    """Compute mode-specific pipeline overrides (fast/ultrafast/balanced)."""
     return _prefilter.cgmlst_mode_overrides_impl(
         cgmlst_mode=cgmlst_mode,
         scheme_type=scheme_type,

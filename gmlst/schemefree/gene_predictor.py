@@ -1,3 +1,5 @@
+"""Re-export shim for gene prediction used by scheme-free typing (see core/)."""
+
 from gmlst.core.gene_predictor import (
     PredictedGene,
     ProdigalPredictor,

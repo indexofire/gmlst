@@ -1,3 +1,11 @@
+"""Hard-coded cgMLST.org scheme catalog used by the ``cgmlst`` provider.
+
+cgMLST.org exposes no catalog API, so the scheme list (names, schema IDs,
+locus counts) is snapshot here and consumed by
+:mod:`gmlst.database.providers.cgmlst` to serve ``scheme list`` and to
+build per-schema download URLs.
+"""
+
 # Hard-coded scheme list from cgMLST.org (as of 2026-07)
 # Source: https://www.cgmlst.org/ncs/1000
 # Download URL: https://www.cgmlst.org/ncs/schema/{schema_id}/alleles/

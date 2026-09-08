@@ -1,3 +1,5 @@
+"""Profile and report serialization for scheme-free typing (JSON/TSV)."""
+
 from __future__ import annotations
 
 import json
@@ -33,6 +35,7 @@ def _normalize_profile_calls(profile: dict[str, Any]) -> dict[str, str]:
 
 
 def profiles_to_json(profiles: list[dict[str, Any]]) -> str:
+    """Serialize profiles to indented JSON with normalized allele calls."""
     normalized: list[dict[str, Any]] = []
     for profile in profiles:
         profile_copy = dict(profile)
@@ -44,6 +47,11 @@ def profiles_to_json(profiles: list[dict[str, Any]]) -> str:
 
 
 def profiles_to_tsv(profiles: list[dict[str, Any]], include_header: bool = True) -> str:
+    """Render profiles as sample-by-locus TSV over the union of loci.
+
+    Allele calls are normalized to bare numbers where possible; missing
+    calls become "0".
+    """
     all_loci = sorted({locus for p in profiles for locus in p.get("profile", {})})
     lines: list[str] = []
     if include_header:
@@ -68,6 +76,7 @@ def write_scheme_json(
     loci: dict[str, list[str]],
     profiles: dict[str, dict[str, Any]],
 ) -> None:
+    """Write a reusable discovered scheme as ``{config, loci, profiles}`` JSON."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "config": config,
@@ -78,14 +87,17 @@ def write_scheme_json(
 
 
 def read_scheme_json(input_path: Path) -> dict[str, Any]:
+    """Load a scheme JSON previously written by :func:`write_scheme_json`."""
     return json.loads(input_path.read_text())
 
 
 def write_error_report_json(output_path: Path, errors: list[dict[str, str]]) -> None:
+    """Write per-sample pipeline errors as an indented JSON list."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(errors, indent=2) + "\n")
 
 
 def write_summary_report_json(output_path: Path, summary: dict[str, Any]) -> None:
+    """Write the run summary dict as an indented JSON document."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(summary, indent=2) + "\n")

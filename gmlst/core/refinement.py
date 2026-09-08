@@ -1,3 +1,16 @@
+"""Post-alignment refinement passes that rescue low-confidence calls.
+
+After the main alignment and initial calling, these stages improve call
+quality under cgMLST mode budgets: targeted re-alignment of loci left
+"missing" by the minimap2 hash prefilter, KMA FASTQ strict confirmation,
+BSR-like minimap2 confirmation of low-confidence loci, the bounded
+ultrafast second pass, cross-backend evidence fallback (typically
+blastn), and re-alignment of non-exact loci against full allele sets.
+All functions are dependency-injected (aligners, calling, ranking, config
+readers) and driven through the adapter layer in
+:mod:`gmlst.core.adapters_refinement`.
+"""
+
 from __future__ import annotations
 
 import os

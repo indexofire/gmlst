@@ -82,6 +82,18 @@ class NucmerAligner:
         loci: list[str],
         input_type: Literal["fasta", "fastq"],
     ) -> AlignmentResult:
+        """Align an assembly against the merged allele FASTA via nucmer.
+
+        Runs ``nucmer --maxmatch`` (reference = genome, query = alleles)
+        followed by ``show-coords -rcl -T`` in a temporary directory and
+        parses the coords table into :class:`AlleleMatch` entries.
+
+        Raises
+        ------
+        ValueError
+            If ``input_type`` is ``"fastq"`` — nucmer requires assembled
+            sequences.
+        """
         if input_type == "fastq":
             raise ValueError(
                 "NucmerAligner does not support FASTQ input. Use kma backend."

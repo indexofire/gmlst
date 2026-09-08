@@ -1,3 +1,5 @@
+"""Shared MST types and helpers — profile parsing, distances, and validation."""
+
 from __future__ import annotations
 
 import csv
@@ -38,6 +40,8 @@ _MAX_LOCI_COUNT = 5000
 
 @dataclass(frozen=True)
 class MstNode:
+    """One MST node: a sample (or group of identical-profile samples)."""
+
     label: str
     profile: tuple[str, ...]
     metadata: dict[str, str]
@@ -47,6 +51,8 @@ class MstNode:
 
 @dataclass(frozen=True)
 class DirectedEdge:
+    """A directed tree edge between node indices with both distance flavors."""
+
     source: int
     target: int
     weight: int
@@ -59,6 +65,7 @@ class DirectedEdge:
 
 
 def validate_tsv_scale(tsv_text: str) -> None:
+    """Reject profile input exceeding the 5000-sample / 5000-locus limits."""
     lines = tsv_text.strip().splitlines()
     if not lines:
         return
@@ -76,6 +83,7 @@ def _resolved_allele_count(profile: tuple[str, ...]) -> int:
 
 
 def normalize_allele(value: str | None) -> str:
+    """Strip call decorations (~, ?, INF- prefix) leaving the bare allele id."""
     cleaned = (value or "").strip()
     if cleaned.startswith("~"):
         cleaned = cleaned[1:]
@@ -87,6 +95,7 @@ def normalize_allele(value: str | None) -> str:
 
 
 def is_missing(value: str | None) -> bool:
+    """Return True when the allele token counts as missing (LNF, NIPH, -, ...)."""
     token = (value or "").strip().upper()
     return token in MISSING_TOKENS
 
@@ -98,6 +107,11 @@ def _profile_difference(
     *,
     include_missing: bool,
 ) -> tuple[int, list[str]]:
+    """Symmetric difference: distance plus the mismatching locus names.
+
+    Companion to :func:`profile_distance` for callers that need which loci
+    differed (used by MST validation and locus-diff output).
+    """
     distance = 0
     mismatch_loci: list[str] = []
     for locus, left_value, right_value in zip(loci, left, right, strict=True):
@@ -121,6 +135,11 @@ def _asymmetric_profile_difference(
     *,
     include_missing: bool,
 ) -> tuple[int, list[str]]:
+    """Directed difference: asymmetric distance plus mismatching locus names.
+
+    Companion to :func:`asymmetric_profile_distance`; a source-side miss
+    always counts, a target-side miss only when ``include_missing``.
+    """
     distance = 0
     mismatch_loci: list[str] = []
     for locus, source_value, target_value in zip(loci, source, target, strict=True):
@@ -149,6 +168,11 @@ def profile_distance(
     *,
     include_missing: bool,
 ) -> int:
+    """Symmetric Hamming-style distance between two profiles.
+
+    Loci missing on either side are ignored unless ``include_missing``
+    counts a present/missing mismatch.
+    """
     distance = 0
     for left_value, right_value in zip(left, right, strict=True):
         left_missing = is_missing(left_value)
@@ -168,6 +192,12 @@ def asymmetric_profile_distance(
     *,
     include_missing: bool,
 ) -> int:
+    """Directed distance from source to target.
+
+    A locus missing in the source always costs 1; missing only in the
+    target costs 1 just when ``include_missing`` is set (GrapeTree-style
+    asymmetry).
+    """
     distance = 0
     for source_value, target_value in zip(source, target, strict=True):
         source_missing = is_missing(source_value)
@@ -399,6 +429,13 @@ def _restore_duplicate_leaves(
     include_missing: bool,
     method: str = "edmonds",
 ) -> tuple[list[MstNode], list[dict[str, object]]]:
+    """Build the MST over unique profiles, then re-attach duplicates as leaves.
+
+    Identical profiles are grouped; the chosen backend builds a tree over
+    one representative per group, and remaining members hang off their
+    representative via zero-weight edges. Payload ids are remapped to the
+    expanded node list.
+    """
     if method == "grapetree_v2":
         from gmlst.visual.mst_grapetree import build_grapetree_v2_mst as build_fn
     elif method == "grapetree_classic":
@@ -534,6 +571,7 @@ def _validate_mst(
 
 
 def edge_sort_key(edge: DirectedEdge) -> tuple[float, int, str, str, int, int]:
+    """Deterministic edge ordering: combined weight, then labels, then indices."""
     return (
         edge.combined_weight,
         edge.asymmetric_weight,
@@ -545,6 +583,7 @@ def edge_sort_key(edge: DirectedEdge) -> tuple[float, int, str, str, int, int]:
 
 
 def build_children_map(edges: list[DirectedEdge]) -> dict[int, list[int]]:
+    """Map each node index to its direct children from directed edges."""
     children: dict[int, list[int]] = {}
     for edge in edges:
         children.setdefault(edge.source, []).append(edge.target)
@@ -552,6 +591,7 @@ def build_children_map(edges: list[DirectedEdge]) -> dict[int, list[int]]:
 
 
 def collect_descendants(children: dict[int, list[int]], node: int) -> set[int]:
+    """Return *node* plus all transitive descendants (iterative DFS)."""
     descendants = {node}
     stack = list(children.get(node, []))
     while stack:

@@ -8,10 +8,8 @@ import json
 import logging
 import sys
 from collections.abc import Callable, Iterator
-from typing import Any
 
 from gmlst.commands.common import (
-    _DictSchemeInfo,
     _load_blocked_schemes,
     emit_output_csv,
     emit_output_json,
@@ -22,6 +20,7 @@ from gmlst.commands.common import (
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.download import DownloadTool
 from gmlst.database.providers import AVAILABLE_PROVIDERS
+from gmlst.database.providers.base import SchemeInfo
 
 
 @contextlib.contextmanager
@@ -40,13 +39,11 @@ def _locked_local_catalog(cache: DatabaseCache) -> Iterator[None]:
 logger = logging.getLogger(__name__)
 
 
-def _reject_if_blocked(
-    scheme: str, match_info: _DictSchemeInfo | dict[str, Any], provider: str
-) -> None:
+def _reject_if_blocked(scheme: str, match_info: SchemeInfo, provider: str) -> None:
     """Exit with error if scheme is blocked."""
     blocked = _load_blocked_schemes()
     provider_blocked = blocked.get(provider, set())
-    scheme_dir = match_info.get("extra", {}).get("directory", "")
+    scheme_dir = str(match_info.extra.get("directory", ""))
     if scheme in provider_blocked or scheme_dir in provider_blocked:
         err_console.print(
             f"[red]Error:[/red] Scheme '{scheme}' is blocked for provider '{provider}'."
@@ -105,8 +102,8 @@ def _find_catalog_scheme_matches(
     *,
     include_local: bool = False,
     ignore_catalog_errors: bool = False,
-) -> list[tuple[str, _DictSchemeInfo]]:
-    matches: list[tuple[str, _DictSchemeInfo]] = []
+) -> list[tuple[str, SchemeInfo]]:
+    matches: list[tuple[str, SchemeInfo]] = []
     for prov in _catalog_providers(include_local=include_local):
         try:
             scheme_dicts = cache.load_catalog(prov)
@@ -121,7 +118,7 @@ def _find_catalog_scheme_matches(
             if item.get("scheme_name") == scheme_name:
                 normalized = dict(item)
                 normalized.setdefault("provider", prov)
-                matches.append((prov, _DictSchemeInfo(normalized)))
+                matches.append((prov, SchemeInfo.from_dict(normalized)))
                 break
     return matches
 
@@ -152,14 +149,14 @@ def _load_schemes(
     cache: DatabaseCache,
     provider: str,
     scheme_type: str,
-) -> list[_DictSchemeInfo]:
+) -> list[SchemeInfo]:
     """Load schemes from cache, filtered by provider, type, and blocked list."""
     providers_to_check = AVAILABLE_PROVIDERS if provider == "all" else [provider]
-    all_schemes: list[_DictSchemeInfo] = []
+    all_schemes: list[SchemeInfo] = []
     for prov in providers_to_check:
         scheme_dicts = cache.load_catalog(prov)
         if scheme_dicts:
-            all_schemes.extend(_DictSchemeInfo(d) for d in scheme_dicts)
+            all_schemes.extend(SchemeInfo.from_dict(d) for d in scheme_dicts)
 
     if scheme_type != "all":
         target_type = scheme_type.lower()
@@ -214,7 +211,7 @@ def resolve_scheme_or_exit(
     scheme: str,
     *,
     include_local: bool = False,
-) -> tuple[str, _DictSchemeInfo]:
+) -> tuple[str, SchemeInfo]:
     """Find scheme in catalogs, exit on not found or blocked."""
     matches = _find_catalog_scheme_matches(cache, scheme, include_local=include_local)
     if not matches:

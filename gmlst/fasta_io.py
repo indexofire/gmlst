@@ -1,3 +1,9 @@
+"""FASTA file helpers: counting, validation, merging, and wrapped output.
+
+Sequences are uppercased on read and gzip-compressed input is handled
+transparently via :func:`gmlst.utils.open_text`.
+"""
+
 from __future__ import annotations
 
 import time
@@ -37,6 +43,11 @@ def utc_now_iso() -> str:
 
 
 def iter_fasta_records(path: Path) -> Iterator[tuple[str, str]]:
+    """Yield ``(header, sequence)`` pairs from a FASTA file.
+
+    The header is the first whitespace-delimited token after ``>`` and
+    the sequence is uppercased.
+    """
     header: str | None = None
     chunks: list[str] = []
     with open_text(path) as handle:
@@ -56,6 +67,7 @@ def iter_fasta_records(path: Path) -> Iterator[tuple[str, str]]:
 
 
 def iter_fasta_sequences(path: Path) -> Iterator[str]:
+    """Yield only the (uppercased) sequences of a FASTA file."""
     for _header, sequence in iter_fasta_records(path):
         yield sequence
 
@@ -67,6 +79,7 @@ def write_wrapped_fasta(
     *,
     width: int = 60,
 ) -> None:
+    """Write one FASTA record: ``>`` header line plus wrapped sequence."""
     handle.write(f">{header}\n")
     write_wrapped_sequence(handle, sequence, width=width)
 
@@ -98,6 +111,7 @@ def write_wrapped_sequence(
     *,
     width: int = 60,
 ) -> None:
+    """Write *sequence* in fixed-width lines of *width* bases each."""
     for index in range(0, len(sequence), width):
         handle.write(sequence[index : index + width] + "\n")
 

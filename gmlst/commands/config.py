@@ -21,6 +21,8 @@ err_console = Console(stderr=True)
 
 @dataclass(frozen=True)
 class ConfigEntry:
+    """One registry entry describing a supported environment variable."""
+
     name: str
     description: str
     default: str

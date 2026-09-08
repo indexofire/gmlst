@@ -1,3 +1,5 @@
+"""Gene clustering for scheme-free typing — mmseqs2 wrapper with hash fallback."""
+
 from __future__ import annotations
 
 import hashlib
@@ -11,6 +13,8 @@ from gmlst.utils import temp_dir
 
 
 class MMseqsClusterEngine:
+    """Group predicted genes into loci for tgMLST, with an exact-hash fallback."""
+
     def __init__(
         self,
         min_seq_id: float = 0.95,
@@ -32,6 +36,12 @@ class MMseqsClusterEngine:
         self.timeout_sec = timeout_sec
 
     def cluster_genes(self, genes: list[PredictedGene]) -> dict[str, str]:
+        """Cluster genes into loci, returning ``{gene key: locus_id}``.
+
+        Uses ``mmseqs easy-cluster`` (identity/coverage per config) in a
+        temp dir; falls back to exact sequence-hash grouping when mmseqs is
+        missing or produces no cluster table (unless fallback is disabled).
+        """
         if not genes:
             return {}
 

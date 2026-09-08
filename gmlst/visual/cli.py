@@ -1,3 +1,5 @@
+"""`gmlst visual` CLI — web app launcher and MST/matrix/heatmap export commands."""
+
 from __future__ import annotations
 
 import threading

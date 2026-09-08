@@ -1,3 +1,12 @@
+"""Hash-based k-mer prefilter for candidate allele selection.
+
+Before running expensive alignments, cgMLST modes use this module to
+rank, per locus, the alleles most likely present in an assembly. Allele
+and contig sequences are reduced to sets of strand-neutral canonical
+k-mer codes (2-bit encoded, both strands collapsed to one value) and
+scored by shared k-mers.
+"""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -15,6 +24,26 @@ def prefilter_assembly_candidates(
     top_n: int,
     stride: int = 1,
 ) -> dict[str, list[tuple[str, float]]]:
+    """Rank up to *top_n* candidate alleles per locus by shared k-mers.
+
+    Each distinct canonical k-mer observed in an assembly contig casts a
+    ``1 / (number of alleles containing it)`` weighted vote for every
+    allele that shares it; k-mers are deduplicated per contig (and per
+    allele when building the index) so repeated sequence does not
+    inflate scores. Loci sharing no k-mers with the assembly are omitted
+    from the result.
+
+    Returns
+    -------
+    dict[str, list[tuple[str, float]]]
+        ``{locus: [(allele_id, score), ...]}`` sorted by descending
+        score, numeric allele ids first.
+
+    Raises
+    ------
+    ValueError
+        If *k*, *top_n*, or *stride* is not positive.
+    """
     if k <= 0:
         raise ValueError("k must be positive")
     if top_n <= 0:

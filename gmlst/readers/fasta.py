@@ -23,6 +23,7 @@ class FastaRecord:
 
     @property
     def length(self) -> int:
+        """Number of bases in this record."""
         return len(self.sequence)
 
 

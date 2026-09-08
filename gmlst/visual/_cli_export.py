@@ -1,3 +1,5 @@
+"""Export dispatcher for `gmlst visual` CLI output (json/tsv/csv/table)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -23,6 +25,14 @@ def emit_export_payload(
     include_meta: bool,
     columns_spec: str | None,
 ) -> None:
+    """Emit a computed visual payload (mst/matrix/heatmap/compare/locus-diff).
+
+    json output wraps the payload in a ``{schema_version, kind, payload}``
+    envelope; every other kind is flattened to tabular rows with optional
+    metadata columns (--include-meta), a --columns subset, and leading
+    summary lines.
+    """
+
     def _selected_columns(rows: list[dict[str, Any]], defaults: list[str]) -> list[str]:
         if not columns_spec:
             return defaults

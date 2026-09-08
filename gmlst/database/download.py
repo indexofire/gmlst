@@ -315,6 +315,15 @@ class _RedirectValidatingSession(requests.Session):
         prepared_request: requests.PreparedRequest,
         response: requests.Response,
     ) -> None:
+        """Re-validate every redirect hop against the SSRF guard.
+
+        SECURITY: requests calls this hook on each redirect before the
+        redirected request is sent, so re-checking ``prepared_request.url``
+        here prevents an attacker-controlled redirect (e.g. from a URL
+        obtained via an external API response) from reaching an internal
+        network address that the originally validated URL would never
+        have been allowed to touch.
+        """
         assert_public_url(str(prepared_request.url))
 
 
@@ -357,6 +366,12 @@ def download_file_requests(
                         fh.write(chunk)
             return
         except requests.RequestException as exc:
+            status = _non_retryable_status(exc)
+            if status is not None:
+                dest.unlink(missing_ok=True)
+                raise RuntimeError(
+                    f"Download failed (HTTP {status}) for {url}"
+                ) from exc
             if attempt == retries:
                 dest.unlink(missing_ok=True)
                 raise RuntimeError(
@@ -372,6 +387,17 @@ def download_file_requests(
             time.sleep(retry_delay)
 
 
+def _non_retryable_status(exc: BaseException) -> int | None:
+    """Return the HTTP status if *exc* is a deterministic 4xx (except 429)."""
+    if isinstance(exc, requests.HTTPError):
+        response = exc.response
+        if response is not None:
+            status = response.status_code
+            if 400 <= status < 500 and status != 429:
+                return status
+    return None
+
+
 def fetch_json(
     url: str,
     *,
@@ -382,7 +408,9 @@ def fetch_json(
 ) -> dict | list:
     """GET a JSON endpoint with retry. Returns parsed data.
 
-    Used by bigsdb (PubMLST/Pasteur) for API calls.
+    Used by bigsdb (PubMLST/Pasteur) for API calls. Client errors (4xx
+    except 429) fail immediately without retry: the server's answer is
+    deterministic for the same request.
     """
     assert_public_url(url)
 
@@ -395,6 +423,11 @@ def fetch_json(
             resp.raise_for_status()
             return resp.json()
         except (requests.RequestException, ValueError) as exc:
+            status = _non_retryable_status(exc)
+            if status is not None:
+                raise RuntimeError(
+                    f"JSON fetch failed (HTTP {status}) for {url}"
+                ) from exc
             if attempt == retries:
                 raise RuntimeError(
                     f"JSON fetch failed after {retries} attempts: {url}"

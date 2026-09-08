@@ -1,3 +1,5 @@
+"""`gmlst utils` command group — backend checks, extraction, concat, benchmarking."""
+
 from __future__ import annotations
 
 import json

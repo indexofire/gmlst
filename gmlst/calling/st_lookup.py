@@ -68,6 +68,12 @@ class STResult:
 
     @property
     def has_conflicting_multicopy(self) -> bool:
+        """True if any locus has multiple distinct allele hits.
+
+        Conflicting multi-copy loci (different alleles detected at
+        different genomic copies, e.g. paralogs) make the profile
+        ambiguous, so ST lookup is skipped and rendered as ``-``.
+        """
         return any(call.multiple_hits for call in self.locus_calls.values())
 
     def allele_ids(self) -> dict[str, str]:
@@ -85,6 +91,26 @@ class STResult:
         call_policy: str = "default",
         detail: bool = False,
     ) -> str:
+        """Render this result as one tseemann/mlst-style TSV row.
+
+        Columns: ``sample_id [scheme] st <allele calls in *loci* order>``.
+        The scheme column is included unless *include_scheme* is False.
+        The ST is rendered as ``-`` when the profile is novel or has
+        conflicting multi-copy loci. Per-locus markers:
+
+        * ``42`` — exact call (``42*`` when the same allele appears on
+          multiple genomic copies)
+        * ``~42`` — closest or novel call; ``42?`` — partial call;
+          ``-`` — missing
+        * ``41,42`` — conflicting multi-copy hits (deduplicated,
+          numerically sorted)
+        * ``42,42`` — same-allele copies expanded when *count_same_copy*
+          is set
+
+        With ``call_policy="chewbbaca"``, chewBBACA-style classifications
+        take precedence over these markers; *detail* appends
+        ``;contig:start-end:strand`` to each allele call.
+        """
         st_str = (
             "-"
             if self.has_conflicting_multicopy or self.is_novel

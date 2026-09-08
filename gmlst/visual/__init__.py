@@ -1,3 +1,5 @@
+"""Local visualization package — Flask app factory and MST building API."""
+
 from __future__ import annotations
 
 from gmlst.visual.app import create_visual_app

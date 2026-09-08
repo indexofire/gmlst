@@ -199,6 +199,7 @@ def run_typing(
     chew_cds_gate: bool = True,
     on_result: Callable[[STResult], None] | None = None,
 ) -> list[STResult]:
+    """Type samples against a scheme; thin wrapper around ``run_typing_impl``."""
     from .pipeline import run_typing_impl
 
     return run_typing_impl(

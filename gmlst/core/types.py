@@ -1,3 +1,11 @@
+"""Shared data types for the core typing pipeline.
+
+Defines the immutable per-run configuration bundle
+(:class:`TypingContext`) and the cgMLST mode override table
+(:class:`CgmlstModeOverrides`) that together parameterize the pipeline
+without threading dozens of keyword arguments through every phase.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -8,6 +16,37 @@ from gmlst.readers.sample import SampleInput
 
 @dataclass(frozen=True)
 class CgmlstModeOverrides:
+    """Pipeline knobs overridden per cgMLST mode (fast/ultrafast/balanced).
+
+    ``None`` means "no override": the environment-configured default
+    applies. Non-``None`` values force the behavior for the mode:
+
+    - ``exact_hash_prefilter``: resolve exact alleles via CDS hashing
+      before alignment.
+    - ``minimap2_hash_prefilter``: shortlist loci against a representative
+      minimap2 index instead of a k-mer prefilter.
+    - ``minimap2_hash_locus_top_n``: candidate alleles kept per locus when
+      narrowing the hash prefilter's loci.
+    - ``minimap2_hash_refine_max_loci``: cap (0 disables) on "missing"
+      loci eligible for targeted refinement re-alignment.
+    - ``minimap2_fasta_emit_cigar``: request CIGAR output in minimap2
+      FASTA alignments.
+    - ``minimap2_fasta_speed_profile``: minimap2 speed preset name
+      (e.g. ``"default"``, ``"ultrafast"``).
+    - ``minimap2_representative_main_alignment``: reuse the
+      representative-index alignment as the main alignment, skipping
+      per-sample candidate FASTAs.
+    - ``minimap2_bsr_confirm_max_loci``: cap on low-confidence loci
+      re-aligned in the BSR-like confirmation pass.
+    - ``minimap2_ultrafast_second_pass_max_loci``: budget for the
+      ultrafast second pass (``None`` selects the adaptive budget, ``0``
+      disables the pass).
+    - ``evidence_fallback_backend``: backend (e.g. ``"blastn"``) used to
+      re-align low-confidence loci; ``"none"`` disables the fallback.
+    - ``evidence_fallback_max_loci``: cap on loci sent to the evidence
+      fallback (larger sets skip it).
+    """
+
     exact_hash_prefilter: bool
     minimap2_hash_prefilter: bool
     minimap2_hash_locus_top_n: int | None
@@ -23,6 +62,16 @@ class CgmlstModeOverrides:
 
 @dataclass(frozen=True)
 class TypingContext:
+    """Immutable configuration bundle shared across one typing run.
+
+    Carries everything a pipeline phase needs — the core facade, scheme
+    and cache handles, aligner and index paths, prefilter state (exact-hash
+    index, allele caches, representative index), CDS prediction settings,
+    and calling thresholds — so per-sample phases receive a single frozen
+    object instead of long keyword chains. Use :meth:`evolve` to derive a
+    copy bound to one sample.
+    """
+
     core: object | None = None
     sample: SampleInput | None = None
     scheme: object | None = None
@@ -65,4 +114,5 @@ class TypingContext:
     chew_cds_gate: bool = True
 
     def evolve(self, **overrides) -> TypingContext:
+        """Return a copy of this context with fields replaced by *overrides*."""
         return replace(self, **overrides)

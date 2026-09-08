@@ -1,3 +1,10 @@
+"""Call-quality ranking used to triage loci for refinement passes.
+
+Provides rank functions that order ``LocusCall`` objects by call type and
+match quality, a low-confidence detector, and an adaptive budget that
+bounds how many loci the ultrafast second pass may re-align.
+"""
+
 from __future__ import annotations
 
 from gmlst.calling.allele import LocusCall

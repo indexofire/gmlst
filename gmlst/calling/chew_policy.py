@@ -1,3 +1,22 @@
+"""chewBBACA-compatible classification of locus calls.
+
+Converts per-locus :class:`~gmlst.calling.allele.LocusCall` results into
+chewBBACA-style category codes so cgMLST output matches the familiar
+schema-genome caller vocabulary:
+
+* ``NIPHEM`` / ``NIPH`` — multiple exact / non-exact hits for the locus
+* ``LNF`` — locus not found
+* ``LOTSC`` — allele landed on a contig shorter than the allele itself
+* ``PLOT5`` / ``PLOT3`` — allele truncated at a contig tip
+* ``ASM`` / ``ALM`` — allele much smaller / larger than the locus mode size
+* ``<allele_id>`` — exact match; ``INF-<allele_id>`` / ``INF`` — inferred
+
+An optional CDS gate checks that the called allele is among the
+pyrodigal-predicted CDSs; failing calls fall back to structural checks
+(contig position, size, sequence containment) before being demoted to
+``LNF``.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -17,6 +36,40 @@ def classify_chew_style_calls(
     cds_sequences: list[str] | None = None,
     enforce_cds_gate: bool = True,
 ) -> dict[str, str]:
+    """Classify every locus call into a chewBBACA-style category code.
+
+    Classification precedence per locus: multiple hits → ``NIPHEM``
+    (exact best hit) or ``NIPH``; missing → ``LNF``. Exact calls with an
+    allele id return the allele id. Contig-position defects yield
+    ``LOTSC`` / ``PLOT5`` / ``PLOT3``; size outliers yield ``ASM`` /
+    ``ALM``; closest/novel calls yield ``INF-<allele_id>`` (or ``INF``).
+    When the CDS gate is enforced and the called allele is absent from
+    the predicted CDS set, only structural defects or the sequence
+    containment fallback can still yield ``INF-*`` — otherwise the locus
+    is demoted to ``LNF``.
+
+    Parameters
+    ----------
+    locus_calls:
+        Per-locus calls produced by the calling pipeline.
+    allele_files:
+        ``{locus: allele FASTA}`` used for length statistics, hashes,
+        and sequences.
+    size_threshold:
+        Relative deviation from the locus mode allele length that
+        triggers ``ASM`` / ``ALM`` (default 0.2 = 20%).
+    cds_dna_hashes:
+        SHA-256 hashes of predicted CDS DNA sequences (gate evidence).
+    cds_sequences:
+        Raw predicted CDS sequences for the containment fallback.
+    enforce_cds_gate:
+        Whether calls failing the CDS gate are demoted.
+
+    Returns
+    -------
+    dict[str, str]
+        ``{locus: classification}`` for every input locus call.
+    """
     stats = _load_locus_length_stats(allele_files)
     allele_hashes = _load_allele_data(allele_files, as_hash=True)
     allele_sequences = _load_allele_data(allele_files)

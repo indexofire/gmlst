@@ -1,3 +1,8 @@
+"""Service functions behind the novel-allele workflow.
+
+Covers extraction bookkeeping and custom-scheme metadata handling.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,6 +10,7 @@ from typing import Any
 
 
 def last_allele_numbers(novel_alleles: dict[str, list]) -> dict[str, int]:
+    """Map each locus to its highest novel allele number (from ``nX`` ids)."""
     last_numbers: dict[str, int] = {}
     for locus, alleles in novel_alleles.items():
         max_number = 0
@@ -32,6 +38,7 @@ def build_custom_scheme_metadata(
     novel_alleles: dict[str, list],
     novel_profiles: list,
 ) -> dict:
+    """Build the metadata document for a newly created custom scheme."""
     return {
         "scheme": custom_name,
         "provider": "local",
@@ -58,6 +65,12 @@ def merge_custom_scheme_update_metadata(
     novel_alleles: dict[str, list],
     updated_at: str,
 ) -> dict:
+    """Merge an update round into existing custom-scheme metadata.
+
+    Records the new per-locus last allele numbers, backfills the N-numbered
+    novel profile list up to the new ST count, appends the new allele ids,
+    and stamps ``updated_at``. Returns a new dict; *meta* is not mutated.
+    """
     updated = dict(meta)
     updated["last_allele_number"] = last_allele_numbers
 
@@ -83,6 +96,10 @@ def collect_novel_typing_results(
     profile_writer,
     logger,
 ) -> None:
+    """Feed typing results into the novel allele/profile writers.
+
+    Assignments are logged as they are made.
+    """
     for result in results:
         sample_name = result.sample_id
 
@@ -124,6 +141,12 @@ def create_novel_writers(
     allele_writer_cls,
     profile_writer_cls,
 ) -> tuple[object | None, object | None]:
+    """Create the novel writers requested by CLI flags.
+
+    Returns ``(allele_writer, profile_writer)``; both None unless
+    ``novel_allele`` is set (the profile writer also requires
+    ``novel_profile``). Output defaults to the current directory.
+    """
     if not novel_allele:
         return None, None
     novel_dir = output_dir or Path.cwd()
@@ -133,6 +156,7 @@ def create_novel_writers(
 
 
 def write_novel_outputs(*, allele_writer, profile_writer, console) -> None:
+    """Flush both writers and report written paths (or "none detected") to console."""
     if allele_writer:
         written = allele_writer.write()
         if written:
@@ -158,6 +182,7 @@ def finalize_novel_typing_outputs(
     logger,
     console,
 ) -> None:
+    """Collect results into the writers, then write and announce the outputs."""
     collect_novel_typing_results(
         results=results,
         allele_writer=allele_writer,

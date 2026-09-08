@@ -148,6 +148,13 @@ class Minimap2Aligner:
         loci: list[str],
         input_type: Literal["fasta", "fastq"],
     ) -> AlignmentResult:
+        """Align an assembly against the prebuilt allele index.
+
+        Runs minimap2 (alleles as query, genome as target) in a temporary
+        directory and parses the PAF output into :class:`AlleleMatch`
+        entries. FASTA assemblies only — FASTQ input is not supported
+        (use the KMA backend).
+        """
         sample_path = sample[0] if isinstance(sample, tuple) else sample
         sample_id = SampleInput.from_path(sample_path).sample_id
         t0 = time.perf_counter()

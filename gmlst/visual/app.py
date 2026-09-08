@@ -1,3 +1,5 @@
+"""Flask application and JSON API for the local MST visualization web app."""
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +33,7 @@ class _QuietNotFoundFilter(logging.Filter):
     """Suppress Werkzeug request logs for well-known browser probes and 404s."""
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Keep the log line only when it is not a well-known probe request."""
         return _WELL_KNOWN_PREFIX not in record.getMessage()
 
 
@@ -101,6 +104,12 @@ def _choose_root_id(
     nodes: list[dict[str, Any]],
     edges: list[dict[str, Any]],
 ) -> int | None:
+    """Pick the layout root node for the tree view.
+
+    Prefers nodes minimizing (weighted eccentricity, total distance to all
+    nodes, then larger member groups, then label) — approximated via double
+    DFS from a tree end plus rerooting sums. Returns None for empty input.
+    """
     if not nodes:
         return None
     if len(nodes) == 1:
@@ -298,6 +307,10 @@ def _cluster_nodes(
     *,
     threshold: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Group nodes into clusters connected by edges of weight <= threshold.
+
+    Returns nodes annotated with ``cluster_id`` plus a per-cluster summary.
+    """
     adjacency = {int(node["id"]): [] for node in nodes}
     for edge in edges:
         weight = int(edge["weight"])
@@ -316,6 +329,7 @@ def _cluster_nodes_by_matrix(
     *,
     threshold: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Cluster nodes from a full distance matrix using the same threshold rule."""
     adjacency = {int(node["id"]): [] for node in nodes}
     for row_index, row in enumerate(matrix):
         for col_index, value in enumerate(row):
@@ -326,6 +340,12 @@ def _cluster_nodes_by_matrix(
 
 
 def create_visual_app(*, title: str) -> Flask:
+    """Create the visualization Flask app serving the Vue UI and JSON API.
+
+    Installs same-origin protection for state-changing requests, security
+    headers, a 32 MB upload cap, and the /api/mst, /api/distance-matrix,
+    /api/locus-diff, /api/allele-heatmap, and /api/compare-results routes.
+    """
     web_root = Path(__file__).resolve().parents[1] / "web"
     app = Flask(
         "gmlst_visual",
@@ -371,6 +391,7 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.get("/")
     def index() -> str:
+        """Serve the single-page visualization UI."""
         return render_template(
             "visual/index.html",
             title=app.config["GMLST_VISUAL_TITLE"],
@@ -378,14 +399,23 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.route("/.well-known/<path:subpath>")
     def well_known_catch(subpath: str) -> tuple[str, int]:
+        """Swallow browser well-known probes with an empty 204 response."""
         return "", 204
 
     @app.get("/health")
     def health() -> tuple[dict[str, str], int]:
+        """Liveness endpoint returning ``{"status": "ok"}``."""
         return {"status": "ok"}, 200
 
     @app.post("/api/mst")
     def api_mst() -> tuple[Any, int]:
+        """POST ``{tsv, metadata_tsv?, method?, include_missing?,
+        aggregate_profiles?, cluster_threshold?}``.
+
+        Builds the MST and responds with nodes, edges, table rows, cluster
+        summary, layout hints (root id), and suggested color fields.
+        Errors: 400 for invalid input, 500 on internal failure.
+        """
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -462,6 +492,12 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.post("/api/distance-matrix")
     def api_distance_matrix() -> tuple[Any, int]:
+        """POST ``{tsv, metadata_tsv?, include_missing?,
+        aggregate_profiles?, cluster_threshold?}``.
+
+        Responds with ``{labels, matrix, table_rows, cluster_summary,
+        metadata_fields, export}``; error semantics match /api/mst.
+        """
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -516,6 +552,11 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.post("/api/locus-diff")
     def api_locus_diff() -> tuple[Any, int]:
+        """POST ``{tsv, left_label, right_label, include_missing?, metadata_tsv?}``.
+
+        Responds with the per-locus comparison payload from
+        :func:`build_locus_diff_from_tsv`.
+        """
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -541,6 +582,12 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.post("/api/allele-heatmap")
     def api_allele_heatmap() -> tuple[Any, int]:
+        """POST ``{tsv, metadata_tsv?, aggregate_profiles?}``.
+
+        Responds with ``{labels, loci, cells, table_rows,
+        metadata_fields, export}`` where each cell carries its allele value
+        and missing/present state.
+        """
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("tsv", "") or "")
@@ -582,6 +629,11 @@ def create_visual_app(*, title: str) -> Flask:
 
     @app.post("/api/compare-results")
     def api_compare_results() -> tuple[Any, int]:
+        """POST ``{left_tsv, right_tsv}`` — two typing result tables.
+
+        Responds with the sample-level comparison payload from
+        :func:`build_result_comparison_from_tsv`.
+        """
         try:
             payload = _require_payload_dict()
             validate_tsv_scale(payload.get("left_tsv", "") or "")

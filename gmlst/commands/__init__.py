@@ -8,7 +8,6 @@ This package contains modular command implementations:
 """
 
 from gmlst.commands.common import (
-    _DictSchemeInfo,
     _load_blocked_schemes,
     _natural_sort_key,
     console,
@@ -20,7 +19,6 @@ from gmlst.commands.utils import cmd_benchmark, utils_group
 
 __all__ = [
     "_load_blocked_schemes",
-    "_DictSchemeInfo",
     "_natural_sort_key",
     "console",
     "err_console",

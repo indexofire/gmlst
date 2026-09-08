@@ -1,3 +1,21 @@
+"""KMA alignment backend.
+
+Strategy
+--------
+The only backend that supports raw FASTQ reads as well as assemblies:
+
+* ``index`` — merge all allele FASTAs and run ``kma index`` once per scheme.
+* ``align`` — map single-end, paired-end (``-ipe``), or assembly (``-asm``)
+  input against the shared template database; KMA reports the best
+  consensus template per locus.
+
+Output parsing
+--------------
+Results come from KMA's tabular ``.res`` file (the ``#`` header line
+defines column names). Template identity and coverage arrive as
+percentages and are normalised; read depth is kept only for FASTQ input.
+"""
+
 from __future__ import annotations
 
 import shutil
@@ -13,6 +31,8 @@ from gmlst.utils import temp_dir
 
 
 class KmaAligner:
+    """MLST aligner using KMA (raw FASTQ reads and assemblies)."""
+
     def __init__(self, threads: int = 1, **kwargs) -> None:
         self.threads = threads
         self.fastq_mem_mode = bool(kwargs.get("fastq_mem_mode", False))
@@ -26,6 +46,7 @@ class KmaAligner:
         return True
 
     def check_dependencies(self) -> None:
+        """Raise ``RuntimeError`` with build instructions if ``kma`` is missing."""
         if shutil.which("kma") is None:
             raise RuntimeError(
                 "kma backend requires KMA binary. Install by source build: "
@@ -34,6 +55,17 @@ class KmaAligner:
             )
 
     def index(self, allele_fastas: list[Path], index_dir: Path) -> Path:
+        """Merge allele FASTAs and build a KMA template database.
+
+        Runs ``kma index`` as a subprocess, writing ``alleles.fasta`` and
+        the ``kma_db.*`` files into *index_dir*.
+
+        Returns
+        -------
+        Path
+            The index **directory** (the database prefix used by
+            :meth:`align` is ``index_dir / "kma_db"``).
+        """
         index_dir.mkdir(parents=True, exist_ok=True)
         merged = merge_fasta_files(allele_fastas, index_dir / "alleles.fasta")
         db_prefix = index_dir / "kma_db"
@@ -60,6 +92,14 @@ class KmaAligner:
         loci: list[str],
         input_type: Literal["fasta", "fastq"],
     ) -> AlignmentResult:
+        """Map reads or an assembly against the KMA template database.
+
+        Paired FASTQ input uses ``-ipe``, single files ``-i``; assemblies
+        add ``-asm``, FASTQ adds ``-ill`` (plus ``-mem_mode`` when
+        enabled). KMA runs in a temporary directory (cleaned up
+        afterwards) and the resulting ``.res`` file is parsed into
+        :class:`AlleleMatch` entries — one per template hit.
+        """
         sample_path = sample[0] if isinstance(sample, tuple) else sample
         sample_id = SampleInput.from_path(sample_path).sample_id
         t0 = time.perf_counter()

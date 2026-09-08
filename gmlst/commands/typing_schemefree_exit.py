@@ -9,6 +9,12 @@ def schemefree_exit_decision(
     errors: list[dict[str, str]],
     fail_on_error: bool,
 ) -> tuple[int, str, str | None]:
+    """Decide the tgMLST process exit code from per-sample outcomes.
+
+    Returns ``(exit_code, reason, primary_stage)``: 0 when everything (or
+    partial failures with ``fail_on_error`` disabled) succeeded; otherwise a
+    stage-specific exit code derived from the dominant failed stage.
+    """
     if failed_count == 0:
         return 0, "all_succeeded", None
 
@@ -27,6 +33,7 @@ def schemefree_exit_decision(
 
 
 def count_errors_by_stage(errors: list[dict[str, str]]) -> dict[str, int]:
+    """Count error records per pipeline stage (defaulting to "unknown")."""
     counts: dict[str, int] = {}
     for error in errors:
         stage = error.get("stage", "unknown")
@@ -35,6 +42,10 @@ def count_errors_by_stage(errors: list[dict[str, str]]) -> dict[str, int]:
 
 
 def primary_failed_stage(errors: list[dict[str, str]]) -> str:
+    """Pick the dominant failed stage.
+
+    Most errors first; ties break toward the earliest pipeline stage.
+    """
     counts = count_errors_by_stage(errors)
     if not counts:
         return "unknown"
@@ -47,6 +58,7 @@ def primary_failed_stage(errors: list[dict[str, str]]) -> str:
 
 
 def stage_exit_code(stage: str) -> int:
+    """Map a failed pipeline stage to its distinct exit code (2-5, default 5)."""
     mapping = {
         "input": 2,
         "assembly": 3,

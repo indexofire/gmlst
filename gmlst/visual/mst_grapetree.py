@@ -1,3 +1,5 @@
+"""GrapeTree-compatible MST backends (goeBURST-style v2 and classic Kruskal)."""
+
 from __future__ import annotations
 
 import math
@@ -284,6 +286,14 @@ def build_grapetree_v2_mst(
     *,
     include_missing: bool,
 ) -> list[dict[str, object]]:
+    """GrapeTree v2 (goeBURST-style) MST over *nodes*.
+
+    Uses missingness-scaled asymmetric distances, harmonic tie-break
+    weights, and shortcut pre-attachments for near-identical profiles;
+    the active core is joined with a rootless Edmonds arborescence and
+    branches are recrafted toward higher-ranked sources. Returns
+    payload-style edge dicts.
+    """
     if len(nodes) <= 1:
         return []
 
@@ -399,6 +409,7 @@ def _eburst_weights(
         histograms.append(counts)
 
     def sort_key(idx: int) -> tuple[int, ...]:
+        """Rank nodes by neighbor counts at small distances (eBURST tiers)."""
         return tuple([-histograms[idx][k] for k in range(1, max_dist + 2)]) + (
             -histograms[idx][0],
         )
@@ -417,12 +428,14 @@ class _DSU:
         self.rank = [0] * n
 
     def find(self, x: int) -> int:
+        """Return the set representative of *x* (path-halving)."""
         while self.parent[x] != x:
             self.parent[x] = self.parent[self.parent[x]]
             x = self.parent[x]
         return x
 
     def union(self, a: int, b: int) -> bool:
+        """Merge two sets; return False if already connected (cycle guard)."""
         root_a = self.find(a)
         root_b = self.find(b)
         if root_a == root_b:
@@ -507,6 +520,11 @@ def build_grapetree_classic_mst(
     *,
     include_missing: bool,
 ) -> list[dict[str, object]]:
+    """Classic GrapeTree MST: missingness-scaled distances plus Kruskal.
+
+    eBURST-style ranks (distance histograms weighted by group size)
+    break ties between equal-cost edges.
+    """
     if len(nodes) <= 1:
         return []
 

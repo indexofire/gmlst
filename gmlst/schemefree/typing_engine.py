@@ -22,6 +22,8 @@ from gmlst.utils import temp_dir
 
 
 class SampleProcessingError(RuntimeError):
+    """Pipeline failure for one sample, tagged with its failing stage."""
+
     def __init__(self, sample_id: str, stage: str, message: str) -> None:
         super().__init__(message)
         self.sample_id = sample_id
@@ -93,6 +95,15 @@ class SchemeFreeTyper:
         self.last_run_errors: list[dict[str, str]] = []
 
     def type_sample_files(self, sample_paths: list[Path]) -> list[SampleProfile]:
+        """Run the full tgMLST pipeline over FASTA/FASTQ sample files.
+
+        Stages: input parsing, optional FASTQ assembly (megahit), gene
+        prediction (Prodigal), locus clustering (mmseqs2, longest gene per
+        sample wins a locus), and allele hashing into profiles. Per-sample
+        failures are captured in ``last_run_errors`` (with stage tags)
+        instead of aborting the run; ``last_run_stats`` carries stage
+        timings and counts.
+        """
         run_start = time.perf_counter()
         all_genes: list[PredictedGene] = []
         sample_inputs: list[SampleInput] = []

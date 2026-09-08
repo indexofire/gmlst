@@ -1,3 +1,5 @@
+"""Edmonds minimum spanning arborescence backend for MST building."""
+
 from __future__ import annotations
 
 from collections import deque
@@ -460,6 +462,13 @@ def build_edmonds_mst(
     *,
     include_missing: bool,
 ) -> list[dict[str, object]]:
+    """Build a directed MST over *nodes* using Edmonds' arborescence algorithm.
+
+    Tries every node as root, keeps the cheapest branching (combined then
+    asymmetric weight), then applies a recrafting pass that re-parents
+    subtrees toward higher-resolution profiles. Returns payload-style edge
+    dicts sorted deterministically.
+    """
     return _build_mst_edges(nodes, loci, include_missing=include_missing)
 
 

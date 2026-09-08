@@ -1,3 +1,15 @@
+"""Single-sample and batch orchestration of the typing pipeline.
+
+``run_typing_impl`` is the engine behind ``gmlst typing``: it resolves the
+scheme from the database cache, normalizes policies and cgMLST mode
+overrides into an immutable :class:`TypingContext`, then per sample runs
+exact-hash pre-resolution, either the prefilter phase (candidate FASTAs /
+representative index) or direct alignment against the full index, and
+finally calling plus post-alignment refinement and ST lookup. All
+collaborators are reached through the ``core`` module facade so adapter
+wiring stays lazy and cycle-free.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -787,6 +799,13 @@ def run_typing_impl(
     chew_cds_gate: bool = True,
     on_result: Callable[[STResult], None] | None = None,
 ) -> list[STResult]:
+    """Type all *sample_paths* against a scheme and return their ST results.
+
+    Sets up the shared :class:`TypingContext` (scheme, indexes, prefilters,
+    CDS settings, mode overrides) once, then types each sample in order,
+    threading the persistent index path between samples. *on_result* fires
+    per finished sample for streaming output.
+    """
     import gmlst.core as core
 
     base_ctx, samples = _setup_typing_config(

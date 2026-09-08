@@ -1,3 +1,5 @@
+"""Read assembly for scheme-free typing — megahit wrapper with FASTA fallback."""
+
 from __future__ import annotations
 
 import shutil
@@ -10,6 +12,8 @@ _FALLBACK_CHUNK_SIZE = 1000
 
 
 class MegahitAssembler:
+    """Assemble FASTQ reads into contigs for tgMLST, with a no-tool fallback."""
+
     def __init__(
         self,
         min_contig_len: int = 500,
@@ -27,6 +31,13 @@ class MegahitAssembler:
         self.timeout_sec = timeout_sec
 
     def assemble(self, sample_path: Path, sample_id: str, output_dir: Path) -> Path:
+        """Assemble one sample, returning the contigs FASTA path.
+
+        Runs megahit (with retries and a timeout); falls back to a
+        read-filtering/pseudo-assembly when megahit is missing, fails, or
+        produces empty output — unless fallback is disabled, in which case
+        errors propagate.
+        """
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if shutil.which(self.megahit_bin) is None:

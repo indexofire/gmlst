@@ -40,6 +40,19 @@ class SchemeInfo:
     extra: dict[str, Any] = field(default_factory=dict)
     """Provider-specific metadata (internal URLs, IDs, etc.)."""
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SchemeInfo:
+        """Build from a catalog-JSON scheme entry (unknown keys ignored)."""
+        return cls(
+            scheme_name=str(data.get("scheme_name", "")),
+            display_name=str(data.get("display_name", "")),
+            organism=str(data.get("organism", "")),
+            scheme_type=str(data.get("scheme_type", "")),
+            n_loci=int(data.get("n_loci", 0) or 0),
+            provider=str(data.get("provider", "")),
+            extra=dict(data.get("extra") or {}),
+        )
+
 
 @runtime_checkable
 class Provider(Protocol):
@@ -113,6 +126,15 @@ def download_required_files(
     max_connections: int | None = None,
     headers: dict[str, str] | None = None,
 ) -> None:
+    """Download all *(url, dest)* pairs in one batch, validating results.
+
+    Files already present and non-empty are skipped by the batch layer.
+    On partial failure, failed destinations (missing or empty) are removed
+    while successful downloads are preserved, and ``RuntimeError`` is
+    raised so the user can re-run and resume. Afterwards any missing or
+    empty destination also raises, so a normal return means every file is
+    present and non-empty.
+    """
     if not url_dest_pairs:
         return
 

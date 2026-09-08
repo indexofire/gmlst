@@ -1,3 +1,9 @@
+"""Tolerant JSON metadata I/O for cache and scheme bookkeeping files.
+
+Reads never raise: missing or malformed metadata falls back to a caller
+supplied default so pipelines keep running with partial cache state.
+"""
+
 from __future__ import annotations
 
 import json
@@ -9,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def read_json_metadata(path: Path, *, default: Any) -> Any:
+    """Load JSON from *path*; return *default* if it is missing, unreadable,
+    or malformed (a warning is logged)."""
     if not path.exists():
         return default
     try:
@@ -19,5 +27,6 @@ def read_json_metadata(path: Path, *, default: Any) -> Any:
 
 
 def write_json_metadata(path: Path, payload: Any) -> None:
+    """Write *payload* as JSON to *path*, creating parent directories as needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload))

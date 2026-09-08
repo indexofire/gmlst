@@ -1,3 +1,5 @@
+"""Shared I/O and formatting helpers for `gmlst visual` CLI subcommands."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,6 +16,11 @@ from gmlst.visual.mst_shared import validate_tsv_scale
 
 
 def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
+    """Enforce TSV size limits unless the parent ``--force-large`` flag is set.
+
+    Scale violations from :func:`validate_tsv_scale` are re-raised as
+    Click usage errors.
+    """
     if ctx.parent is not None and ctx.parent.params.get("force_large"):
         click.echo(
             "Warning: bypassing TSV scale limits because --force-large is active.",
@@ -27,6 +34,7 @@ def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
 
 
 def read_input_text(path: Path, *, label: str) -> str:
+    """Read a text input file, converting OS errors into a Click usage error."""
     try:
         return path.read_text()
     except OSError as exc:
@@ -34,6 +42,7 @@ def read_input_text(path: Path, *, label: str) -> str:
 
 
 def emit_json_payload(payload: dict[str, Any], *, output: Path | None) -> None:
+    """Emit a JSON payload to *output* (or stdout), announcing file writes."""
     try:
         wrote_file = emit_output_json(payload, output)
     except OSError as exc:
@@ -43,6 +52,7 @@ def emit_json_payload(payload: dict[str, Any], *, output: Path | None) -> None:
 
 
 def render_simple_table(rows: list[dict[str, Any]], columns: list[str]) -> str:
+    """Render rows as a plain `` | ``-separated table with a dashed separator."""
     if not rows:
         return "(no rows)"
     widths = {column: len(column) for column in columns}
@@ -70,6 +80,11 @@ def emit_rows_by_format(
     output_format: str,
     summary_lines: list[str] | None = None,
 ) -> None:
+    """Emit tabular rows as json (``{"rows", "summary"}``), tsv, or a text table.
+
+    Text/table output is prefixed with *summary_lines* when provided; file
+    writes are announced on stdout.
+    """
     normalized_format = output_format.lower()
     if normalized_format == "json":
         payload: dict[str, Any] = {"rows": rows}
@@ -100,6 +115,7 @@ def emit_rows_by_format(
 
 
 def matrix_rows(labels: list[str], matrix: list[list[int]]) -> list[dict[str, Any]]:
+    """Convert a square distance matrix into per-sample row dicts."""
     return [
         {
             "sample_id": row_label,
@@ -114,6 +130,7 @@ def heatmap_rows(
     loci: list[str],
     cells: list[list[dict[str, str]]],
 ) -> list[dict[str, Any]]:
+    """Convert per-sample heatmap cells into row dicts keyed by locus."""
     rows: list[dict[str, Any]] = []
     for label, row_cells in zip(labels, cells, strict=True):
         row = {"sample_id": label}

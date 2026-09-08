@@ -1,3 +1,11 @@
+"""FASTA/allele sequence loading and candidate FASTA writing for the core.
+
+Parses scheme allele files into nested per-locus mappings (optionally
+capped per locus), selects one representative allele per locus, and
+materializes prefilter candidates as per-locus ``.tfa`` files for
+targeted alignment.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -7,6 +15,10 @@ from gmlst.fasta_io import iter_fasta_records, iter_fasta_sequences
 
 
 def split_allele_header_impl(header: str) -> tuple[str, str]:
+    """Split a ``<locus>_<allele_id>`` FASTA header into its two parts.
+
+    Headers without an underscore yield ``(header, "")``.
+    """
     if "_" in header:
         locus, allele_id = header.rsplit("_", 1)
         return locus, allele_id
@@ -14,6 +26,7 @@ def split_allele_header_impl(header: str) -> tuple[str, str]:
 
 
 def iter_fasta_sequences_impl(path: Path) -> Iterator[str]:
+    """Yield raw sequences from a FASTA file."""
     yield from iter_fasta_sequences(path)
 
 
@@ -23,6 +36,11 @@ def load_scheme_allele_sequences_impl(
     split_allele_header_fn,
     max_per_locus: int = 0,
 ) -> dict[str, dict[str, str]]:
+    """Load all allele FASTAs into ``locus -> allele_id -> sequence``.
+
+    When *max_per_locus* is positive, at most that many records are read
+    per locus (file order), bounding memory for very large schemes.
+    """
     sequences: dict[str, dict[str, str]] = {}
     for locus, path in allele_files.items():
         locus_seqs: dict[str, str] = {}
@@ -41,6 +59,7 @@ def load_representative_allele_sequences_impl(
     split_allele_header_fn,
     allele_order_key_fn,
 ) -> dict[tuple[str, str], str]:
+    """Stream allele FASTAs, keeping only the lowest-ordered allele per locus."""
     representatives: dict[tuple[str, str], str] = {}
     for locus, path in allele_files.items():
         best_allele_id: str | None = None
@@ -62,6 +81,7 @@ def representatives_from_nested_alleles_impl(
     *,
     allele_order_key_fn,
 ) -> dict[tuple[str, str], str]:
+    """Keep the lowest-ordered allele per locus from in-memory sequences."""
     representatives: dict[tuple[str, str], str] = {}
     for locus, alleles in allele_sequences.items():
         best_allele_id: str | None = None
@@ -82,6 +102,11 @@ def write_candidate_fastas_impl(
     candidates: dict[str, list[tuple[str, float]]],
     out_dir: Path,
 ) -> list[Path]:
+    """Write one ``<locus>.tfa`` per locus holding its ranked candidates.
+
+    Loci with no resolvable allele sequences are skipped; returns the
+    paths of the FASTA files actually written.
+    """
     paths: list[Path] = []
     for locus, ranked in candidates.items():
         locus_alleles = allele_sequences.get(locus)

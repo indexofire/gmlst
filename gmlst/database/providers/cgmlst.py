@@ -39,10 +39,12 @@ class CgmlstProvider:
 
     @property
     def name(self) -> str:
+        """Short identifier: ``"cgmlst"``."""
         return self._name
 
     @property
     def label(self) -> str:
+        """Human-readable provider name: ``"cgMLST.org"``."""
         return self._label
 
     def list_schemes(self, scheme_type: str = "cgmlst") -> list[SchemeInfo]:
@@ -161,6 +163,15 @@ class CgmlstProvider:
         max_connections: int | None = None,
         extra: dict[str, Any] | None = None,
     ) -> bool:
+        """Re-download the scheme when the remote schema changed or is incomplete.
+
+        Compares the scraped schema status page (version, last change,
+        locus count) against the cached ``remote`` metadata and checks the
+        local locus count; on any difference (or an incomplete local copy)
+        it drops the stale ZIP and re-downloads, returning ``True``.
+        Unchanged schemes only get ``checked_at`` refreshed and ``False``
+        is returned.
+        """
         meta_file = dest_dir / ".meta.json"
         local_meta: dict[str, Any] = {}
         if meta_file.exists():
