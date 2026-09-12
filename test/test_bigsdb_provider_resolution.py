@@ -1,12 +1,32 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
 
 import gmlst.database.providers.bigsdb as bigsdb
 from gmlst.database.providers.bigsdb import BigSdbProvider
+
+_SEQDEF = "https://rest.pubmlst.org/db/pubmlst_demo_seqdef"
+_SCHEME_URL = f"{_SEQDEF}/schemes/1"
+
+
+def _mock_scheme_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+    provider: BigSdbProvider,
+    scheme_detail: dict,
+) -> None:
+    monkeypatch.setattr(
+        provider,
+        "_resolve_seqdef_url",
+        lambda _scheme_name: (_SEQDEF, "demo"),
+    )
+    monkeypatch.setattr(
+        bigsdb, "_resolve_scheme_url", lambda *_args, **_kwargs: _SCHEME_URL
+    )
+    monkeypatch.setattr(bigsdb, "_get_json", lambda url, **_kw: scheme_detail)
 
 
 def test_resolve_seqdef_url_uses_provider_mapping(
@@ -254,3 +274,143 @@ def test_update_scheme_noop_when_meta_missing_but_local_files_complete(
     assert changed is False
     assert calls["batch"] == 0
     assert calls["single"] == 0
+
+
+def test_download_scheme_cleans_profile_tmp_when_loci_fail(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+    _mock_scheme_resolution(
+        monkeypatch,
+        provider,
+        {
+            "loci": [f"{_SEQDEF}/loci/abc", f"{_SEQDEF}/loci/def"],
+            "profiles_csv": f"{_SCHEME_URL}/profiles_csv",
+        },
+    )
+
+    profile_written = threading.Event()
+
+    def _fail_loci(url_dest_pairs, **_kwargs):
+        profile_written.wait(timeout=5)
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(bigsdb, "download_required_files", _fail_loci)
+
+    def _fake_profile_download(_url, dest, **_kwargs):
+        dest.write_text("ST\tabc\tdef\n1\t1\t1\n")
+        profile_written.set()
+
+    monkeypatch.setattr(bigsdb, "_download_file", _fake_profile_download)
+
+    with pytest.raises(RuntimeError, match="network down"):
+        provider.download_scheme("demo_1", tmp_path)
+
+    assert not (tmp_path / "demo_1.txt.tmp").exists()
+
+
+def test_download_scheme_removes_stale_temp_files_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+    _mock_scheme_resolution(
+        monkeypatch,
+        provider,
+        {
+            "loci": [f"{_SEQDEF}/loci/abc", f"{_SEQDEF}/loci/def"],
+            "profiles_csv": f"{_SCHEME_URL}/profiles_csv",
+        },
+    )
+
+    def _fake_batch(url_dest_pairs, **_kwargs):
+        for _url, dest in url_dest_pairs:
+            dest.write_text(">locus_1\nATGC\n")
+
+    monkeypatch.setattr(bigsdb, "download_required_files", _fake_batch)
+    monkeypatch.setattr(
+        bigsdb,
+        "_download_file",
+        lambda _url, dest, **_kwargs: dest.write_text("ST\tabc\tdef\n1\t1\t1\n"),
+    )
+
+    (tmp_path / "removed_locus.tfa.tmp").write_text("stale from failed run")
+    (tmp_path / "abc.tfa.aria2").write_text("stale aria2 control file")
+
+    provider.download_scheme("demo_1", tmp_path)
+
+    assert not (tmp_path / "removed_locus.tfa.tmp").exists()
+    assert not (tmp_path / "abc.tfa.aria2").exists()
+    assert (tmp_path / "abc.tfa").exists()
+    assert (tmp_path / "demo_1.txt").exists()
+
+
+def test_update_scheme_cleans_locus_tmp_files_on_verification_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+    monkeypatch.setattr(
+        provider,
+        "_resolve_seqdef_url",
+        lambda _scheme_name: (_SEQDEF, "demo"),
+    )
+    monkeypatch.setattr(
+        bigsdb, "_resolve_scheme_url", lambda *_args, **_kwargs: _SCHEME_URL
+    )
+
+    def _fake_alleles(url: str, headers=None):
+        if url.endswith("/schemes/1"):
+            return {
+                "loci": [f"{_SEQDEF}/loci/abc", f"{_SEQDEF}/loci/def"],
+                "profiles_csv": f"{_SCHEME_URL}/profiles_csv",
+                "records": 1,
+                "last_updated": "2026-01-01T00:00:00",
+                "last_added": "2026-01-01T00:00:00",
+            }
+        if url.endswith("/loci/abc/alleles"):
+            return {"records": 2, "last_updated": "2026-01-02T00:00:00"}
+        if url.endswith("/loci/def/alleles"):
+            return {"records": 1, "last_updated": "2026-01-01T00:00:00"}
+        return {}
+
+    monkeypatch.setattr(bigsdb, "_get_json", _fake_alleles)
+
+    (tmp_path / "abc.tfa").write_text(">abc_1\nATGC\n")
+    (tmp_path / "def.tfa").write_text(">def_1\nATGC\n")
+    (tmp_path / "demo_1.txt").write_text("ST\tabc\tdef\n1\t1\t1\n")
+    (tmp_path / ".meta.json").write_text(
+        json.dumps(
+            {
+                "scheme": "demo_1",
+                "provider": "pubmlst",
+                "scheme_type": "mlst",
+                "loci": ["abc", "def"],
+            }
+        )
+    )
+
+    def _fake_batch(url_dest_pairs, **_kwargs):
+        for _url, dest in url_dest_pairs:
+            dest.write_text(">abc_1\nATGC\n")
+
+    monkeypatch.setattr(bigsdb, "download_required_files", _fake_batch)
+
+    with pytest.raises(RuntimeError, match="Incomplete locus download"):
+        provider.update_scheme("demo_1", tmp_path)
+
+    assert not (tmp_path / "abc.tfa.tmp").exists()
+    assert (tmp_path / "abc.tfa").exists()

@@ -307,6 +307,7 @@ class BigSdbProvider:
                 continue
             url_dest_pairs.append((f"{locus_url}/alleles_fasta", dest_file))
 
+        profile_promoted = False
         try:
             if url_dest_pairs:
                 logger.info(
@@ -322,15 +323,16 @@ class BigSdbProvider:
                     headers=self._auth_headers(),
                 )
             if profile_future is not None:
-                try:
-                    profile_future.result()
-                    profile_tmp.replace(profile_dest)
-                except (OSError, RuntimeError, ValueError):
-                    profile_tmp.unlink(missing_ok=True)
-                    raise
+                profile_future.result()
+                profile_tmp.replace(profile_dest)
+                profile_promoted = True
         finally:
             if profile_executor is not None:
+                # Drain the profile thread before unlinking so the cleanup
+                # can never race with an in-flight write of the tmp file.
                 profile_executor.shutdown(wait=True)
+                if not profile_promoted:
+                    profile_tmp.unlink(missing_ok=True)
 
         # Write metadata
         meta = {
@@ -355,6 +357,7 @@ class BigSdbProvider:
             },
         }
         atomic_write_text(dest_dir / ".meta.json", json.dumps(meta, indent=2))
+        _sweep_stale_temp_files(dest_dir)
         logger.info("[%s] Done → %s", self._name, dest_dir)
 
     def update_scheme(
@@ -432,25 +435,31 @@ class BigSdbProvider:
                 len(url_dest_pairs),
                 len(all_loci),
             )
-            download_required_files(
-                url_dest_pairs,
-                provider_name=self._name,
-                download_tool=download_tool,
-                max_connections=max_connections or 4,
-                headers=self._auth_headers(),
-            )
+            try:
+                download_required_files(
+                    url_dest_pairs,
+                    provider_name=self._name,
+                    download_tool=download_tool,
+                    max_connections=max_connections or 4,
+                    headers=self._auth_headers(),
+                )
 
-            for _, tmp_file in url_dest_pairs:
-                locus_name = tmp_file.name.removesuffix(".tfa.tmp")
-                expected = int(new_locus_meta[locus_name]["records"])
-                actual = count_fasta_records(tmp_file)
-                if actual < expected:
-                    raise RuntimeError(
-                        f"[{self._name}] Incomplete locus download for {locus_name}: "
-                        f"expected >= {expected} alleles, got {actual}"
-                    )
-                final_file = tmp_file.with_suffix("")
-                tmp_file.replace(final_file)
+                for _, tmp_file in url_dest_pairs:
+                    locus_name = tmp_file.name.removesuffix(".tfa.tmp")
+                    expected = int(new_locus_meta[locus_name]["records"])
+                    actual = count_fasta_records(tmp_file)
+                    if actual < expected:
+                        raise RuntimeError(
+                            f"[{self._name}] Incomplete locus download for "
+                            f"{locus_name}: expected >= {expected} alleles, "
+                            f"got {actual}"
+                        )
+                    final_file = tmp_file.with_suffix("")
+                    tmp_file.replace(final_file)
+            except BaseException:
+                for _, tmp_file in url_dest_pairs:
+                    tmp_file.unlink(missing_ok=True)
+                raise
 
         old_profile_meta = local_meta.get("profile_meta", {})
         new_profile_meta = {
@@ -477,14 +486,18 @@ class BigSdbProvider:
         profiles_csv_url = scheme_detail.get("profiles_csv")
         if profile_changed and profiles_csv_url:
             tmp_profile = dest_dir / f"{scheme_name}.txt.tmp"
-            _download_file(
-                profiles_csv_url,
-                tmp_profile,
-                tool=download_tool,
-                max_connections=max_connections,
-                headers=self._auth_headers(),
-            )
-            tmp_profile.replace(profile_dest)
+            try:
+                _download_file(
+                    profiles_csv_url,
+                    tmp_profile,
+                    tool=download_tool,
+                    max_connections=max_connections,
+                    headers=self._auth_headers(),
+                )
+                tmp_profile.replace(profile_dest)
+            except BaseException:
+                tmp_profile.unlink(missing_ok=True)
+                raise
 
         changed = bool(changed_loci or profile_changed)
         needs_metadata_backfill = not isinstance(
@@ -506,6 +519,7 @@ class BigSdbProvider:
             }
             atomic_write_text(meta_file, json.dumps(updated_meta, indent=2))
 
+        _sweep_stale_temp_files(dest_dir)
         return changed
 
     # ------------------------------------------------------------------
@@ -618,6 +632,24 @@ def _resolve_scheme_url(
 # ---------------------------------------------------------------------------
 # Module-level helpers
 # ---------------------------------------------------------------------------
+
+
+def _sweep_stale_temp_files(dest_dir: Path) -> None:
+    """Delete leftover temp files from earlier failed or interrupted runs.
+
+    Only called after a download/update finished successfully, when every
+    legitimate ``.tmp`` file has already been promoted to its final name,
+    so anything matching here is debris. ``*.aria2`` control files belong
+    to the same class: their download completed (or was finished by another
+    backend), so the control file is no longer meaningful.
+    """
+    for pattern in ("*.tmp", "*.aria2"):
+        for stale in dest_dir.glob(pattern):
+            if stale.is_file():
+                logger.info(
+                    "[%s] Removing stale temp file: %s", dest_dir.name, stale.name
+                )
+                stale.unlink(missing_ok=True)
 
 
 def _find_seqdef_databases(org: dict[str, Any]) -> list[dict[str, Any]]:
