@@ -1,16 +1,10 @@
 :root {
   --panel: var(--surface);
   --stage: var(--surface-2);
-  --sidebar-bg: var(--sidebar-bg);
   --sidebar-soft: var(--sidebar-surface);
-  --sidebar-border: var(--sidebar-border);
-  --text: var(--text-2);
-  --muted: var(--text-3);
-  --border: var(--border);
   --brand: var(--primary);
   --brand-light: var(--primary-hover);
   --brand-pale: var(--data-1);
-  --danger: var(--danger);
   --radius: var(--radius-lg);
   --shadow: var(--shadow-lg);
   --text-heading: var(--text-1);
@@ -200,18 +194,19 @@ body {
   z-index: 5;
   width: 26px;
   height: 34px;
-  border: 1px solid var(--sidebar-border);
+  border: 1px solid var(--text-3);
   border-radius: 8px;
   background: var(--surface-2);
-  color: var(--sidebar-text);
+  color: var(--text-2);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--shadow-md);
 }
 
 .sidebar-toggle:hover {
   background: var(--surface);
+  color: var(--text-1);
 }
 
 .workflow-section {
@@ -259,7 +254,7 @@ body {
   display: block;
   margin: 8px 0 6px;
   font-size: 12px;
-  color: var(--sidebar-text-muted);
+  color: #a8bcd4;
   font-weight: 600;
 }
 
@@ -270,12 +265,12 @@ input[type="text"],
 input[type="number"] {
   width: 100%;
   max-width: 100%;
-  border: 1px solid var(--text-3);
+  border: 1px solid var(--sidebar-border);
   border-radius: 10px;
   background: var(--sidebar-surface);
   padding: 9px 11px;
   font-size: 13px;
-  color: var(--primary-subtle);
+  color: var(--sidebar-text);
 }
 
 select:focus,
@@ -504,6 +499,15 @@ input:focus-visible {
 
 .btn-secondary {
   color: var(--sidebar-text);
+  background: var(--sidebar-surface);
+  border-color: var(--sidebar-border);
+}
+
+/* btn-secondary in main content area (light bg) — use dark text */
+.viz .btn-secondary,
+.stats-view .btn-secondary,
+.compare-panel .btn-secondary {
+  color: var(--text-2);
   background: var(--surface-2);
   border-color: var(--border-strong);
 }
@@ -515,8 +519,9 @@ input:focus-visible {
 }
 
 .btn-secondary:hover {
-  background: var(--surface-2);
-  border-color: var(--border-strong);
+  background: var(--sidebar-accent);
+  border-color: var(--sidebar-accent);
+  color: var(--sidebar-bg);
 }
 
 .metrics {

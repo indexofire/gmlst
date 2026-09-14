@@ -101,7 +101,7 @@
   --sidebar-surface: #334155;
   --sidebar-border: #475569;
   --sidebar-text: #e2e8f0;
-  --sidebar-text-muted: #94a3b8;
+  --sidebar-text-muted: #a8bcd4;
   --sidebar-accent: #60a5fa;
 
   /* Graph specific */
@@ -191,7 +191,7 @@
   --sidebar-surface: #1e293b;
   --sidebar-border: #334155;
   --sidebar-text: #e2e8f0;
-  --sidebar-text-muted: #94a3b8;
+  --sidebar-text-muted: #a8bcd4;
   --sidebar-accent: #60a5fa;
 
   /* Graph specific */
@@ -267,7 +267,7 @@
     --sidebar-surface: #1e293b;
     --sidebar-border: #334155;
     --sidebar-text: #e2e8f0;
-    --sidebar-text-muted: #94a3b8;
+    --sidebar-text-muted: #a8bcd4;
     --sidebar-accent: #60a5fa;
     --graph-bg: #1e293b;
     --graph-grid: #334155;
