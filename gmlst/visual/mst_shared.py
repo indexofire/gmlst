@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import csv
 import io
+import logging as _logging
 from dataclasses import dataclass
 from typing import cast
+
+_logger = _logging.getLogger(__name__)
 
 META_COLUMNS = {
     "FILE",
@@ -276,6 +279,42 @@ def _merge_metadata(
     return merged
 
 
+def _is_allele_like(value: str) -> bool:
+    """True if *value* plausibly represents an allele call."""
+    v = value.strip()
+    if not v:
+        return True  # blank → missing allele
+    if v.isdigit():
+        return True
+    if v in ("LNF", "-", "--"):
+        return True
+    if v.startswith(("~", "INF-", "NIPH", "NIPHEM", "PLOT", "ASM", "ALM", "LOTSC")):
+        return True
+    if v.endswith(("?", "*")):
+        return True
+    # Comma-separated multi-allele calls
+    return all(part.strip().lstrip("~").rstrip("?*").isdigit() for part in v.split(","))
+
+
+def _detect_non_allele_columns(
+    rows: list[dict[str, str]], loci: list[str], sample_size: int = 20
+) -> set[str]:
+    """Return locus columns whose values are never allele-like (all free text)."""
+    candidates: set[str] = set()
+    for locus in loci:
+        checked = 0
+        allele_like_seen = False
+        for row in rows[:sample_size]:
+            value = row.get(locus, "")
+            if _is_allele_like(value):
+                allele_like_seen = True
+                break
+            checked += 1
+        if checked >= min(sample_size, len(rows)) and not allele_like_seen:
+            candidates.add(locus)
+    return candidates
+
+
 def _parse_rows(
     tsv_text: str,
     *,
@@ -292,15 +331,32 @@ def _parse_rows(
     loci = [
         name for name in fieldnames if name not in META_COLUMNS and name != sample_key
     ]
+
+    # Auto-detect metadata columns hiding among locus columns: a column whose
+    # values never look like allele calls (all rows are free-text like clade
+    # labels, years, or source names) is treated as metadata, not a locus.
+    rows = list(reader)
+    reader = None  # already consumed; reuse rows below
+    auto_meta: set[str] = set()  # already consumed; reuse rows below
+    if rows and len(loci) > 1:
+        auto_meta = _detect_non_allele_columns(rows, loci)
+        if auto_meta:
+            loci = [name for name in loci if name not in auto_meta]
+            _logger.info(
+                "Auto-detected metadata columns (non-allele values): %s",
+                ", ".join(sorted(auto_meta)),
+            )
+
     metadata_fields = _metadata_fields_for(fieldnames, sample_key)
     metadata_fields.extend(
         field for field in extra_metadata_fields if field not in metadata_fields
     )
+    metadata_fields.extend(field for field in auto_meta if field not in metadata_fields)
     if not loci:
         raise ValueError("No locus columns detected in TSV")
 
     nodes: list[MstNode] = []
-    for row in reader:
+    for row in rows:
         sample = row.get(sample_key, "").strip()
         if not sample:
             continue

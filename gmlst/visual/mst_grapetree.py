@@ -31,23 +31,36 @@ def _normalized_asymmetric_distance(
     n = len(nodes)
     n_total = len(loci)
     dist: list[list[float]] = [[0.0] * n for _ in range(n)]
+
+    # Pre-normalize profiles and missing-masks once — the previous inner
+    # loop re-ran is_missing + normalize_allele for every (i, k, j) triple,
+    # which dominated runtime (4M+ calls at n=92).
+    normalized: list[tuple[str, ...]] = []
+    present_masks: list[tuple[bool, ...]] = []
+    presence_counts: list[int] = []
+    for node in nodes:
+        norm = tuple(normalize_allele(v) for v in node.profile)
+        mask = tuple(not is_missing(v) for v in node.profile)
+        normalized.append(norm)
+        present_masks.append(mask)
+        presence_counts.append(sum(mask))
+
     for i in range(n):
-        presence_count = sum(
-            0 if is_missing(nodes[i].profile[j]) else 1 for j in range(n_total)
-        )
+        presence_count = presence_counts[i]
         if presence_count == 0:
             continue
         scale = n_total / presence_count
+        row_i = normalized[i]
+        mask_i = present_masks[i]
         for k in range(n):
             if i == k:
                 continue
+            row_k = normalized[k]
             diffs = 0
             for j in range(n_total):
-                left = nodes[i].profile[j]
-                right = nodes[k].profile[j]
-                if is_missing(left):
+                if not mask_i[j]:
                     continue
-                if normalize_allele(left) != normalize_allele(right):
+                if row_i[j] != row_k[j]:
                     diffs += 1
             dist[i][k] = diffs * scale
     return dist

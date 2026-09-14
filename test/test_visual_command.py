@@ -699,7 +699,7 @@ def test_asymmetric_branching_can_choose_more_central_parent_under_missing_data(
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (
@@ -725,7 +725,7 @@ def test_asymmetric_edge_fields_capture_branching_direction() -> None:
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert edges == [
         {
@@ -752,7 +752,7 @@ def test_recrafting_prefers_more_resolved_equal_cost_parent() -> None:
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (
@@ -780,7 +780,7 @@ def test_recrafting_can_prefer_more_resolved_nearby_parent_with_small_cost_delta
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (
@@ -807,7 +807,7 @@ def test_subtree_aware_recrafting_prefers_parent_better_for_descendants() -> Non
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (
@@ -836,7 +836,7 @@ def test_multistep_recrafting_revisits_affected_subtree() -> None:
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (
@@ -865,7 +865,7 @@ def test_recrafting_keeps_parent_under_subtree_cost_gate() -> None:
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
 
     assert {
         (

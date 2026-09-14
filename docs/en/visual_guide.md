@@ -1,6 +1,6 @@
 # Visual Guide
 
-This guide covers the local visualization workflow in `gmlst`, including the web server, supported input formats, MST building, layout choices, metadata coloring, and frontend build details. For export commands that produce compatible profile tables, see [novel_workflow.md](novel_workflow.md) and [commands.md](commands.md).
+This guide covers the local visualization workflow in `gmlst`, including the web server, supported input formats, MST building, layout choices, metadata coloring, CLI export, agent-facing summary output, and frontend build details. For export commands that produce compatible profile tables, see [novel_workflow.md](novel_workflow.md) and [commands.md](commands.md).
 
 ## Overview
 
@@ -12,6 +12,12 @@ The web UI is useful when you want to:
 - color nodes by metadata columns in a TSV file
 - compare the effect of missing-value penalties
 - export a publication-ready SVG snapshot
+
+The CLI subcommands are useful when you want to:
+
+- build MST payloads without a browser
+- produce JSON for downstream tools or AI agents
+- get a compact analytical summary readable in one context window
 
 ## Starting the Server
 
@@ -76,6 +82,12 @@ ST2	12	44	111	wound	WardA	2024
 
 Metadata can either be embedded in the uploaded table or supplied as a separate metadata table keyed by sample ID.
 
+### Automatic metadata detection
+
+Columns whose values never look like allele calls (numbers, `LNF`, `~2`, `1?`, `NIPH`, comma-separated multi-alleles) are automatically reclassified as metadata instead of loci. This means a table mixing loci with free-text columns such as `clade`, `source`, or `isolation_site` is handled without manual splitting.
+
+One caveat: purely numeric columns such as `year` are indistinguishable from allele numbers and stay as loci. Pass those through the separate `--metadata` file when needed.
+
 ## Building MST
 
 Once a profile table is loaded, the UI builds a minimum spanning tree from the allele differences between samples.
@@ -98,15 +110,106 @@ Why MST matters here:
 
 Three MST algorithms are available:
 
-| Method | Algorithm | Optimizes | Best for |
+| Method | Algorithm | Optimizes | Best for | Scalability |
+|---|---|---|---|---|
+| `grapetree_classic` **(default)** | Kruskal MST on Hamming distance | Minimum total Hamming distance | **Large datasets (500+ samples)** | O(n² log n) — 1000 samples in ~37s |
+| `grapetree_v2` | Edmonds + branch recrafting (harmonic/eBurst weights) | Composite population-structure metric | **Matching GrapeTree software output** | O(n²) distance matrix — 1000 samples in ~255s, ~3.5GB RAM |
+| `edmonds` | Edmonds arborescence + subtree recraft | Minimum total Hamming distance | Small datasets (≤100 samples), deterministic results | O(n³) — **do not use for n>200** |
+
+Measured on 992 samples × 100 loci:
+
+| Method | Time | Peak memory | Total weight |
 |---|---|---|---|
-| `edmonds` | Edmonds arborescence + subtree recraft | Minimum total Hamming distance | Deterministic results, strict distance minimization |
-| `grapetree_v2` | Edmonds + branch recrafting (harmonic/eBurst weights) | Composite population-structure metric | **Matching GrapeTree software output** (default in GrapeTree) |
-| `grapetree_classic` | Kruskal MST on Hamming distance | Minimum total Hamming distance | Fast computation on large datasets |
+| `grapetree_classic` | 37s | 230 MB | 8824 |
+| `grapetree_v2` | 255s | 3.5 GB | ~2× classic |
+| `edmonds` | >20 min (timeout) | — | — |
 
-**grapetree_v2** uses a branch recrafting heuristic that trades total Hamming distance for better-resolved subtree structure. This means grapetree_v2 may produce a tree with higher total edge weight than edmonds or grapetree_classic, but with a topology that better reflects population clustering. In testing, grapetree_v2's total weight stays within 2× of the theoretical minimum.
+Key behavioral differences:
 
-On simple datasets (≤6 samples, no weight ties), all three methods produce identical trees. On larger or more polymorphic datasets, grapetree_v2 diverges from the others due to its composite optimization target.
+- **edmonds** produces the lowest total weight (0.4% better than classic on small datasets) thanks to its subtree-aware recrafting, but the per-root loop makes it O(n³) and unusable beyond ~200 samples.
+- **grapetree_v2** uses a composite metric (normalized distance + harmonic weights + eBurst weights) and produces trees whose total Hamming weight can be up to 2× the minimum, but whose topology better reflects population clustering. It requires O(n²) memory for the distance matrix.
+- **grapetree_classic** is a standard Kruskal minimum spanning tree: identical weight to edmonds (within tie-breaking), fast, memory-light. It is the default since v0.1.6.
+
+On simple datasets (≤6 samples, no weight ties), all three methods produce identical trees. On larger or more polymorphic datasets, `grapetree_v2` diverges due to its composite optimization target, and `edmonds` finds marginally better trees than `classic` via recrafting.
+
+## CLI MST Commands
+
+### Full JSON output
+
+```bash
+gmlst visual mst --input profiles.tsv --metadata meta.tsv --output result.json
+```
+
+Produces the complete MST payload (nodes, edges, metadata, mismatch loci) as JSON. For 1000 samples this is ~750KB–1.1MB — **too large to read into an LLM context window** (~290K tokens). Use this for tool-based processing or as the web frontend's data source.
+
+### Summary output (agent-friendly)
+
+```bash
+gmlst visual mst --input profiles.tsv --metadata meta.tsv --format summary --output summary.json
+```
+
+Produces a compact analytical summary (~7KB for 1000 samples, ~1K tokens) that an AI agent can read directly. The summary contains:
+
+| Field | Content | Analytical value |
+|---|---|---|
+| `mst_summary` | Edge count, weight min/median/max, zero-weight pairs | Overall tree shape and data quality |
+| `clusters` | Connected components (edge weight ≤15), size, dominant metadata, purity | Group structure and clonal complex assignment |
+| `top_variable_loci` | Most frequently mismatched loci | Discriminant marker candidates |
+| `outliers` | Nodes connected by high-weight edges (>50) | Divergent/imported strains, data quality flags |
+| `suggested_analysis` | Actionable next steps | Analysis roadmap |
+
+Example summary for a 991-sample dataset:
+
+```json
+{
+  "sample_count": 991,
+  "mst_summary": {
+    "edges": 990, "weight_min": 0, "weight_median": 5,
+    "weight_max": 95, "zero_weight_pairs": 72
+  },
+  "clusters": [
+    {"id": "C1", "size": 82, "clade_dominant": "CC08",
+     "clade_purity": 1.0,
+     "source_composition": {"env": 23, "blood": 22, "water": 19}}
+  ],
+  "top_variable_loci": [["L086", 105], ["L041", 100]],
+  "outliers": [{"node": "S0280", "max_edge_weight": 95}],
+  "suggested_analysis": ["Check outliers for imported strains", "..."]
+}
+```
+
+### Other MST-related commands
+
+```bash
+# Pairwise distance matrix
+gmlst visual matrix --input profiles.tsv --output dist.json
+
+# Allele heatmap payload
+gmlst visual heatmap --input profiles.tsv --output heatmap.json
+
+# Compare two typing results
+gmlst visual compare --left run1.tsv --right run2.tsv
+
+# Locus-level diff between two samples
+gmlst visual locus-diff --input profiles.tsv --left-label s1 --right-label s2
+```
+
+## Agent Integration Pattern
+
+For AI agents (or scripts) consuming MST results, use a two-tier approach:
+
+```
+Tier 1 (context):  --format summary  →  ~7KB, read directly
+Tier 2 (tools):    --format json     →  ~1MB, process with Python
+```
+
+A typical agent workflow:
+
+1. Run `gmlst visual mst --format summary` and read the JSON into context.
+2. Reason about clusters, outliers, and marker loci from the summary alone.
+3. When per-sample or per-edge detail is needed, run a Python script against the full JSON and return only the extracted answer.
+
+This pattern keeps the LLM context small while preserving access to full-resolution data.
 
 ## Layout Options
 
@@ -195,7 +298,7 @@ Backend routes:
 
 - `/`
 - `/health`
-- `/api/mst`
+- `/api/mst` (POST: `{tsv, metadata_tsv?, method?, include_missing?, aggregate_profiles?}`)
 - `/api/distance-matrix`
 - `/api/allele-heatmap`
 - `/api/locus-diff`
@@ -218,6 +321,16 @@ In short:
 - Flask serves the application and the MST API
 - Vue 3 provides the browser UI
 - Vite builds the frontend assets used by the packaged server
+
+MST implementation files:
+
+```text
+gmlst/visual/mst.py            Public API: build_mst_from_tsv
+gmlst/visual/mst_shared.py     Parsing, distances, validation, shared helpers
+gmlst/visual/mst_edmonds.py    Edmonds arborescence + subtree recrafting
+gmlst/visual/mst_grapetree.py  GrapeTree v2 (composite metric) + classic (Kruskal)
+gmlst/visual/mst_summary.py    Compact summary for agent/context consumption
+```
 
 ## Building Frontend
 

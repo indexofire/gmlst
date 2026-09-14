@@ -82,6 +82,8 @@ export default {
       title: window.GMLST_VISUAL_TITLE || "gmlst visual web",
       _building: false,
       sidebarCollapsed: false,
+      isFullscreen: false,
+      theme: "auto",
       tsvText: "",
       metadataText: "",
       includeMissing: false,
@@ -94,6 +96,8 @@ export default {
         { id: "graph", label: "Graph" },
         { id: "matrix", label: "Matrix" },
         { id: "heatmap", label: "Heatmap" },
+        { id: "stats", label: "Stats" },
+        { id: "summary", label: "Summary" },
         { id: "compare", label: "Compare" },
       ],
       layoutMode: "tree",
@@ -108,6 +112,7 @@ export default {
       nodeColorPickerValue: "#2563eb",
       colorScheme: "default",
       colorBy: "",
+      shapeBy: "",
       suggestedColorFields: [],
       maxWeight: "",
       edgeWeightMax: 0,
@@ -164,6 +169,12 @@ export default {
         y: 0,
       },
       inspectedItem: null,
+      multiSelectedNodeIds: [],
+      showComparePanel: false,
+      timelineField: "",
+      timelineValue: 0,
+      timelinePlaying: false,
+      timelineTimer: null,
       manualRootId: null,
       currentLayout: null,
       currentRenderedGraph: null,
@@ -209,6 +220,9 @@ export default {
     tableColumns() {
       return visibleTableColumns(this.metadataFields);
     },
+    shapeFieldOptions() {
+      return this.metadataFields.filter((f) => f !== this.colorBy);
+    },
     clusterOptions() {
       const options = availableClusterOptions(this.clusterSummary);
       if (options.length) {
@@ -225,6 +239,102 @@ export default {
         value: String(clusterId),
         label: `Cluster ${clusterId}`,
       }));
+    },
+    statsData() {
+      if (!this.lastData?.nodes?.length || !this.lastData?.edges?.length) {
+        return null;
+      }
+      const nodes = this.lastData.nodes;
+      const edges = this.lastData.edges;
+      const weights = edges.map((e) => Number(e.weight) || 0).sort((a, b) => a - b);
+      const n = weights.length;
+      const q = (p) => weights[Math.min(n - 1, Math.floor(p * n))] || 0;
+      const degreeMap = {};
+      for (const e of edges) {
+        degreeMap[e.source] = (degreeMap[e.source] || 0) + 1;
+        degreeMap[e.target] = (degreeMap[e.target] || 0) + 1;
+      }
+      const nodeMap = new Map(nodes.map((nd) => [String(nd.id), nd]));
+      const topDegree = Object.entries(degreeMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([id, deg]) => ({
+          label: nodeMap.get(String(id))?.label || id,
+          degree: deg,
+        }));
+      const min = weights[0];
+      const max = weights[n - 1];
+      const bins = 20;
+      const step = max === min ? 1 : (max - min) / bins;
+      const counts = new Array(bins).fill(0);
+      for (const w of weights) {
+        counts[Math.min(bins - 1, Math.floor((w - min) / step))]++;
+      }
+      const histogram = counts
+        .map((count, i) => ({
+          label: `${Math.round(min + i * step)}–${Math.round(min + (i + 1) * step)}`,
+          count,
+          pct: Math.round((count / n) * 100),
+        }))
+        .filter((b) => b.count > 0);
+      const outliers = edges
+        .filter((e) => (Number(e.weight) || 0) > 50)
+        .sort((a, b) => b.weight - a.weight)
+        .slice(0, 5)
+        .map((e) => ({
+          source: e.source_label,
+          target: e.target_label,
+          weight: e.weight,
+        }));
+      return {
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        weightMin: min,
+        weightQ25: q(0.25),
+        weightMedian: q(0.5),
+        weightQ75: q(0.75),
+        weightMax: max,
+        zeroWeightCount: weights.filter((w) => w === 0).length,
+        histogram,
+        topDegree,
+        outliers,
+        clusterCount: this.clusterSummary.length,
+        metadataFields: this.metadataFields,
+      };
+    },
+    summaryData() {
+      if (!this.statsData) return null;
+      const s = this.statsData;
+      const suggestions = [];
+      if (s.outliers.length > 0) {
+        suggestions.push(
+          `${s.outliers.length} edges exceed weight 50; check those nodes for imported/divergent strains or data quality issues`,
+        );
+      }
+      suggestions.push(
+        "Compare metadata composition across clusters to identify transmission links",
+      );
+      if (s.zeroWeightCount > 0) {
+        suggestions.push(
+          `${s.zeroWeightCount} zero-weight edges indicate duplicate profiles — verify they are expected`,
+        );
+      }
+      suggestions.push(
+        "High-degree nodes are potential hub strains worth investigating for outbreak links",
+      );
+      return {
+        sample_count: s.nodeCount,
+        mst_summary: {
+          edges: s.edgeCount,
+          weight_median: s.weightMedian,
+          weight_max: s.weightMax,
+          zero_weight_pairs: s.zeroWeightCount,
+        },
+        cluster_count: s.clusterCount,
+        top_variable_nodes: s.topDegree.slice(0, 5),
+        outliers: s.outliers,
+        suggested_analysis: suggestions,
+      };
     },
     filteredDistanceMatrixView() {
       const limit = this.matrixRenderLimit;
@@ -422,12 +532,21 @@ export default {
     hoveredLegendValue() {
       this._applyLegendHover();
     },
+    colorBy() { this.syncViewStateToUrl(); },
+    shapeBy() { this.syncViewStateToUrl(); },
+    layoutMode() { this.syncViewStateToUrl(); },
+    aggregateProfiles() { this.syncViewStateToUrl(); },
   },
   mounted() {
     this._boundCanvas = null;
     this._pendingNodeClick = null;
     this._debounceTimer = null;
     this._dragRaf = null;
+    this.initTheme();
+    this.loadViewStateFromUrl();
+    document.addEventListener("fullscreenchange", () => {
+      this.isFullscreen = Boolean(document.fullscreenElement);
+    });
     this.syncCanvasInteraction();
     window.addEventListener("mousemove", this.onMouseMove);
     window.addEventListener("mouseup", this.onMouseUp);
@@ -461,6 +580,181 @@ export default {
     }
   },
   methods: {
+    toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          this.isFullscreen = true;
+        }).catch(() => {});
+      } else {
+        document.exitFullscreen().then(() => {
+          this.isFullscreen = false;
+        }).catch(() => {});
+      }
+    },
+    syncViewStateToUrl() {
+      const params = new URLSearchParams();
+      if (this.colorBy) params.set("color", this.colorBy);
+      if (this.shapeBy) params.set("shape", this.shapeBy);
+      if (this.layoutMode !== "tree") params.set("layout", this.layoutMode);
+      if (this.theme !== "auto") params.set("theme", this.theme);
+      if (this.aggregateProfiles !== true) params.set("agg", "0");
+      const hash = params.toString();
+      const url = hash ? `${location.pathname}?${hash}` : location.pathname;
+      history.replaceState(null, "", url);
+    },
+    loadViewStateFromUrl() {
+      const params = new URLSearchParams(location.search);
+      const color = params.get("color");
+      const shape = params.get("shape");
+      const layout = params.get("layout");
+      const theme = params.get("theme");
+      const agg = params.get("agg");
+      if (color) this.colorBy = color;
+      if (shape) this.shapeBy = shape;
+      if (layout && ["tree", "radial"].includes(layout)) this.layoutMode = layout;
+      if (theme && ["light", "dark"].includes(theme)) {
+        this.theme = theme;
+        document.documentElement.setAttribute("data-theme", theme);
+      }
+      if (agg === "0") this.aggregateProfiles = false;
+    },
+    initTheme() {
+      const saved = localStorage.getItem("gmlst-theme");
+      if (saved === "light" || saved === "dark") {
+        this.theme = saved;
+        document.documentElement.setAttribute("data-theme", saved);
+      } else {
+        this.theme = "auto";
+      }
+    },
+    toggleMultiSelect(nodeId) {
+      const id = String(nodeId);
+      const idx = this.multiSelectedNodeIds.indexOf(id);
+      if (idx >= 0) {
+        this.multiSelectedNodeIds.splice(idx, 1);
+      } else {
+        this.multiSelectedNodeIds.push(id);
+      }
+      this.showComparePanel = this.multiSelectedNodeIds.length >= 2;
+      this.redrawFromLastData();
+    },
+    clearMultiSelect() {
+      this.multiSelectedNodeIds = [];
+      this.showComparePanel = false;
+      this.redrawFromLastData();
+    },
+    timelineFieldOptions() {
+      if (!this.lastData?.nodes?.length) return [];
+      const fields = this.metadataFields.filter((f) => {
+        return this.lastData.nodes.some((nd) => {
+          const v = nd.meta?.[f];
+          return v && /^\d{4}([-.]\d{1,2})?$/.test(String(v).trim());
+        });
+      });
+      return fields;
+    },
+    timelineMaxValue() {
+      if (!this.timelineField || !this.lastData?.nodes) return 0;
+      return Math.max(
+        ...this.lastData.nodes.map((nd) =>
+          parseInt(String(nd.meta?.[this.timelineField] || "0"), 10) || 0,
+        ),
+      );
+    },
+    timelineNodeVisible(node) {
+      if (!this.timelineField || this.timelineValue <= 0) return true;
+      const year = parseInt(String(node.meta?.[this.timelineField] || "0"), 10) || 0;
+      return year <= this.timelineValue;
+    },
+    toggleTimelinePlay() {
+      if (this.timelinePlaying) {
+        this.stopTimeline();
+      } else {
+        this.startTimeline();
+      }
+    },
+    startTimeline() {
+      if (!this.timelineField) return;
+      this.timelinePlaying = true;
+      this.timelineValue = 0;
+      const max = this.timelineMaxValue();
+      this.timelineTimer = window.setInterval(() => {
+        this.timelineValue += 1;
+        if (this.timelineValue >= max) {
+          this.stopTimeline();
+          this.timelineValue = max;
+        }
+        this.redrawFromLastData();
+      }, 400);
+    },
+    stopTimeline() {
+      this.timelinePlaying = false;
+      if (this.timelineTimer) {
+        window.clearInterval(this.timelineTimer);
+        this.timelineTimer = null;
+      }
+    },
+    resetTimeline() {
+      this.stopTimeline();
+      this.timelineValue = 0;
+      this.redrawFromLastData();
+    },
+    selectedNodesForCompare() {
+      if (!this.lastData?.nodes) return [];
+      const idSet = new Set(this.multiSelectedNodeIds);
+      return this.lastData.nodes.filter((n) => idSet.has(String(n.id)));
+    },
+    comparePairsDistance() {
+      const nodes = this.selectedNodesForCompare();
+      if (nodes.length < 2 || !this.lastData?.edges) return [];
+      const idSet = new Set(nodes.map((n) => String(n.id)));
+      const relevant = this.lastData.edges.filter(
+        (e) => idSet.has(String(e.source)) && idSet.has(String(e.target)),
+      );
+      const nodeMap = new Map(nodes.map((n) => [String(n.id), n]));
+      return relevant.map((e) => ({
+        a: nodeMap.get(String(e.source))?.label || "?",
+        b: nodeMap.get(String(e.target))?.label || "?",
+        weight: e.weight,
+        loci: (e.mismatch_loci || []).join(", "),
+      }));
+    },
+    shapeIndexFor(value) {
+      const str = String(value);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash + str.charCodeAt(i)) & 0xffffffff;
+      }
+      return Math.abs(hash) % 5;
+    },
+    shapePath(idx, cx, cy, r) {
+      switch (idx) {
+        case 0:
+          return `M${cx - r},${cy} a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 -${r * 2},0`;
+        case 1:
+          return `M${cx - r * 0.9},${cy - r * 0.9} h${r * 1.8} v${r * 1.8} h-${r * 1.8} z`;
+        case 2:
+          return `M${cx},${cy - r} L${cx + r * 0.95},${cy + r * 0.7} L${cx - r * 0.95},${cy + r * 0.7} z`;
+        case 3:
+          return `M${cx},${cy - r} L${cx + r},${cy} L${cx},${cy + r} L${cx - r},${cy} z`;
+        default:
+          const ir = r * 0.5;
+          return `M${cx - r},${cy - r * 0.4} L${cx - ir},${cy - r} L${cx + ir},${cy - r} L${cx + r},${cy - r * 0.4} L${cx + r},${cy + r * 0.4} L${cx + ir},${cy + r} L${cx - ir},${cy + r} L${cx - r},${cy + r * 0.4} z`;
+      }
+    },
+    cycleTheme() {
+      const order = ["auto", "light", "dark"];
+      const next = order[(order.indexOf(this.theme) + 1) % order.length];
+      this.theme = next;
+      if (next === "auto") {
+        document.documentElement.removeAttribute("data-theme");
+        localStorage.removeItem("gmlst-theme");
+      } else {
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("gmlst-theme", next);
+      }
+      this.syncViewStateToUrl();
+    },
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
     },
@@ -1524,9 +1818,13 @@ export default {
             radius: nodeRadius(node, this.scaleNodeSize),
             isRoot,
             sameComponent,
-            isSelected: selectedNode === node.id,
+            isSelected:
+              selectedNode === node.id
+              || this.multiSelectedNodeIds.includes(String(node.id)),
             searchMatch,
-            searchDimmed: hasSearch ? !searchMatch : false,
+            searchDimmed:
+              (hasSearch ? !searchMatch : false)
+              || !this.timelineNodeVisible(node),
             legendDimmed,
           };
         })
@@ -2041,9 +2339,28 @@ export default {
         "node",
       );
       circleNodeGroups
-        .append("circle")
-        .attr("r", (node) => node.radius + (node.isSelected ? 2 : 0))
-        .attr("fill", (node) => node.color)
+        .each((node, i, elems) => {
+          const group = d3.select(elems[i]);
+          const r = node.radius + (node.isSelected ? 2 : 0);
+          const fillColor = node.color;
+          const strokeFn = (nd) => {
+            if (nd.isSelected) return '#fbbf24';
+            if (this.correctnessOverlay && nd.isRoot) return '#0f172a';
+            return 'rgba(255,255,255,0.7)';
+          };
+          if (this.shapeBy && node.meta?.[this.shapeBy] !== undefined) {
+            const shapeIdx = this.shapeIndexFor(node.meta[this.shapeBy]);
+            group.append('path')
+              .attr('d', this.shapePath(shapeIdx, node.x, node.y, r))
+              .attr('fill', fillColor)
+              .attr('stroke', strokeFn)
+              .attr('stroke-width', 1.2);
+          } else {
+            group.append('circle')
+              .attr('r', r)
+              .attr('fill', fillColor);
+          }
+        })
         .attr("stroke", (node) => {
           if (node.isSelected) {
             return "#fbbf24";
@@ -2164,6 +2481,11 @@ export default {
           if (_event.shiftKey) {
             _event.stopPropagation();
             this.openNodeColorPicker(node.id, node.color);
+            return;
+          }
+          if (_event.ctrlKey || _event.metaKey) {
+            _event.stopPropagation();
+            this.toggleMultiSelect(node.id);
             return;
           }
           if (this._pendingNodeClick) {
@@ -2602,6 +2924,36 @@ export default {
       const content = `<?xml version="1.0" encoding="UTF-8"?>\n${raw}`;
       this._downloadBlob("gmlst_mst.svg", new Blob([content], { type: "image/svg+xml;charset=utf-8" }));
     },
+    async exportPng(scale = 2) {
+      const svg = this.$refs.svg;
+      if (!svg) {
+        this.setStatus("error", "Build a graph before exporting PNG");
+        return;
+      }
+      const bbox = svg.getBoundingClientRect();
+      const width = Math.ceil(bbox.width);
+      const height = Math.ceil(bbox.height);
+      const raw = new XMLSerializer().serializeToString(svg);
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(raw)}`;
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = svgUrl;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = getComputedStyle(document.documentElement)
+        .getPropertyValue("--graph-bg")
+        .trim() || "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) this._downloadBlob("gmlst_mst.png", blob);
+      }, "image/png");
+    },
     downloadJson(filename, payload) {
       this._downloadBlob(
         filename,
@@ -2813,6 +3165,35 @@ export default {
         <h1>{{ title }}</h1>
         <p class="topbar-subtitle">MST workspace</p>
       </div>
+      <button
+        class="theme-toggle"
+        :aria-label="`Theme: ${theme}`"
+        :title="`Theme: ${theme} (click to cycle)`"
+        type="button"
+        @click="cycleTheme"
+      >
+        <svg v-if="theme === 'light'" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+          <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.95 2.05a1 1 0 010 1.41l-.7.7a1 1 0 11-1.42-1.4l.71-.71a1 1 0 011.41 0zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-3.05 4.95a1 1 0 01-1.41 0l-.71-.7a1 1 0 111.42-1.42l.7.71a1 1 0 010 1.41zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.95-1.05a1 1 0 010 1.41 1 1 0 01-1.41 0l-.71-.7a1 1 0 111.42-1.42l.7.71zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm1.05-5.66a1 1 0 011.41 0l.71.71A1 1 0 013.75 6.34l-.7-.7a1 1 0 010-1.3zM10 6a4 4 0 100 8 4 4 0 000-8z"/>
+        </svg>
+        <svg v-else-if="theme === 'dark'" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+        </svg>
+        <svg v-else viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+          <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 2.07A6 6 0 0111 15.93V4.07z"/>
+        </svg>
+      </button>
+      <button
+        class="theme-toggle"
+        :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+        :title="isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen'"
+        type="button"
+        @click="toggleFullscreen"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+          <path v-if="!isFullscreen" d="M3 3h5v2H5v3H3V3zm9 0h5v5h-2V5h-3V3zM3 12h2v3h3v2H3v-5zm12 3v-3h2v5h-5v-2h3z"/>
+          <path v-else d="M7 3v4H3V5h2V3h2zm6 0h2v2h2v2h-4V3zM3 13h4v4H5v-2H3v-2zm12 0h2v2h-2v2h-2v-4h2z"/>
+        </svg>
+      </button>
       <nav v-if="lastData" class="view-tabs" aria-label="Analysis view switcher">
         <button
           v-for="tab in viewTabs"
@@ -2891,6 +3272,16 @@ export default {
               <rect x="2" y="9.5" width="3.25" height="4" rx="0.75" fill="currentColor" opacity="0.2" />
               <rect x="6.375" y="9.5" width="3.25" height="4" rx="0.75" fill="currentColor" opacity="0.5" />
               <rect x="10.75" y="9.5" width="3.25" height="4" rx="0.75" fill="currentColor" opacity="0.82" />
+            </template>
+            <template v-else-if="tab.id === 'summary'">
+              <rect x="2" y="2.5" width="12" height="2.5" rx="1.25" fill="currentColor" opacity="0.3" />
+              <rect x="2" y="6.5" width="9" height="2.5" rx="1.25" fill="currentColor" opacity="0.5" />
+              <rect x="2" y="10.5" width="11" height="2.5" rx="1.25" fill="currentColor" opacity="0.7" />
+            </template>
+            <template v-else-if="tab.id === 'stats'">
+              <path d="M3 13.5 3 9 6.5 9 6.5 13.5" stroke="currentColor" stroke-width="1.4" fill="none" />
+              <path d="M6.75 13.5 6.75 3.5 10.25 3.5 10.25 13.5" stroke="currentColor" stroke-width="1.4" fill="none" />
+              <path d="M10.5 13.5 10.5 6.5 14 6.5 14 13.5" stroke="currentColor" stroke-width="1.4" fill="none" />
             </template>
             <template v-else>
               <rect
@@ -3086,6 +3477,14 @@ export default {
             </option>
           </select>
 
+          <label class="field-label" for="shape-by">Shape nodes by</label>
+          <select id="shape-by" v-model="shapeBy" @change="redrawFromLastData">
+            <option value="">Circle (default)</option>
+            <option v-for="field in shapeFieldOptions" :key="field" :value="field">
+              {{ field }}
+            </option>
+          </select>
+
           <label class="field-label" for="color-scheme">Color scheme</label>
           <select id="color-scheme" v-model="colorScheme" @change="redrawFromLastData">
             <option value="default">Default (60 colors)</option>
@@ -3261,6 +3660,42 @@ export default {
           </template>
         </section>
 
+        <details v-if="multiSelectedNodeIds.length >= 2" v-show="analysisView === 'graph'" class="foldout" open>
+          <summary>Compare selected ({{ multiSelectedNodeIds.length }})</summary>
+          <div class="foldout-body compare-panel">
+            <div class="compare-node-list">
+              <span v-for="n in selectedNodesForCompare()" :key="n.id" class="compare-chip">
+                {{ n.label }}
+              </span>
+            </div>
+            <table v-if="comparePairsDistance().length" class="compare-table">
+              <thead>
+                <tr>
+                  <th>Sample A</th>
+                  <th>Sample B</th>
+                  <th>Dist</th>
+                  <th>Mismatch loci</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(pair, i) in comparePairsDistance()" :key="i">
+                  <td>{{ pair.a }}</td>
+                  <td>{{ pair.b }}</td>
+                  <td class="compare-dist">{{ pair.weight }}</td>
+                  <td class="compare-loci">{{ pair.loci || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-else class="tip compact-tip">
+              Selected samples are not directly connected in the MST.
+              Compare their distance via the distance matrix view.
+            </p>
+            <button class="btn btn-secondary btn-full" @click="clearMultiSelect">
+              Clear selection
+            </button>
+          </div>
+        </details>
+
         <details v-if="lastData" v-show="analysisView === 'graph'" class="foldout">
           <summary>Inspection details</summary>
           <div class="foldout-body">
@@ -3393,6 +3828,9 @@ export default {
             <button v-show="analysisView === 'graph'" class="btn btn-secondary btn-full" @click="exportSvg">
               Export SVG
             </button>
+            <button v-show="analysisView === 'graph'" class="btn btn-secondary btn-full" @click="exportPng()">
+              Export PNG
+            </button>
             <button v-show="analysisView === 'graph'" class="btn btn-secondary btn-full" @click="exportNewick">
               Export Newick
             </button>
@@ -3433,6 +3871,28 @@ export default {
             @select-by-value="selectNodesByLegendValue"
             @update:hovered-value="hoveredLegendValue = $event"
           />
+        </div>
+        <div v-if="analysisView === 'graph' && timelineFieldOptions().length" class="timeline-bar">
+          <select v-model="timelineField" class="timeline-select" aria-label="Timeline field">
+            <option value="">No timeline</option>
+            <option v-for="f in timelineFieldOptions()" :key="f" :value="f">{{ f }}</option>
+          </select>
+          <template v-if="timelineField">
+            <button class="timeline-btn" @click="toggleTimelinePlay" :aria-label="timelinePlaying ? 'Pause' : 'Play'">
+              {{ timelinePlaying ? '⏸' : '▶' }}
+            </button>
+            <input
+              type="range"
+              class="timeline-slider"
+              min="0"
+              :max="timelineMaxValue()"
+              v-model.number="timelineValue"
+              @input="redrawFromLastData()"
+              :aria-label="`Timeline: ${timelineField}`"
+            />
+            <span class="timeline-value">{{ timelineValue || 'all' }}</span>
+            <button class="timeline-btn" @click="resetTimeline" aria-label="Reset timeline">↺</button>
+          </template>
         </div>
         <div v-if="analysisView === 'graph'" ref="canvas" class="canvas" role="region" aria-label="Graph viewport — drag to pan, scroll to zoom, right-click nodes to hide">
           <div v-if="_building" class="loading-overlay">
@@ -3478,7 +3938,7 @@ export default {
           :color-by="colorBy"
           :truncated="heatmapTruncated"
           :render-limit="matrixRenderLimit"
-          :truncated-count="heatmapTruncatedCount"
+          :truncated-count="matrixTruncatedCount"
           :loci-truncated="heatmapLociTruncated"
           :loci-render-limit="lociRenderLimit"
           :loci-truncated-count="heatmapLociTruncatedCount"
@@ -3488,6 +3948,113 @@ export default {
           @fill-compare="fillCompareFromPair($event, compareRightLabel || $event)"
           @trigger-compare="triggerCompareFromPair(compareLeftLabel || $event, $event)"
         />
+        <div v-else-if="analysisView === 'summary'" class="stats-view">
+          <div v-if="!summaryData" class="stats-empty">
+            <p>Build a graph first to see the analysis summary.</p>
+          </div>
+          <div v-else class="summary-container">
+            <div class="summary-hero">
+              <div class="summary-hero-metric">
+                <strong>{{ summaryData.sample_count }}</strong>
+                <span>samples</span>
+              </div>
+              <div class="summary-hero-metric">
+                <strong>{{ summaryData.mst_summary.edges }}</strong>
+                <span>edges</span>
+              </div>
+              <div class="summary-hero-metric">
+                <strong>{{ summaryData.mst_summary.weight_median }}</strong>
+                <span>median weight</span>
+              </div>
+              <div class="summary-hero-metric">
+                <strong>{{ summaryData.cluster_count }}</strong>
+                <span>clusters</span>
+              </div>
+            </div>
+            <div v-if="summaryData.outliers.length" class="summary-section summary-section-warn">
+              <h3>⚠ Outliers</h3>
+              <div v-for="o in summaryData.outliers" :key="o.source" class="summary-outlier-row">
+                <strong>{{ o.source }} ↔ {{ o.target }}</strong>
+                <span class="summary-outlier-w">weight = {{ o.weight }}</span>
+              </div>
+            </div>
+            <div class="summary-section">
+              <h3>Hub Nodes (top degree)</h3>
+              <div class="summary-hubs">
+                <div v-for="nd in summaryData.top_variable_nodes" :key="nd.label" class="summary-hub">
+                  <span>{{ nd.label }}</span>
+                  <strong>{{ nd.degree }}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="summary-section">
+              <h3>Suggested Analysis</h3>
+              <ul class="summary-suggestions">
+                <li v-for="(s, i) in summaryData.suggested_analysis" :key="i">{{ s }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="analysisView === 'stats'" class="stats-view">
+          <div v-if="!statsData" class="stats-empty">
+            <p>Build a graph first to see statistics.</p>
+          </div>
+          <div v-else class="stats-grid">
+            <div class="stats-card">
+              <h3>Overview</h3>
+              <div class="stats-metrics">
+                <div class="stats-metric"><span>Samples</span><strong>{{ statsData.nodeCount }}</strong></div>
+                <div class="stats-metric"><span>Edges</span><strong>{{ statsData.edgeCount }}</strong></div>
+                <div class="stats-metric"><span>Clusters</span><strong>{{ statsData.clusterCount }}</strong></div>
+                <div class="stats-metric"><span>Zero-weight pairs</span><strong>{{ statsData.zeroWeightCount }}</strong></div>
+              </div>
+            </div>
+            <div class="stats-card">
+              <h3>Edge Weight Distribution</h3>
+              <div class="stats-quartiles">
+                <span>min: {{ statsData.weightMin }}</span>
+                <span>Q25: {{ statsData.weightQ25 }}</span>
+                <span>median: {{ statsData.weightMedian }}</span>
+                <span>Q75: {{ statsData.weightQ75 }}</span>
+                <span>max: {{ statsData.weightMax }}</span>
+              </div>
+              <div class="stats-histogram">
+                <div
+                  v-for="bin in statsData.histogram"
+                  :key="bin.label"
+                  class="stats-hist-bar"
+                  :style="{ height: Math.max(4, bin.pct * 1.8) + 'px' }"
+                  :title="`${bin.label}: ${bin.count} (${bin.pct}%)`"
+                />
+              </div>
+              <div class="stats-hist-labels">
+                <span>{{ statsData.weightMin }}</span>
+                <span>{{ statsData.weightMax }}</span>
+              </div>
+            </div>
+            <div class="stats-card">
+              <h3>Top Degree Nodes</h3>
+              <table class="stats-table">
+                <thead>
+                  <tr><th>Node</th><th>Degree</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="nd in statsData.topDegree" :key="nd.label">
+                    <td>{{ nd.label }}</td>
+                    <td class="stats-num">{{ nd.degree }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-if="statsData.outliers.length" class="stats-card stats-card-warning">
+              <h3>Outlier Alerts</h3>
+              <div v-for="o in statsData.outliers" :key="o.source + o.target" class="stats-outlier">
+                <span class="stats-outlier-pair">{{ o.source }} ↔ {{ o.target }}</span>
+                <span class="stats-outlier-w">w={{ o.weight }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <CompareTable
           v-else
           :summary="compareResultsSummary"

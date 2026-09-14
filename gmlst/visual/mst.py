@@ -41,7 +41,7 @@ def build_mst_from_tsv(
     metadata_text: str | None = None,
     include_missing: bool = False,
     aggregate_profiles: bool = False,
-    method: MstMethod = "edmonds",
+    method: MstMethod = "grapetree_classic",
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str]]:
     """Build a minimum spanning tree from profile TSV text.
 

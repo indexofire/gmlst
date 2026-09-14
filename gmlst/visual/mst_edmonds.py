@@ -244,18 +244,37 @@ def _select_min_incoming(
     node_ids: set[int],
     edges: list[DirectedEdge],
     root: int,
+    edges_by_target: dict[int, list[DirectedEdge]] | None = None,
 ) -> dict[int, DirectedEdge]:
+    """Pick each node's cheapest incoming edge (excluding the root).
+
+    When *edges_by_target* (edges pre-grouped by target, pre-sorted by
+    ``_edge_sort_key``) is supplied, this runs in O(n) per call instead of
+    scanning every edge — the dominant cost of the per-root arborescence
+    loop.
+    """
     incoming: dict[int, DirectedEdge] = {}
-    for edge in edges:
-        if (
-            edge.target == root
-            or edge.target not in node_ids
-            or edge.source not in node_ids
-        ):
+    if edges_by_target is None:
+        for edge in edges:
+            if (
+                edge.target == root
+                or edge.target not in node_ids
+                or edge.source not in node_ids
+            ):
+                continue
+            previous = incoming.get(edge.target)
+            if previous is None or _edge_sort_key(edge) < _edge_sort_key(previous):
+                incoming[edge.target] = edge
+        return incoming
+
+    for target, candidates in edges_by_target.items():
+        if target == root or target not in node_ids:
             continue
-        previous = incoming.get(edge.target)
-        if previous is None or _edge_sort_key(edge) < _edge_sort_key(previous):
-            incoming[edge.target] = edge
+        for edge in candidates:
+            if edge.source not in node_ids:
+                continue
+            incoming[target] = edge
+            break
     return incoming
 
 
@@ -265,8 +284,11 @@ def _minimum_arborescence(
     root: int,
     *,
     next_id: int,
+    edges_by_target: dict[int, list[DirectedEdge]] | None = None,
 ) -> tuple[list[DirectedEdge], int]:
-    selected = _select_min_incoming(node_ids, edges, root)
+    selected = _select_min_incoming(
+        node_ids, edges, root, edges_by_target=edges_by_target
+    )
     cycle = _find_directed_cycle(selected)
     if cycle is None:
         return list(selected.values()), next_id
@@ -411,12 +433,23 @@ def _build_mst_edges(
     best_edges: list[DirectedEdge] | None = None
     best_score: tuple[float, int, str, int] | None = None
     next_id = node_count
+
+    # Pre-group edges by target (sorted by _edge_sort_key) so each root's
+    # _select_min_incoming is O(n) instead of O(E) — turns the per-root
+    # loop from O(n*E) into O(n^2) for this stage.
+    edges_by_target: dict[int, list[DirectedEdge]] = {}
+    for edge in directed_edges:
+        edges_by_target.setdefault(edge.target, []).append(edge)
+    for candidates in edges_by_target.values():
+        candidates.sort(key=_edge_sort_key)
+
     for root in range(node_count):
         candidate_edges, next_id = _minimum_arborescence(
             set(range(node_count)),
             directed_edges,
             root,
             next_id=next_id,
+            edges_by_target=edges_by_target,
         )
         combined_total = sum(edge.combined_weight for edge in candidate_edges)
         asymmetric_total = sum(edge.asymmetric_weight for edge in candidate_edges)

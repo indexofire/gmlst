@@ -30,7 +30,9 @@ from gmlst.visual.mst import (
 )
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
-TABULAR_FORMATS = click.Choice(["json", "tsv", "table"], case_sensitive=False)
+TABULAR_FORMATS = click.Choice(
+    ["json", "tsv", "table", "summary"], case_sensitive=False
+)
 EXPORT_SCHEMA_VERSION = "gmlst-visual-export-v1"
 
 
@@ -115,7 +117,7 @@ def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
 @click.option(
     "--method",
     type=click.Choice(VALID_MST_METHODS, case_sensitive=False),
-    default="edmonds",
+    default="grapetree_classic",
     show_default=True,
     help="MST algorithm method.",
 )
@@ -143,6 +145,19 @@ def cmd_visual_mst(
         metadata_text=metadata_text,
         method=method,
     )
+    if output_format.lower() == "summary":
+        from gmlst.visual.mst_summary import summarize_mst_payload
+
+        summary = summarize_mst_payload(
+            {
+                "nodes": nodes,
+                "edges": edges,
+                "metadata_fields": metadata_fields,
+                "aggregate_profiles": aggregate_profiles,
+            }
+        )
+        emit_json_payload(summary, output=output_path)
+        return
     if output_format.lower() == "json":
         emit_json_payload(
             {
@@ -553,7 +568,7 @@ def cmd_visual_locus_diff(
 @click.option(
     "--method",
     type=click.Choice(VALID_MST_METHODS, case_sensitive=False),
-    default="edmonds",
+    default="grapetree_classic",
     show_default=True,
     help="MST algorithm method for kind=mst.",
 )

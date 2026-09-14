@@ -1,6 +1,6 @@
 # 可视化指南
 
-本文介绍 `gmlst` 的本地可视化工作流，包括 Web 服务器启动、输入格式、MST 构建、布局切换、元数据着色以及前端构建方式。若要先从 CLI 导出适合可视化的 profile 表，请结合 [novel_workflow.md](novel_workflow.md) 和 [commands.md](commands.md) 一起阅读。
+本文介绍 `gmlst` 的本地可视化工作流，包括 Web 服务器启动、输入格式、MST 构建、算法选择、CLI 导出、智能体摘要输出、布局切换、元数据着色以及前端构建方式。若要先从 CLI 导出适合可视化的 profile 表，请结合 [novel_workflow.md](novel_workflow.md) 和 [commands.md](commands.md) 一起阅读。
 
 ## 概述
 
@@ -12,6 +12,12 @@
 - 根据元数据列给节点着色
 - 比较不同 missing token 处理方式对距离的影响
 - 导出适合汇报或论文使用的 SVG 图
+
+CLI 子命令适合以下场景：
+
+- 无浏览器环境下构建 MST payload
+- 生成供下游工具或 AI 智能体消费的 JSON
+- 获取可在一个 context 窗口内读完的紧凑分析摘要
 
 ## 启动服务器
 
@@ -76,6 +82,12 @@ ST2	12	44	111	wound	WardA	2024
 
 元数据既可以直接嵌入同一个表，也可以作为单独的 metadata 文件按样本 ID 关联后上传。
 
+### 元数据自动检测
+
+当表中混合了 locus 列和自由文本列（如 `clade`、`source`、`分离地点`）时，解析器会自动检测值是否像 allele call（纯数字、`LNF`、`~2`、`1?`、`NIPH`、逗号分隔多 allele 等）。值全部不像 allele 的列会被自动归类为元数据，无需手动拆分。
+
+一个注意点：纯数字列（如 `year`）与 allele 编号无法区分，会保留为 locus。需要按年份分析时，请通过单独的 `--metadata` 文件传入。
+
 ## 构建 MST
 
 加载 profile 表后，界面会根据样本之间的 allele 差异构建最小生成树。
@@ -93,6 +105,91 @@ MST 在这里有三个主要价值：
 - 用紧凑方式展示样本间最近邻关系
 - 很适合基于 cgMLST profile 的比较
 - 能在进入更复杂系统发育分析之前，先做快速交互式探索
+
+### MST 算法
+
+支持三种算法：
+
+| 方法 | 算法 | 优化目标 | 适用场景 | 规模上限 |
+|---|---|---|---|---|
+| `grapetree_classic` **（默认）** | Kruskal MST（Hamming 距离） | 总 Hamming 距离最小 | **大数据集（500+ 样本）** | O(n² log n) — 1000 样本约 37s |
+| `grapetree_v2` | Edmonds + 分支重排（harmonic/eBurst 权重） | 复合种群结构指标 | **与 GrapeTree 软件输出对齐** | O(n²) 距离矩阵 — 1000 样本约 255s、3.5GB 内存 |
+| `edmonds` | Edmonds 有向生成树 + 子树重排 | 总 Hamming 距离最小 | 小数据集（≤100 样本），需要确定性结果 | O(n³) — **n>200 不可用** |
+
+992 样本 × 100 loci 实测：
+
+| 方法 | 耗时 | 峰值内存 | 总权重 |
+|---|---|---|---|
+| `grapetree_classic` | 37s | 230 MB | 8824 |
+| `grapetree_v2` | 255s | 3.5 GB | 约为 classic 的 2 倍 |
+| `edmonds` | >20 分钟（超时） | — | — |
+
+各方法的关键行为差异：
+
+- **edmonds** 通过子树重排能找到总权重最低的树（比 classic 低约 0.4%），但逐根循环使其复杂度为 O(n³)，超过约 200 个样本后不可用。
+- **grapetree_v2** 使用复合指标（归一化距离 + harmonic 权重 + eBurst 权重），产生的树总 Hamming 权重可达最小值的 2 倍，但拓扑结构更符合种群聚类，且需要 O(n²) 内存存储距离矩阵。
+- **grapetree_classic** 是标准 Kruskal 最小生成树：与 edmonds 权重相同（仅在并列时有差异），速度快、内存低。自 v0.1.6 起为默认方法。
+
+在简单数据集（≤6 个样本、无权重并列）上，三种方法产生完全相同的树。在更大或更多态的数据集上，`grapetree_v2` 因复合优化目标而偏离其他方法，`edmonds` 通过重排找到略优于 `classic` 的树。
+
+## CLI MST 命令
+
+### 全量 JSON 输出
+
+```bash
+gmlst visual mst --input profiles.tsv --metadata meta.tsv --output result.json
+```
+
+生成完整 MST payload（节点、边、元数据、错配位点）。1000 样本约 750KB–1.1MB，**约 290K tokens，不能直接读入 LLM context**。适合工具链处理或作为 Web 前端数据源。
+
+### 摘要输出（面向智能体）
+
+```bash
+gmlst visual mst --input profiles.tsv --metadata meta.tsv --format summary --output summary.json
+```
+
+生成紧凑分析摘要（1000 样本约 7KB，约 1K tokens），AI 智能体可直接读入。摘要包含：
+
+| 字段 | 内容 | 分析价值 |
+|---|---|---|
+| `mst_summary` | 边数、权重最小/中位/最大值、零权重对数 | 树形概况与数据质量 |
+| `clusters` | 连通分量（边权≤15）、大小、主导元数据、纯度 | 群体结构与克隆复合体 |
+| `top_variable_loci` | 错配频率最高的位点 | 分型标记物候选 |
+| `outliers` | 高边权（>50）连接的节点 | 高偏离/导入株、数据质量标记 |
+| `suggested_analysis` | 可执行的后续分析建议 | 分析路线图 |
+
+### 其他 MST 相关命令
+
+```bash
+# 成对距离矩阵
+gmlst visual matrix --input profiles.tsv --output dist.json
+
+# Allele 热图
+gmlst visual heatmap --input profiles.tsv --output heatmap.json
+
+# 比较两次分型结果
+gmlst visual compare --left run1.tsv --right run2.tsv
+
+# 两个样本之间的位点差异
+gmlst visual locus-diff --input profiles.tsv --left-label s1 --right-label s2
+```
+
+## 智能体集成模式
+
+AI 智能体（或脚本）消费 MST 结果时，推荐双层模式：
+
+```
+第一层（读 context）: --format summary → 约 7KB，直接读入
+第二层（工具处理）:  --format json    → 约 1MB，用 Python 处理
+```
+
+典型的智能体工作流：
+
+1. 运行 `gmlst visual mst --format summary` 并将 JSON 读入 context。
+2. 仅凭摘要即可分析聚类结构、异常样本、标记位点。
+3. 需要某个样本的邻居或某条边的错配位点细节时，写 Python 脚本处理全量 JSON，只返回提取结果。
+
+这种模式在保持 LLM context 精简的同时，不丢失对全分辨率数据的访问能力。
 
 ## 布局选项
 
@@ -181,7 +278,7 @@ STN1	n1	7	3	9	4	2	1
 
 - `/`
 - `/health`
-- `/api/mst`
+- `/api/mst`（POST：`{tsv, metadata_tsv?, method?, include_missing?, aggregate_profiles?}`）
 - `/api/distance-matrix`
 - `/api/allele-heatmap`
 - `/api/locus-diff`
@@ -204,6 +301,16 @@ gmlst/web/static/visual/dist/
 - Flask 负责提供页面和 API
 - Vue 3 负责浏览器中的交互界面
 - Vite 负责打包前端静态资源
+
+MST 实现文件：
+
+```text
+gmlst/visual/mst.py            公共 API: build_mst_from_tsv
+gmlst/visual/mst_shared.py     解析、距离计算、验证、共享辅助函数
+gmlst/visual/mst_edmonds.py    Edmonds 有向生成树 + 子树重排
+gmlst/visual/mst_grapetree.py  GrapeTree v2（复合指标）+ classic（Kruskal）
+gmlst/visual/mst_summary.py    面向智能体/context 的紧凑摘要
+```
 
 ## 构建前端
 

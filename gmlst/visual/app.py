@@ -421,7 +421,7 @@ def create_visual_app(*, title: str) -> Flask:
             validate_tsv_scale(payload.get("tsv", "") or "")
             tsv_text = _parse_text(payload, "tsv")
             metadata_text = _parse_text(payload, "metadata_tsv")
-            method = _parse_text(payload, "method") or "edmonds"
+            method = _parse_text(payload, "method") or "grapetree_classic"
             include_missing = _parse_bool(payload, "include_missing", default=False)
             aggregate_profiles = _parse_bool(
                 payload,
