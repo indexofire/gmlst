@@ -18,10 +18,17 @@ async function postJson(endpoint, payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "request failed");
+    let message = `request failed (status ${response.status})`;
+    try {
+      const data = await response.json();
+      if (data.error) message = data.error;
+    } catch {
+      // Non-JSON body (e.g. 413 HTML page) — keep the status-based message
+    }
+    throw new Error(message);
   }
+  const data = await response.json();
   return data;
 }
 

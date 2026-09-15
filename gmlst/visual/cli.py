@@ -11,6 +11,7 @@ import click
 
 from gmlst.visual._cli_export import emit_export_payload
 from gmlst.visual._cli_helpers import (
+    cli_catch_value_errors,
     emit_json_payload,
     emit_rows_by_format,
     heatmap_rows,
@@ -30,9 +31,8 @@ from gmlst.visual.mst import (
 )
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
-TABULAR_FORMATS = click.Choice(
-    ["json", "tsv", "table", "summary"], case_sensitive=False
-)
+TABULAR_FORMATS = click.Choice(["json", "tsv", "table"], case_sensitive=False)
+MST_FORMATS = click.Choice(["json", "tsv", "table", "summary"], case_sensitive=False)
 EXPORT_SCHEMA_VERSION = "gmlst-visual-export-v1"
 
 
@@ -64,6 +64,16 @@ def visual_group(ctx: click.Context, force_large: bool) -> None:
 @click.option("--open-browser", is_flag=True, help="Open browser automatically.")
 def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
     """Run the local web UI for Grapetree-style MST visualization."""
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        click.echo(
+            click.style(
+                f"WARNING: binding to {host} — the visual server has no "
+                "authentication. Anyone on this network can submit data.",
+                fg="yellow",
+                bold=True,
+            ),
+            err=True,
+        )
     app = create_visual_app(title="gmlst visual web")
     click.echo(f"Serving MST web app on http://{host}:{port}")
     if open_browser:
@@ -92,7 +102,7 @@ def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
-    help="Write output JSON to file.",
+    help="Write output to file.",
 )
 @click.option(
     "--format",
@@ -122,6 +132,7 @@ def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
     help="MST algorithm method.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_mst(
     ctx: click.Context,
     input_path: Path,
@@ -213,7 +224,7 @@ def cmd_visual_mst(
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
-    help="Write output JSON to file.",
+    help="Write output to file.",
 )
 @click.option(
     "--format",
@@ -236,6 +247,7 @@ def cmd_visual_mst(
     help="Collapse duplicate profiles before distance calculation.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_matrix(
     ctx: click.Context,
     input_path: Path,
@@ -304,7 +316,7 @@ def cmd_visual_matrix(
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
-    help="Write output JSON to file.",
+    help="Write output to file.",
 )
 @click.option(
     "--format",
@@ -321,6 +333,7 @@ def cmd_visual_matrix(
     help="Collapse duplicate profiles before heatmap generation.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_heatmap(
     ctx: click.Context,
     input_path: Path,
@@ -391,7 +404,7 @@ def cmd_visual_heatmap(
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
-    help="Write output JSON to file.",
+    help="Write output to file.",
 )
 @click.option(
     "--format",
@@ -402,6 +415,7 @@ def cmd_visual_heatmap(
     help="Output format.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_compare(
     ctx: click.Context,
     left_path: Path,
@@ -460,7 +474,7 @@ def cmd_visual_compare(
     "--output",
     "output_path",
     type=click.Path(path_type=Path),
-    help="Write output JSON to file.",
+    help="Write output to file.",
 )
 @click.option(
     "--format",
@@ -477,6 +491,7 @@ def cmd_visual_compare(
     help="Count asymmetric missing-token mismatches.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_locus_diff(
     ctx: click.Context,
     input_path: Path,
@@ -604,6 +619,7 @@ def cmd_visual_locus_diff(
     help="Comma-separated column list for tabular export formats.",
 )
 @click.pass_context
+@cli_catch_value_errors
 def cmd_visual_export(
     ctx: click.Context,
     kind: str,

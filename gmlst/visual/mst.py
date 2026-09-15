@@ -40,7 +40,7 @@ def build_mst_from_tsv(
     *,
     metadata_text: str | None = None,
     include_missing: bool = False,
-    aggregate_profiles: bool = False,
+    aggregate_profiles: bool = True,
     method: MstMethod = "grapetree_classic",
 ) -> tuple[list[dict[str, object]], list[dict[str, object]], list[str]]:
     """Build a minimum spanning tree from profile TSV text.
@@ -107,7 +107,7 @@ def build_distance_matrix_from_tsv(
     tsv_text: str,
     *,
     include_missing: bool,
-    aggregate_profiles: bool = False,
+    aggregate_profiles: bool = True,
     metadata_text: str | None = None,
 ) -> tuple[list[str], list[list[int]], list[dict[str, object]], list[str]]:
     """Build the pairwise profile-distance matrix from profile TSV text.
@@ -217,7 +217,7 @@ def build_locus_diff_from_tsv(
 def build_allele_heatmap_from_tsv(
     tsv_text: str,
     *,
-    aggregate_profiles: bool = False,
+    aggregate_profiles: bool = True,
     metadata_text: str | None = None,
 ) -> tuple[
     list[str], list[str], list[list[dict[str, str]]], list[dict[str, object]], list[str]

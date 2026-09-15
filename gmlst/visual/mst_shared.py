@@ -67,18 +67,29 @@ class DirectedEdge:
     asymmetric_mismatch_loci: tuple[str, ...]
 
 
+_MAX_COMBINED_CELLS = 250_000
+
+
 def validate_tsv_scale(tsv_text: str) -> None:
-    """Reject profile input exceeding the 5000-sample / 5000-locus limits."""
+    """Reject profile input exceeding sample/locus/combined-cell limits."""
     lines = tsv_text.strip().splitlines()
     if not lines:
         return
-    header_cols = lines[0].split("\t")
+    delimiter = _sniff_delimiter(tsv_text)
+    header_cols = lines[0].split(delimiter)
     loci_count = max(len(header_cols) - 1, 0)
     sample_count = max(len(lines) - 1, 0)
     if sample_count > _MAX_SAMPLE_COUNT:
         raise ValueError(f"Too many samples: {sample_count} (max {_MAX_SAMPLE_COUNT})")
     if loci_count > _MAX_LOCI_COUNT:
         raise ValueError(f"Too many loci: {loci_count} (max {_MAX_LOCI_COUNT})")
+    combined = sample_count * loci_count
+    if combined > _MAX_COMBINED_CELLS:
+        raise ValueError(
+            f"Combined scale too large: {sample_count} samples × {loci_count} loci "
+            f"= {combined} cells (max {_MAX_COMBINED_CELLS}). "
+            "Reduce samples or loci."
+        )
 
 
 def _resolved_allele_count(profile: tuple[str, ...]) -> int:
@@ -86,11 +97,13 @@ def _resolved_allele_count(profile: tuple[str, ...]) -> int:
 
 
 def normalize_allele(value: str | None) -> str:
-    """Strip call decorations (~, ?, INF- prefix) leaving the bare allele id."""
+    """Strip call decorations (~, ?, *, INF- prefix) leaving the bare allele id."""
     cleaned = (value or "").strip()
     if cleaned.startswith("~"):
         cleaned = cleaned[1:]
     if cleaned.endswith("?"):
+        cleaned = cleaned[:-1]
+    if cleaned.endswith("*"):
         cleaned = cleaned[:-1]
     if cleaned.startswith("INF-"):
         cleaned = cleaned[4:]
@@ -336,7 +349,6 @@ def _parse_rows(
     # values never look like allele calls (all rows are free-text like clade
     # labels, years, or source names) is treated as metadata, not a locus.
     rows = list(reader)
-    reader = None  # already consumed; reuse rows below
     auto_meta: set[str] = set()  # already consumed; reuse rows below
     if rows and len(loci) > 1:
         auto_meta = _detect_non_allele_columns(rows, loci)

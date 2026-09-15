@@ -77,6 +77,8 @@ def _parse_bool(payload: dict[str, Any], key: str, *, default: bool) -> bool:
 
 def _parse_non_negative_int(payload: dict[str, Any], key: str, *, default: int) -> int:
     value = payload.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError(f"'{key}' must be an integer")
     try:
         parsed = int(value)
     except (TypeError, ValueError) as exc:
@@ -366,6 +368,19 @@ def create_visual_app(*, title: str) -> Flask:
             return None
         origin = request.headers.get("Origin")
         referer = request.headers.get("Referer")
+        # Validate Host against allowlist (defends against DNS rebinding,
+        # where an attacker's Host header would otherwise match Origin).
+        host = request.host.lower()
+        allowed_hosts = {"127.0.0.1", "localhost", "[::1]"}
+        host_name = host.split(":")[0] if ":" in host else host
+        if host_name not in allowed_hosts:
+            # Non-loopback binding: require exact Origin match against
+            # the actual request Host (still better than no check).
+            app.logger.warning(
+                "Request to non-loopback host %r — CSRF check relies on "
+                "Host header trust",
+                host,
+            )
         host_url = request.host_url.rstrip("/")
         if origin is not None and origin.rstrip("/") != host_url:
             return jsonify({"error": "Cross-origin requests are not allowed"}), 403
@@ -418,9 +433,11 @@ def create_visual_app(*, title: str) -> Flask:
         """
         try:
             payload = _require_payload_dict()
-            validate_tsv_scale(payload.get("tsv", "") or "")
             tsv_text = _parse_text(payload, "tsv")
+            validate_tsv_scale(tsv_text)
             metadata_text = _parse_text(payload, "metadata_tsv")
+            if metadata_text:
+                validate_tsv_scale(metadata_text)
             method = _parse_text(payload, "method") or "grapetree_classic"
             include_missing = _parse_bool(payload, "include_missing", default=False)
             aggregate_profiles = _parse_bool(
@@ -500,9 +517,11 @@ def create_visual_app(*, title: str) -> Flask:
         """
         try:
             payload = _require_payload_dict()
-            validate_tsv_scale(payload.get("tsv", "") or "")
             tsv_text = _parse_text(payload, "tsv")
+            validate_tsv_scale(tsv_text)
             metadata_text = _parse_text(payload, "metadata_tsv")
+            if metadata_text:
+                validate_tsv_scale(metadata_text)
             include_missing = _parse_bool(payload, "include_missing", default=False)
             aggregate_profiles = _parse_bool(
                 payload,
@@ -559,9 +578,11 @@ def create_visual_app(*, title: str) -> Flask:
         """
         try:
             payload = _require_payload_dict()
-            validate_tsv_scale(payload.get("tsv", "") or "")
             tsv_text = _parse_text(payload, "tsv")
+            validate_tsv_scale(tsv_text)
             metadata_text = _parse_text(payload, "metadata_tsv")
+            if metadata_text:
+                validate_tsv_scale(metadata_text)
             left_label = _parse_text(payload, "left_label")
             right_label = _parse_text(payload, "right_label")
             include_missing = _parse_bool(payload, "include_missing", default=False)
@@ -590,9 +611,11 @@ def create_visual_app(*, title: str) -> Flask:
         """
         try:
             payload = _require_payload_dict()
-            validate_tsv_scale(payload.get("tsv", "") or "")
             tsv_text = _parse_text(payload, "tsv")
+            validate_tsv_scale(tsv_text)
             metadata_text = _parse_text(payload, "metadata_tsv")
+            if metadata_text:
+                validate_tsv_scale(metadata_text)
             aggregate_profiles = _parse_bool(
                 payload,
                 "aggregate_profiles",

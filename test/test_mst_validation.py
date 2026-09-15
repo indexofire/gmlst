@@ -299,6 +299,7 @@ class TestMstStructuralProperties:
             DUPLICATE_PROFILES_TSV,
             include_missing=False,
             method=method,
+            aggregate_profiles=False,
         )
         edge_set = _extract_edge_set(edges)
         assert any(weight == 0 for _, _, weight in edge_set)
@@ -318,6 +319,7 @@ class TestMstStructuralProperties:
             ALL_IDENTICAL_TSV,
             include_missing=False,
             method=method,
+            aggregate_profiles=False,
         )
         assert all(cast(int, edge["weight"]) == 0 for edge in edges)
 
@@ -389,7 +391,9 @@ class TestMstCrossMethodComparison:
         self, tsv_name: str, tsv: str
     ) -> None:
         for method in METHODS:
-            _, edges, _ = build_mst_from_tsv(tsv, include_missing=False, method=method)
+            _, edges, _ = build_mst_from_tsv(
+                tsv, include_missing=False, method=method, aggregate_profiles=False
+            )
             assert any(cast(int, e["weight"]) == 0 for e in edges), (
                 f"{tsv_name}/{method}: expected at least one zero-weight edge"
             )

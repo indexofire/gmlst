@@ -1,4 +1,4 @@
-"""Export dispatcher for `gmlst visual` CLI output (json/tsv/csv/table)."""
+"""Export dispatcher for `gmlst visual` CLI output (json/tsv/table)."""
 
 from __future__ import annotations
 

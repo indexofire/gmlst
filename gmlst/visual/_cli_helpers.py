@@ -14,6 +14,8 @@ from gmlst.commands.common import (
 )
 from gmlst.visual.mst_shared import validate_tsv_scale
 
+_force_large_warned = False
+
 
 def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
     """Enforce TSV size limits unless the parent ``--force-large`` flag is set.
@@ -22,10 +24,13 @@ def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
     Click usage errors.
     """
     if ctx.parent is not None and ctx.parent.params.get("force_large"):
-        click.echo(
-            "Warning: bypassing TSV scale limits because --force-large is active.",
-            err=True,
-        )
+        global _force_large_warned
+        if not _force_large_warned:
+            click.echo(
+                "Warning: bypassing TSV scale limits because --force-large is active.",
+                err=True,
+            )
+            _force_large_warned = True
         return
     try:
         validate_tsv_scale(tsv_text)
@@ -138,3 +143,17 @@ def heatmap_rows(
             row[str(loci[cell_index])] = str(cell["value"])
         rows.append(row)
     return rows
+
+
+def cli_catch_value_errors(fn):
+    """Decorator: convert builder ValueError to click.UsageError (no tracebacks)."""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+
+    return wrapper

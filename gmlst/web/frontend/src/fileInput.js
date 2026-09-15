@@ -6,7 +6,7 @@
  */
 
 /** Maximum file size accepted by the client-side input handlers (64 MiB). */
-export const MAX_FILE_SIZE = 64 * 1024 * 1024
+export const MAX_FILE_SIZE = 32 * 1024 * 1024
 
 /**
  * Read a File object as text, throwing if it exceeds the size limit.

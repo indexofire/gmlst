@@ -593,7 +593,9 @@ def test_build_mst_grapetree_header_uses_first_column_as_sample() -> None:
             "B\t1\t1",
         ]
     )
-    _, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    _, edges, _ = build_mst_from_tsv(
+        tsv, include_missing=False, aggregate_profiles=False
+    )
     assert len(edges) == 1
     assert edges[0]["weight"] == 0
 
@@ -625,7 +627,9 @@ def test_build_mst_restores_duplicate_profiles_as_zero_length_leaves() -> None:
         ]
     )
 
-    nodes, edges, _ = build_mst_from_tsv(tsv, include_missing=False)
+    nodes, edges, _ = build_mst_from_tsv(
+        tsv, include_missing=False, aggregate_profiles=False
+    )
 
     assert [node["label"] for node in nodes] == ["A", "B", "C"]
     assert len(edges) == 2
@@ -865,7 +869,9 @@ def test_recrafting_keeps_parent_under_subtree_cost_gate() -> None:
         ]
     )
 
-    _, edges, _ = build_mst_from_tsv(tsv, method="edmonds", include_missing=False)
+    _, edges, _ = build_mst_from_tsv(
+        tsv, method="edmonds", include_missing=False, aggregate_profiles=False
+    )
 
     assert {
         (
