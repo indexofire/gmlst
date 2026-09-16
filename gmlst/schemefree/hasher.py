@@ -26,6 +26,7 @@ class HashStrategy(ABC):
         self.allele_db: dict[str | int, dict] = {}  # hash -> allele info
         self.total_sequences = 0
         self._locus_allele_numbers: dict[str, dict[str | int, int]] = {}
+        self._locus_highest: dict[str, int] = {}
 
     @abstractmethod
     def get_allele_id(self, sequence: str, locus_id: str) -> str:
@@ -44,6 +45,16 @@ class HashStrategy(ABC):
     def get_strategy_name(self) -> str:
         """Return strategy name."""
         pass
+
+    def reserve_allele_numbers(self, locus_id: str, highest: int) -> None:
+        """Reserve allele numbers up to *highest* for a loaded scheme locus.
+
+        Novel alleles at *locus_id* then continue numbering after
+        *highest* instead of restarting at 1.
+        """
+        self._locus_highest[locus_id] = max(
+            self._locus_highest.get(locus_id, 0), highest
+        )
 
     def _normalize_sequence(self, sequence: str) -> str:
         """Normalize sequence for hashing.
@@ -67,7 +78,10 @@ class HashStrategy(ABC):
     def _format_locus_allele(self, locus_id: str, sequence_key: str | int) -> str:
         locus_map = self._locus_allele_numbers.setdefault(locus_id, {})
         if sequence_key not in locus_map:
-            locus_map[sequence_key] = len(locus_map) + 1
+            next_num = (
+                max([*locus_map.values(), self._locus_highest.get(locus_id, 0)]) + 1
+            )
+            locus_map[sequence_key] = next_num
         return f"{locus_id}_{locus_map[sequence_key]}"
 
 
