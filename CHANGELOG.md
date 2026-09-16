@@ -20,6 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.2.1] - 2026-09-17
+
+### Fixed
+- `typing tgmlst` de novo locus numbering is now deterministic: two runs on
+  identical input produce byte-identical profiles. Parallel sample processing
+  no longer orders genes by completion time, and locus IDs are assigned by a
+  canonical cluster key instead of the order mmseqs emits cluster lines.
+- `typing tgmlst --load-scheme` was a no-op for typing results (scheme data was
+  never consulted); saved schemes now store per-allele sequence hashes plus one
+  representative sequence per locus, and load-mode anchors genes to scheme loci
+  with allele-ID reuse for byte-identical alleles and continued numbering for
+  novel alleles/loci. Legacy scheme files still load, with a warning that
+  locus anchoring is disabled until re-export.
+- Load-mode typing pins a gene to its scheme locus directly when its sequence
+  hash matches a scheme allele exactly, so borderline cluster assignments
+  between paralogous loci cannot displace byte-identical matches. Verified on
+  real genomes: re-typing a scheme-building sample reproduces its de novo
+  profile at 99.98% (5010/5011 loci; the single residual is a shadowed
+  paralog whose sequence is not part of the scheme).
+
+### Added
+- `typing tgmlst --stats` now reports `scheme_loci_anchored` and `novel_loci`
+  when typing against a loaded scheme.
+
 ## [0.2.0] - 2026-09-16
 
 The AI-agent friendliness release. JSON output is versioned, stdout carries
