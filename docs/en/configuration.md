@@ -36,10 +36,17 @@ Use `gmlst config` to inspect and manage variables:
 ```bash
 gmlst config show                    # view all variables with current values
 gmlst config env                     # shell-exportable format
+gmlst config get GMLST_TMPDIR        # get a single variable
+gmlst config get GMLST_TMPDIR --format json  # {name, value, source, is_default}
 gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # write to ~/.config/gmlst/env.sh
 gmlst config init                    # add source line to shell rc (run once)
 source ~/.config/gmlst/env.sh        # apply now in current shell
 ```
+
+Two display behaviors are worth knowing:
+
+- `config show` masks secret values. Any variable whose name looks like a credential (`*_API_KEY`, tokens, secrets, passwords) prints as `first4****last4`, or `********` when the value is short. This keeps API keys out of terminal logs and screenshots. Unset secrets are not masked because there is nothing to hide. Masking affects `config show` only; `config get` still prints the real value because its output is meant for scripting.
+- `config get --format json` reports provenance through the `source` field: `file` when the live value matches an `export` line in the `env.sh` config file, `env` when the variable is set in the environment any other way, and `default` when it is unset (the built-in default applies and `is_default` is `true`).
 
 ### Cache
 
