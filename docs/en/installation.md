@@ -246,7 +246,7 @@ gmlst --version
 Example output:
 
 ```text
-gmlst, version 0.1.3
+gmlst, version 0.2.0
 ```
 
 ### Check top level help

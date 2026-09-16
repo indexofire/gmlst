@@ -128,7 +128,7 @@ Key behavioral differences:
 
 - **edmonds** produces the lowest total weight (0.4% better than classic on small datasets) thanks to its subtree-aware recrafting, but the per-root loop makes it O(n³) and unusable beyond ~200 samples.
 - **grapetree_v2** uses a composite metric (normalized distance + harmonic weights + eBurst weights) and produces trees whose total Hamming weight can be up to 2× the minimum, but whose topology better reflects population clustering. It requires O(n²) memory for the distance matrix.
-- **grapetree_classic** is a standard Kruskal minimum spanning tree: identical weight to edmonds (within tie-breaking), fast, memory-light. It is the default since v0.1.6.
+- **grapetree_classic** is a standard Kruskal minimum spanning tree: identical weight to edmonds (within tie-breaking), fast, memory-light. It is the default since v0.2.0.
 
 On simple datasets (≤6 samples, no weight ties), all three methods produce identical trees. On larger or more polymorphic datasets, `grapetree_v2` diverges due to its composite optimization target, and `edmonds` finds marginally better trees than `classic` via recrafting.
 
