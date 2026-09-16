@@ -3016,7 +3016,7 @@ export default {
         return;
       }
       this.downloadJson("gmlst_graph.json", {
-        schema_version: this.lastData.export?.schema_version || "gmlst-visual-v1",
+        schema_version: this.lastData.export?.schema_version || "gmlst-visual-export-v1",
         exported_from: "gmlst visual",
         graph: this.currentRenderedGraph,
       });
@@ -3117,7 +3117,7 @@ export default {
         return;
       }
       this.downloadJson("gmlst_session.json", {
-        schema_version: this.lastData.export?.schema_version || "gmlst-visual-v1",
+        schema_version: this.lastData.export?.schema_version || "gmlst-visual-export-v1",
         exported_from: "gmlst visual",
         inputs: {
           tsv: this.tsvText,

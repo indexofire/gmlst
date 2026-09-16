@@ -21,7 +21,9 @@ HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
     no_args_is_help=True,
 )
 @click.version_option(__version__, "--version", "-V")
-@click.option("--verbose", "-v", is_flag=True, help="Enable debug logging.")
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Enable verbose (INFO-level) logging."
+)
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
 @click.pass_context
 def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:

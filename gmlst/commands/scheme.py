@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import re
 import shutil
@@ -19,22 +20,30 @@ from gmlst.commands.common import (
     console,
     deprecated_scheme_option,
     emit_output_table,
+    emit_versioned_json,
     err_console,
     make_progress,
+    status_console,
 )
 from gmlst.commands.scheme_common import (
     DOWNLOAD_TOOL_CHOICES,
     _download_tool_choice,
     _exit_scheme_not_found,
+    _exit_scheme_not_in_cache,
     _find_catalog_scheme_matches,
     _load_schemes,
+    _locked_local_catalog,
     _provider_choices,
     _reject_if_blocked,
     emit_scheme_format,
     refresh_all_catalogs,
     resolve_scheme_or_exit,
 )
-from gmlst.commands.scheme_custom import cmd_create, cmd_update_custom
+from gmlst.commands.scheme_custom import (
+    _remove_from_local_catalog,
+    cmd_create,
+    cmd_update_custom,
+)
 from gmlst.commands.scheme_render import (
     _SCHEME_LIST_COLUMNS,
     _SCHEME_SHOW_COLUMNS,
@@ -47,6 +56,7 @@ from gmlst.commands.scheme_render import (
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.providers import AVAILABLE_PROVIDERS
 from gmlst.fasta_io import count_profile_rows
+from gmlst.schema_versions import SCHEME_LIST_V1, SCHEME_OP_V1, SCHEME_SHOW_V1
 from gmlst.utils import setup_logging
 
 
@@ -102,9 +112,16 @@ def scheme_group() -> None:
     help="Only show schemes that are already downloaded/cached.",
 )
 @click.option(
+    "--limit",
+    "-l",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Show at most N schemes (no limit by default).",
+)
+@click.option(
     "--pager",
     is_flag=True,
-    help="Send output through a pager (less).",
+    help="Send output through a pager (less) (interactive; requires a terminal).",
 )
 @cache_dir_option
 def cmd_list(
@@ -113,6 +130,7 @@ def cmd_list(
     name: str | None,
     output_format: str,
     available: bool,
+    limit: int | None,
     pager: bool,
     cache_dir: Path | None,
 ) -> None:
@@ -125,10 +143,9 @@ def cmd_list(
     if name:
         try:
             pattern = re.compile(name, re.IGNORECASE)
-            all_schemes = [s for s in all_schemes if pattern.search(s.organism)]
         except re.error as exc:
-            err_console.print(f"[red]Invalid regex pattern:[/red] {exc}")
-            return
+            raise click.UsageError(f"Invalid regex pattern: {exc}") from exc
+        all_schemes = [s for s in all_schemes if pattern.search(s.organism)]
 
     # Filter to only show downloaded/cached schemes if --available flag is set
     if available:
@@ -136,8 +153,8 @@ def cmd_list(
             s for s in all_schemes if cache.is_downloaded(s.scheme_name, s.provider)
         ]
         if not all_schemes:
-            console.print("[yellow]No downloaded schemes found.[/yellow]")
-            console.print(
+            status_console.print("[yellow]No downloaded schemes found.[/yellow]")
+            status_console.print(
                 "Run [bold]gmlst scheme download <scheme_name>[/bold] to download."
             )
             return
@@ -156,6 +173,12 @@ def cmd_list(
         )
     )
 
+    if limit is not None and len(all_schemes) > limit:
+        status_console.print(
+            f"[dim]Showing {limit} of {len(all_schemes)} matching schemes.[/dim]"
+        )
+        all_schemes = all_schemes[:limit]
+
     payload = [
         {
             "scheme_name": s.scheme_name,
@@ -171,12 +194,17 @@ def cmd_list(
     ]
 
     if emit_scheme_format(
-        output_format, payload, payload, _SCHEME_LIST_COLUMNS, _render_scheme_list_text
+        output_format,
+        payload,
+        payload,
+        _SCHEME_LIST_COLUMNS,
+        _render_scheme_list_text,
+        json_schema_version=SCHEME_LIST_V1,
     ):
         return
 
     if not all_schemes:
-        console.print("[yellow]No schemes found.[/yellow]")
+        status_console.print("[yellow]No schemes found.[/yellow]")
         return
 
     title = f"Available Schemes ({len(all_schemes)} total)"
@@ -210,7 +238,9 @@ def cmd_list(
                 # less not installed — fall through to console.print
                 pass
         console.print(table)
-        console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
+        status_console.print(
+            "\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]"
+        )
 
     emit_output_table(
         output=None,
@@ -238,11 +268,29 @@ def cmd_list(
     type=click.Choice(["mlst", "cgmlst", "wgmlst", "all"], case_sensitive=False),
     help="Filter by scheme type.",
 )
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    default="table",
+    show_default=True,
+    type=click.Choice(["text", "table", "csv", "tsv", "json"], case_sensitive=False),
+    help="Output format.",
+)
+@click.option(
+    "--limit",
+    "-l",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Show at most N schemes (no limit by default).",
+)
 @cache_dir_option
 def cmd_search(
     pattern: str,
     provider: str,
     scheme_type: str,
+    output_format: str,
+    limit: int | None,
     cache_dir: Path | None,
 ) -> None:
     """Search schemes by name, organism, description, or provider.
@@ -270,14 +318,44 @@ def cmd_search(
         )
     )
 
+    if limit is not None and len(matches) > limit:
+        status_console.print(
+            f"[dim]Showing {limit} of {len(matches)} matching schemes.[/dim]"
+        )
+        matches = matches[:limit]
+
+    payload = [
+        {
+            "scheme_name": s.scheme_name,
+            "organism": s.organism,
+            "scheme_type": s.scheme_type,
+            "n_loci": s.n_loci,
+            "provider": s.provider,
+            "display_name": s.display_name,
+            "extra": s.extra,
+            "downloaded": cache.is_downloaded(s.scheme_name, s.provider),
+        }
+        for s in matches
+    ]
+
+    if emit_scheme_format(
+        output_format,
+        payload,
+        payload,
+        _SCHEME_LIST_COLUMNS,
+        _render_scheme_list_text,
+        json_schema_version=SCHEME_LIST_V1,
+    ):
+        return
+
     if not matches:
-        console.print(f"[yellow]No schemes matching '{pattern}'.[/yellow]")
+        status_console.print(f"[yellow]No schemes matching '{pattern}'.[/yellow]")
         return
 
     title = f"Search: '{pattern}' ({len(matches)} matches)"
     table = _build_scheme_list_table(matches, cache, title, console.size.width)
     console.print(table)
-    console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
+    status_console.print("\nDownload: [bold]gmlst scheme download <scheme_name>[/bold]")
 
 
 def _gather_locus_stats(
@@ -306,6 +384,11 @@ def _gather_locus_stats(
     except (FileNotFoundError, OSError):
         pass
     return stats
+
+
+# Stripped from `scheme show --format json` only, so two runs against the
+# same catalog state emit byte-identical JSON; human formats keep all fields.
+_SHOW_JSON_NON_DETERMINISTIC_FIELDS = ("scheme_dir", "downloaded_at", "updated_at")
 
 
 @scheme_group.command("show", context_settings=HELP_SETTINGS)
@@ -343,11 +426,11 @@ def cmd_show(
     """
     scheme = scheme or scheme_opt
     if not scheme:
-        console.print(
+        status_console.print(
             "[yellow]No scheme specified.[/yellow] "
             "Use [bold]-s/--scheme[/bold] for details."
         )
-        console.print(
+        status_console.print(
             "Showing scheme list. For details: "
             "[bold]gmlst scheme show -s <scheme_name>[/bold]"
         )
@@ -358,6 +441,7 @@ def cmd_show(
             name=None,
             output_format=output_format,
             available=False,
+            limit=None,
             cache_dir=cache_dir,
         )
         return
@@ -401,12 +485,17 @@ def cmd_show(
         if locus_stats:
             payload["locus_stats"] = locus_stats
 
+    json_payload: dict[str, object] = {
+        k: v for k, v in payload.items() if k not in _SHOW_JSON_NON_DETERMINISTIC_FIELDS
+    }
+
     if emit_scheme_format(
         output_format,
-        payload,
+        json_payload,
         [payload],
         _SCHEME_SHOW_COLUMNS,
         lambda rows: _render_scheme_show_text(rows[0]),
+        json_schema_version=SCHEME_SHOW_V1,
     ):
         return
     table = render_scheme_show_table(payload, scheme, locus_stats)
@@ -418,20 +507,22 @@ def cmd_show(
 
     if show_all:
         if not is_downloaded:
-            console.print(
+            status_console.print(
                 "\n[yellow]Scheme not downloaded."
                 " Use [bold]gmlst scheme download[/bold] first.[/yellow]"
             )
             return
         if not locus_stats:
-            console.print("\n[dim]No allele files found.[/dim]")
+            status_console.print("\n[dim]No allele files found.[/dim]")
             return
 
         locus_table = render_locus_stats_table(locus_stats)
         total_alleles = sum(int(s["alleles"]) for s in locus_stats)
 
         console.print(locus_table)
-        console.print(f"\nTotal: {len(locus_stats)} loci, {total_alleles} alleles")
+        status_console.print(
+            f"\nTotal: {len(locus_stats)} loci, {total_alleles} alleles"
+        )
 
 
 @scheme_group.command("download", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -456,6 +547,15 @@ def cmd_show(
     help="Maximum concurrent downloads for scheme download.",
 )
 @click.option("--token", envvar="ENTEROBASE_TOKEN", help="API token (Enterobase only).")
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    help="Output format for completion summary.",
+)
 @cache_dir_option
 def cmd_download(
     scheme: str | None,
@@ -465,6 +565,7 @@ def cmd_download(
     download_tool: str,
     connections: int,
     token: str | None,
+    output_format: str,
     cache_dir: Path | None,
 ) -> None:
     """Download MLST/cgMLST scheme data from catalog.
@@ -489,20 +590,22 @@ def cmd_download(
     _reject_if_blocked(scheme, match_info, detected_provider)
 
     if cache.is_downloaded(scheme, detected_provider) and not force:
-        console.print(
+        status_console.print(
             f"Scheme [cyan]{scheme}[/cyan] "
             f"(provider: [cyan]{detected_provider}[/cyan]) "
             "already cached. Use [bold]--force[/bold] to re-download."
         )
         return
 
-    console.print(
+    status_console.print(
         f"Downloading [cyan]{scheme}[/cyan] ({detected_type}) "
         f"from [bold]{detected_provider}[/bold] ..."
     )
     try:
-        with console.status(f"[bold green]Downloading {scheme}...", spinner="dots"):
-            cache.ensure_scheme(
+        with status_console.status(
+            f"[bold green]Downloading {scheme}...", spinner="dots"
+        ):
+            scheme_obj = cache.ensure_scheme(
                 scheme,
                 provider=detected_provider,
                 scheme_type=detected_type,
@@ -512,7 +615,19 @@ def cmd_download(
                 max_connections=connections,
             )
         dest = cache.scheme_dir(scheme, detected_provider)
-        console.print(f"[green]Done.[/green] Cached at [dim]{dest}[/dim]")
+        status_console.print(f"[green]Done.[/green] Cached at [dim]{dest}[/dim]")
+        if output_format == "json":
+            emit_versioned_json(
+                {
+                    "scheme": scheme,
+                    "provider": detected_provider,
+                    "scheme_type": detected_type,
+                    "path": str(dest),
+                    "n_loci": len(scheme_obj.loci),
+                },
+                None,
+                SCHEME_OP_V1,
+            )
     except Exception as exc:
         err_console.print(f"[red]Error:[/red] {exc}")
         sys.exit(1)
@@ -555,6 +670,14 @@ def cmd_download(
     default=4,
     help="Maximum concurrent downloads for scheme update.",
 )
+@click.option(
+    "--format",
+    "output_format",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    help="Output format for completion summary.",
+)
 @cache_dir_option
 def cmd_update(
     scheme: str | None,
@@ -564,6 +687,7 @@ def cmd_update(
     token: str | None,
     download_tool: str,
     connections: int | None,
+    output_format: str,
     cache_dir: Path | None,
 ) -> None:
     """Update local catalogs or refresh a specific cached scheme."""
@@ -576,18 +700,22 @@ def cmd_update(
 
     if scheme:
         if force:
-            console.print("Refreshing provider catalogs before scheme update ...")
+            status_console.print(
+                "Refreshing provider catalogs before scheme update ..."
+            )
             refresh_all_catalogs(cache, token=token)
 
         provider, match_info = resolve_scheme_or_exit(cache, scheme)
         scheme_type = match_info.scheme_type or "mlst"
 
-        console.print(
+        status_console.print(
             f"Checking updates for [cyan]{scheme}[/cyan] "
             f"from [bold]{provider}[/bold] ..."
         )
         try:
-            with console.status(f"[bold green]Updating {scheme}...", spinner="dots"):
+            with status_console.status(
+                f"[bold green]Updating {scheme}...", spinner="dots"
+            ):
                 _, changed = cache.update_scheme(
                     scheme,
                     provider=provider,
@@ -598,9 +726,23 @@ def cmd_update(
                 )
             dest = cache.scheme_dir(scheme, provider)
             if changed:
-                console.print(f"[green]Updated.[/green] Cached at [dim]{dest}[/dim]")
+                status_console.print(
+                    f"[green]Updated.[/green] Cached at [dim]{dest}[/dim]"
+                )
             else:
-                console.print(f"[green]Up to date.[/green] Cached at [dim]{dest}[/dim]")
+                status_console.print(
+                    f"[green]Up to date.[/green] Cached at [dim]{dest}[/dim]"
+                )
+            if output_format == "json":
+                emit_versioned_json(
+                    {
+                        "scheme": scheme,
+                        "provider": provider,
+                        "changed": bool(changed),
+                    },
+                    None,
+                    SCHEME_OP_V1,
+                )
         except FileNotFoundError as exc:
             err_console.print(f"[red]Error:[/red] {exc}")
             err_console.print(f"Run [bold]gmlst scheme download {scheme}[/bold] first.")
@@ -615,20 +757,20 @@ def cmd_update(
     elif update_all_schemes:
         cached_schemes = cache.list_cached()
         if not cached_schemes:
-            console.print("[yellow]No cached schemes found.[/yellow]")
-            console.print(
+            status_console.print("[yellow]No cached schemes found.[/yellow]")
+            status_console.print(
                 "Run [bold]gmlst scheme download <scheme_name>[/bold] to download."
             )
             return
 
         if force:
-            console.print(
+            status_console.print(
                 "Refreshing provider catalogs before updating cached schemes ..."
             )
             refresh_all_catalogs(cache, token=token)
 
         if not yes:
-            console.print(
+            status_console.print(
                 f"\n[bold]Cached schemes to update ({len(cached_schemes)}):[/bold]"
             )
             table = Table(show_header=True, header_style="bold cyan", box=None)
@@ -643,19 +785,21 @@ def cmd_update(
                     str(item.get("scheme_type", "?")),
                     str(item.get("downloaded_at", "?"))[:10] or "?",
                 )
-            console.print(table)
-            console.print(
+            status_console.print(table)
+            status_console.print(
                 "\n[dim]Each scheme requires a network check and may download data. "
                 "This can take several minutes.[/dim]"
             )
             if not click.confirm("Proceed with updating all cached schemes?"):
-                console.print("[yellow]Aborted.[/yellow]")
+                status_console.print("[yellow]Aborted.[/yellow]")
                 return
-            console.print()
 
-        console.print(f"Updating {len(cached_schemes)} cached scheme database(s) ...")
+        status_console.print(
+            f"Updating {len(cached_schemes)} cached scheme database(s) ..."
+        )
         changed_count = 0
         failed_count = 0
+        results: list[dict[str, object]] = []
         progress = make_progress()
         with progress:
             task = progress.add_task("Updating schemes", total=len(cached_schemes))
@@ -678,6 +822,14 @@ def cmd_update(
                     )
                 except Exception as exc:
                     failed_count += 1
+                    results.append(
+                        {
+                            "scheme": scheme_name,
+                            "provider": provider,
+                            "status": "failed",
+                            "error": str(exc),
+                        }
+                    )
                     progress.console.print(
                         f"  [red]✗ {scheme_name}[/red] [dim]({provider})[/dim] — {exc}"
                     )
@@ -685,21 +837,52 @@ def cmd_update(
                     continue
                 if changed:
                     changed_count += 1
+                    results.append(
+                        {
+                            "scheme": scheme_name,
+                            "provider": provider,
+                            "status": "updated",
+                            "error": None,
+                        }
+                    )
+                else:
+                    results.append(
+                        {
+                            "scheme": scheme_name,
+                            "provider": provider,
+                            "status": "unchanged",
+                            "error": None,
+                        }
+                    )
                 progress.advance(task)
-        console.print(
-            f"[green]Done.[/green] Updated: {changed_count}; "
-            f"unchanged: {len(cached_schemes) - changed_count - failed_count}; "
-            f"failed: {failed_count}"
-        )
+        if output_format == "json":
+            emit_versioned_json(
+                {
+                    "total": len(cached_schemes),
+                    "updated": changed_count,
+                    "unchanged": len(cached_schemes) - changed_count - failed_count,
+                    "failed": failed_count,
+                    "results": results,
+                },
+                None,
+                SCHEME_OP_V1,
+            )
+        else:
+            status_console.print(
+                f"[green]Done.[/green] Updated: {changed_count}; "
+                f"unchanged: {len(cached_schemes) - changed_count - failed_count}; "
+                f"failed: {failed_count}"
+            )
         if failed_count:
             sys.exit(1)
     else:
         # Update all catalogs
         if force:
-            console.print("Force refreshing all catalogs ...")
+            status_console.print("Force refreshing all catalogs ...")
         else:
-            console.print("Updating all catalogs ...")
+            status_console.print("Updating all catalogs ...")
         total = 0
+        failed_providers = 0
         providers_list = list(AVAILABLE_PROVIDERS)
         progress = make_progress()
         with progress:
@@ -713,9 +896,149 @@ def cmd_update(
                         f"  [green]{prov}:[/green] {len(schemes)} schemes"
                     )
                 except Exception as exc:
+                    failed_providers += 1
                     progress.console.print(f"  [red]{prov}:[/red] {exc}")
                 progress.advance(task)
         console.print(f"[green]Done.[/green] Total: {total} schemes")
+        if failed_providers:
+            sys.exit(1)
+
+
+def _dir_size_bytes(path: Path) -> int:
+    total = 0
+    for entry in path.rglob("*"):
+        with contextlib.suppress(OSError):
+            if entry.is_file():
+                total += entry.stat().st_size
+    return total
+
+
+def _format_size(size_bytes: int) -> str:
+    if size_bytes >= 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes / 1024:.1f} KB"
+
+
+@scheme_group.command("remove", context_settings=HELP_SETTINGS, no_args_is_help=True)
+@click.argument("scheme", required=False)
+@deprecated_scheme_option
+@click.option(
+    "-p",
+    "--provider",
+    default=None,
+    help="Provider of the cached scheme (auto-detected from the cache).",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Skip confirmation prompt.",
+)
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    help="Output format for completion summary.",
+)
+@cache_dir_option
+def cmd_remove(
+    scheme: str | None,
+    scheme_opt: str | None,
+    provider: str | None,
+    yes: bool,
+    output_format: str,
+    cache_dir: Path | None,
+) -> None:
+    """Remove a downloaded scheme from the local cache.
+
+    SCHEME is the scheme name, e.g. 'saureus_1' or 'custom_1'.
+    """
+    scheme = scheme or scheme_opt
+    if not scheme:
+        raise click.UsageError("Scheme name is required.")
+
+    cache = DatabaseCache(cache_dir)
+    known_providers = [*AVAILABLE_PROVIDERS, "local"]
+    if provider is not None and provider not in known_providers:
+        err_console.print(
+            f"[red]Error:[/red] Unknown provider '{provider}'. "
+            f"Valid providers: {', '.join(known_providers)}."
+        )
+        sys.exit(1)
+
+    try:
+        if provider is None:
+            provider = next(
+                (
+                    prov
+                    for prov in known_providers
+                    if cache.scheme_dir(scheme, prov).exists()
+                ),
+                None,
+            )
+            if provider is None:
+                _exit_scheme_not_in_cache(scheme)
+        scheme_path = cache.scheme_dir(scheme, provider)
+    except ValueError as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        sys.exit(1)
+
+    if not scheme_path.exists():
+        _exit_scheme_not_in_cache(scheme, provider)
+
+    status_console.print("[bold]Cached scheme to remove:[/bold]")
+    status_console.print(f"  Scheme: {scheme}")
+    status_console.print(f"  Provider: {provider}")
+    status_console.print(f"  Path: {scheme_path}")
+    size_bytes = _dir_size_bytes(scheme_path)
+    if size_bytes:
+        status_console.print(f"  Size: {_format_size(size_bytes)}")
+
+    if not yes and not click.confirm(f"Remove cached scheme '{scheme}' ({provider})?"):
+        status_console.print("[yellow]Aborted.[/yellow]")
+        return
+
+    # Security: scheme_dir() already validates identifiers; still refuse to
+    # rmtree anything that resolves outside the cache root (mirrors ensure_scheme).
+    try:
+        scheme_path.resolve().relative_to(cache.root.resolve())
+    except ValueError:
+        err_console.print(
+            f"[red]Error:[/red] Refusing to delete path outside cache root: "
+            f"{scheme_path.resolve()}"
+        )
+        sys.exit(1)
+
+    with _locked_local_catalog(cache):
+        try:
+            shutil.rmtree(scheme_path)
+        except OSError as exc:
+            err_console.print(f"[red]Error:[/red] Failed to remove '{scheme}': {exc}")
+            sys.exit(1)
+        if provider == "local":
+            try:
+                _remove_from_local_catalog(cache, scheme)
+            except OSError as exc:
+                status_console.print(
+                    f"[yellow]Warning:[/yellow] scheme directory removed, but "
+                    f"failed to update the local catalog: {exc}"
+                )
+
+    status_console.print(f"[green]Removed[/green] {scheme} ({scheme_path})")
+    if output_format == "json":
+        emit_versioned_json(
+            {
+                "scheme": scheme,
+                "provider": provider,
+                "path": str(scheme_path),
+                "removed": True,
+            },
+            None,
+            SCHEME_OP_V1,
+        )
 
 
 @scheme_group.command("export", context_settings=HELP_SETTINGS, no_args_is_help=True)

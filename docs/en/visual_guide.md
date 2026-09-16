@@ -134,6 +134,14 @@ On simple datasets (≤6 samples, no weight ties), all three methods produce ide
 
 ## CLI MST Commands
 
+### Piping typing results
+
+The `mst`/`matrix`/`heatmap`/`compare`/`locus-diff` file options accept `-` to read from stdin, so typing output can be piped straight into tree building without a temp file:
+
+```bash
+gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary
+```
+
 ### Full JSON output
 
 ```bash
@@ -153,9 +161,17 @@ Produces a compact analytical summary (~7KB for 1000 samples, ~1K tokens) that a
 | Field | Content | Analytical value |
 |---|---|---|
 | `mst_summary` | Edge count, weight min/median/max, zero-weight pairs | Overall tree shape and data quality |
-| `clusters` | Connected components (edge weight ≤15), size, dominant metadata, purity | Group structure and clonal complex assignment |
+| `clusters` | Connected components (edge weight ≤ `cluster_edge_threshold`), size, dominant metadata, purity | Group structure and clonal complex assignment |
+| `cluster_count` | Number of detected clusters (each ≥5 members, capped at 20) | Completeness check for `clusters` |
+| `unclustered_samples` | Samples not in any reported cluster | Fraction of unclustered diversity |
+| `truncated` | `true` when cluster reporting stopped at the 20-cluster cap | Whether `cluster_count` is a lower bound |
 | `top_variable_loci` | Most frequently mismatched loci | Discriminant marker candidates |
-| `outliers` | Nodes connected by high-weight edges (>50) | Divergent/imported strains, data quality flags |
+| `outliers` | Nodes connected by high-weight edges (> `outlier_weight`) | Divergent/imported strains, data quality flags |
+| `method` | MST method that built the tree (`edmonds`, `grapetree_classic`, `grapetree_v2`) | Provenance — required to reproduce the tree |
+| `include_missing` | Whether asymmetric missing-token mismatches were counted | Distance-metric provenance |
+| `aggregate_profiles` | Whether duplicate profiles were collapsed before tree building | Explains node count vs. sample count |
+| `cluster_edge_threshold` | Max edge weight joining samples into one cluster (15) | Interpreting cluster semantics |
+| `outlier_weight` | Edge weight above which a node is flagged as outlier (50) | Interpreting outlier flags |
 | `suggested_analysis` | Actionable next steps | Analysis roadmap |
 
 Example summary for a 991-sample dataset:
@@ -163,6 +179,11 @@ Example summary for a 991-sample dataset:
 ```json
 {
   "sample_count": 991,
+  "method": "grapetree_classic",
+  "include_missing": false,
+  "aggregate_profiles": true,
+  "cluster_edge_threshold": 15,
+  "outlier_weight": 50,
   "mst_summary": {
     "edges": 990, "weight_min": 0, "weight_median": 5,
     "weight_max": 95, "zero_weight_pairs": 72
@@ -172,6 +193,9 @@ Example summary for a 991-sample dataset:
      "clade_purity": 1.0,
      "source_composition": {"env": 23, "blood": 22, "water": 19}}
   ],
+  "cluster_count": 14,
+  "unclustered_samples": 133,
+  "truncated": false,
   "top_variable_loci": [["L086", 105], ["L041", 100]],
   "outliers": [{"node": "S0280", "max_edge_weight": 95}],
   "suggested_analysis": ["Check outliers for imported strains", "..."]

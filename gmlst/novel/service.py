@@ -8,6 +8,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from rich.console import Console
+
+# Local stderr console — importing from gmlst.commands.common would create a
+# circular import (commands.scheme → scheme_custom → novel.service).
+status_console = Console(stderr=True)
+
 
 def last_allele_numbers(novel_alleles: dict[str, list]) -> dict[str, int]:
     """Map each locus to its highest novel allele number (from ``nX`` ids)."""
@@ -155,23 +161,25 @@ def create_novel_writers(
     return allele_writer, profile_writer
 
 
-def write_novel_outputs(*, allele_writer, profile_writer, console) -> None:
+def write_novel_outputs(*, allele_writer, profile_writer) -> None:
     """Flush both writers and report written paths (or "none detected") to console."""
     if allele_writer:
         written = allele_writer.write()
         if written:
-            console.print("[green]Novel alleles written:[/green]")
+            status_console.print("[green]Novel alleles written:[/green]")
             for locus, path in written.items():
-                console.print(f"  {locus}: {path}")
+                status_console.print(f"  {locus}: {path}")
         else:
-            console.print("[yellow]No novel alleles detected.[/yellow]")
+            status_console.print("[yellow]No novel alleles detected.[/yellow]")
 
     if profile_writer:
         profile_path = profile_writer.write()
         if profile_path:
-            console.print(f"[green]Novel profiles written:[/green] {profile_path}")
+            status_console.print(
+                f"[green]Novel profiles written:[/green] {profile_path}"
+            )
         else:
-            console.print("[yellow]No novel profiles detected.[/yellow]")
+            status_console.print("[yellow]No novel profiles detected.[/yellow]")
 
 
 def finalize_novel_typing_outputs(
@@ -180,7 +188,6 @@ def finalize_novel_typing_outputs(
     allele_writer,
     profile_writer,
     logger,
-    console,
 ) -> None:
     """Collect results into the writers, then write and announce the outputs."""
     collect_novel_typing_results(
@@ -192,5 +199,4 @@ def finalize_novel_typing_outputs(
     write_novel_outputs(
         allele_writer=allele_writer,
         profile_writer=profile_writer,
-        console=console,
     )

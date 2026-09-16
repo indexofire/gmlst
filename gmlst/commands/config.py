@@ -7,15 +7,18 @@ import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import click
 from rich.box import MINIMAL_HEAVY_HEAD
 from rich.console import Console
 from rich.table import Table
 
-from gmlst.commands.common import HELP_SETTINGS
+from gmlst.commands.common import HELP_SETTINGS, emit_versioned_json
+from gmlst.schema_versions import CONFIG_GET_V1
 
 console = Console()
+status_console = Console(stderr=True)
 err_console = Console(stderr=True)
 
 
@@ -200,11 +203,84 @@ def _current_value(name: str) -> str:
     return os.environ.get(name, "")
 
 
+def _is_secret(name: str) -> bool:
+    """Return True when *name* looks like a credential-bearing variable.
+
+    Deliberately simple name heuristic: values of API keys, tokens,
+    secrets, and passwords are masked in display-only views
+    (`config show`) to keep them out of logged CLI output.
+    """
+    upper = name.upper()
+    return (
+        upper.endswith("_API_KEY")
+        or "TOKEN" in upper
+        or "SECRET" in upper
+        or "PASSWORD" in upper
+    )
+
+
+def _mask_secret(value: str) -> str:
+    """Mask *value* for display: fully when short, partially when long."""
+    if len(value) <= 8:
+        return "********"
+    return f"{value[:4]}****{value[-4:]}"
+
+
 def _find_env_file() -> Path | None:
     for p in _ENV_FILE_CANDIDATES:
         if p.exists():
             return p
     return None
+
+
+def _env_file_export_value(name: str) -> str | None:
+    """Return the value exported for *name* in the env.sh config file, if any.
+
+    The config file is sourced by the shell before the CLI runs, so its
+    values are indistinguishable from other environment variables at
+    runtime; matching the live value against the file's export line is the
+    closest available provenance heuristic. Later exports win, matching
+    shell semantics.
+    """
+    env_file = _find_env_file()
+    if env_file is None:
+        return None
+    prefix = f"export {name}="
+    value: str | None = None
+    for line in env_file.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped.startswith(prefix):
+            continue
+        raw = stripped[len(prefix) :]
+        try:
+            tokens = shlex.split(raw, comments=True)
+        except ValueError:
+            # Malformed quoting in a user-edited file; skip this line.
+            continue
+        value = " ".join(tokens)
+    return value
+
+
+def _get_value_snapshot(entry: ConfigEntry, val: str) -> dict[str, Any]:
+    """Build the `config get --format json` payload for *entry*.
+
+    *is_default* is False whenever the environment variable is set, even
+    if the explicit value happens to equal the built-in default.
+    """
+    if val:
+        source = "file" if _env_file_export_value(entry.name) == val else "env"
+        return {
+            "name": entry.name,
+            "value": val,
+            "source": source,
+            "is_default": False,
+        }
+    return {
+        "name": entry.name,
+        "value": entry.default,
+        "source": "default",
+        "is_default": True,
+    }
 
 
 @click.group("config", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -240,20 +316,31 @@ def cmd_show() -> None:
     table.add_column("Default", style="dim", overflow="fold", ratio=2)
     table.add_column("Description", style="white", overflow="fold", ratio=4)
 
+    masked_any_secret = False
     for _cat_name, entries in sorted(categories.items()):
         for entry in entries:
             val = _current_value(entry.name)
-            display_val = val if val else f"[dim]{entry.default}[/dim]"
+            if val and _is_secret(entry.name):
+                display_val = _mask_secret(val)
+                masked_any_secret = True
+            else:
+                display_val = val if val else f"[dim]{entry.default}[/dim]"
             table.add_row(entry.name, display_val, entry.default, entry.description)
         table.add_row("", "", "", "")
 
     console.print(table)
 
+    if masked_any_secret:
+        status_console.print(
+            "[dim]Secret values are masked in this view;"
+            " use 'gmlst config get <NAME>' to retrieve.[/dim]"
+        )
+
     env_file = _find_env_file()
     if env_file:
-        console.print(f"\nConfig file: [bold]{env_file}[/bold]")
+        status_console.print(f"\nConfig file: [bold]{env_file}[/bold]")
     else:
-        console.print(
+        status_console.print(
             "\n[dim]No config file found."
             " Use [bold]gmlst config set[/bold]"
             " to create one.[/dim]"
@@ -262,7 +349,20 @@ def cmd_show() -> None:
 
 @config_group.command("get", context_settings=HELP_SETTINGS)
 @click.argument("name", required=True)
-def cmd_get(name: str) -> None:
+@click.option(
+    "--format",
+    "fmt",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"]),
+    help=(
+        "Output format. 'json' emits a versioned envelope whose 'source' "
+        "reports provenance: 'file' when the value matches an export in the "
+        "env.sh config file, 'env' when set in the environment any other "
+        "way, 'default' when unset (built-in default, is_default true)."
+    ),
+)
+def cmd_get(name: str, fmt: str) -> None:
     """Get the current value of a configuration variable."""
     entry = _REGISTRY_BY_NAME.get(name.upper())
     if not entry:
@@ -273,6 +373,10 @@ def cmd_get(name: str) -> None:
         sys.exit(1)
 
     val = _current_value(entry.name)
+    if fmt == "json":
+        emit_versioned_json(_get_value_snapshot(entry, val), None, CONFIG_GET_V1)
+        return
+
     if val:
         console.print(val)
     else:
@@ -313,10 +417,10 @@ def cmd_set(name: str, value: str) -> None:
     env_file.write_text("\n".join(lines) + "\n")
     env_file.chmod(0o600)
 
-    console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
-    console.print(f"Written to: [bold]{env_file}[/bold]")
-    console.print(f"\nApply now with: [bold]source {env_file}[/bold]")
-    console.print(
+    status_console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
+    status_console.print(f"Written to: [bold]{env_file}[/bold]")
+    status_console.print(f"\nApply now with: [bold]source {env_file}[/bold]")
+    status_console.print(
         "Or run [bold]gmlst config init[/bold] to auto-load in every new shell."
     )
 
@@ -367,8 +471,12 @@ def cmd_init() -> None:
         sys.exit(1)
 
     if rc_path.exists() and _INIT_MARKER in rc_path.read_text():
-        console.print(f"[green]✓ Already configured in [bold]{rc_path}[/bold].[/green]")
-        console.print("Variables will be loaded automatically in every new shell.")
+        status_console.print(
+            f"[green]✓ Already configured in [bold]{rc_path}[/bold].[/green]"
+        )
+        status_console.print(
+            "Variables will be loaded automatically in every new shell."
+        )
         return
 
     source_line = _build_source_line(shell_name)
@@ -379,9 +487,11 @@ def cmd_init() -> None:
         fh.write(f"{source_line}\n")
         fh.write("# <<< gmlst config <<<\n")
 
-    console.print(f"[green]✓ Added source line to [bold]{rc_path}[/bold].[/green]")
-    console.print(
+    status_console.print(
+        f"[green]✓ Added source line to [bold]{rc_path}[/bold].[/green]"
+    )
+    status_console.print(
         "Variables from [bold]~/.config/gmlst/env.sh[/bold]"
         " will load in every new shell session."
     )
-    console.print(f"\nRestart your shell or run: [bold]source {rc_path}[/bold]")
+    status_console.print(f"\nRestart your shell or run: [bold]source {rc_path}[/bold]")

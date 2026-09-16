@@ -18,7 +18,7 @@ test("buildGraphJsonPayload wraps graph with schema and source", () => {
 
 test("buildGraphJsonPayload uses default schema version", () => {
   const result = buildGraphJsonPayload(null, {});
-  assert.equal(result.schema_version, "gmlst-visual-v1");
+  assert.equal(result.schema_version, "gmlst-visual-export-v1");
 });
 
 test("buildGraphJsonPayload accepts custom source", () => {
@@ -68,7 +68,7 @@ test("buildSessionJsonPayload extracts state fields", () => {
 
 test("buildSessionJsonPayload uses default schema when lastData missing", () => {
   const result = buildSessionJsonPayload({ lastData: null });
-  assert.equal(result.schema_version, "gmlst-visual-v1");
+  assert.equal(result.schema_version, "gmlst-visual-export-v1");
 });
 
 test("buildNewickString returns null for empty parent map", () => {

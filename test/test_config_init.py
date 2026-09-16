@@ -1,14 +1,22 @@
-"""Tests for gmlst config init and set commands."""
+"""Tests for gmlst config init, set, show, and get commands."""
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from gmlst.commands.config import _build_source_line, _detect_shell_rc, config_group
+from gmlst.commands.config import (
+    _CONFIG_REGISTRY,
+    _build_source_line,
+    _detect_shell_rc,
+    _is_secret,
+    _mask_secret,
+    config_group,
+)
 
 
 class TestDetectShellRc:
@@ -182,6 +190,212 @@ class TestConfigSetFilePermissions:
 
         mode = env_file.stat().st_mode & 0o777
         assert mode == 0o600
+
+
+class TestIsSecret:
+    def test_api_key_suffix_is_secret(self) -> None:
+        assert _is_secret("GMLST_PUBMLST_API_KEY") is True
+        assert _is_secret("GMLST_PASTEUR_API_KEY") is True
+
+    def test_token_in_name_is_secret(self) -> None:
+        assert _is_secret("ENTEROBASE_TOKEN") is True
+
+    def test_secret_and_password_markers(self) -> None:
+        assert _is_secret("MY_SECRET_VALUE") is True
+        assert _is_secret("DB_PASSWORD") is True
+
+    def test_plain_variables_are_not_secret(self) -> None:
+        assert _is_secret("GMLST_CACHE_DIR") is False
+        assert _is_secret("GMLST_PRIVATE_BIGSDB_URL") is False
+
+    def test_matching_is_case_insensitive(self) -> None:
+        assert _is_secret("provider_api_key") is True
+
+
+class TestMaskSecret:
+    def test_short_value_fully_masked(self) -> None:
+        assert _mask_secret("abc123") == "********"
+        assert _mask_secret("") == "********"
+
+    def test_long_value_partially_masked(self) -> None:
+        assert _mask_secret("sk-pubmlst-abcdef1234567890") == "sk-p****7890"
+
+
+class TestConfigShowMasking:
+    def test_secret_value_masked_in_show(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        fake_key = "sk-pubmlst-abcdef1234567890"
+        monkeypatch.setenv("GMLST_PUBMLST_API_KEY", fake_key)
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["show"])
+
+        assert result.exit_code == 0
+        assert fake_key not in result.output
+        assert "sk-p****7890" in result.output
+        assert "Secret values are masked" in result.output
+
+    def test_short_secret_fully_masked_in_show(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ENTEROBASE_TOKEN", "tok123")
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["show"])
+
+        assert result.exit_code == 0
+        assert "tok123" not in result.output
+        assert "********" in result.output
+
+    def test_non_secret_value_shown_unmasked(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("GMLST_TMPDIR", "/nvme/scratch")
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["show"])
+
+        assert result.exit_code == 0
+        assert "/nvme/scratch" in result.output
+
+    def test_unset_secret_not_replaced_by_mask(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        for entry in _CONFIG_REGISTRY:
+            if _is_secret(entry.name):
+                monkeypatch.delenv(entry.name, raising=False)
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["show"])
+
+        assert result.exit_code == 0
+        assert "Secret values are masked" not in result.output
+
+    def test_get_still_returns_real_secret_value(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_key = "sk-pubmlst-abcdef1234567890"
+        monkeypatch.setenv("GMLST_PUBMLST_API_KEY", fake_key)
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["get", "GMLST_PUBMLST_API_KEY"])
+
+        assert result.exit_code == 0
+        assert fake_key in result.output
+
+
+class TestConfigGetJson:
+    def test_env_set_var_reports_env_source(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("GMLST_TMPDIR", "/scratch/env-value")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["get", "GMLST_TMPDIR", "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["schema_version"] == "gmlst-config-get-v1"
+        assert doc["data"] == {
+            "name": "GMLST_TMPDIR",
+            "value": "/scratch/env-value",
+            "source": "env",
+            "is_default": False,
+        }
+
+    def test_file_match_reports_file_source(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        env_file = tmp_path / "env.sh"
+        env_file.write_text('export GMLST_TMPDIR="/from/file"\n')
+        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setenv("GMLST_TMPDIR", "/from/file")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["get", "GMLST_TMPDIR", "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["schema_version"] == "gmlst-config-get-v1"
+        assert doc["data"] == {
+            "name": "GMLST_TMPDIR",
+            "value": "/from/file",
+            "source": "file",
+            "is_default": False,
+        }
+
+    def test_env_override_of_file_reports_env_source(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        env_file = tmp_path / "env.sh"
+        env_file.write_text("export GMLST_TMPDIR=/from/file\n")
+        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setenv("GMLST_TMPDIR", "/overridden")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["get", "GMLST_TMPDIR", "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["data"]["source"] == "env"
+        assert doc["data"]["value"] == "/overridden"
+
+    def test_unset_var_reports_default_source(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("GMLST_TMPDIR", raising=False)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["get", "GMLST_TMPDIR", "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["schema_version"] == "gmlst-config-get-v1"
+        assert doc["data"] == {
+            "name": "GMLST_TMPDIR",
+            "value": "/tmp",
+            "source": "default",
+            "is_default": True,
+        }
+
+    def test_secret_value_not_masked_in_json(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_key = "sk-pubmlst-abcdef1234567890"
+        monkeypatch.setenv("GMLST_PUBMLST_API_KEY", fake_key)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            config_group, ["get", "GMLST_PUBMLST_API_KEY", "--format", "json"]
+        )
+
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["data"]["value"] == fake_key
+
+    def test_text_mode_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GMLST_TMPDIR", "/scratch/plain")
+
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["get", "GMLST_TMPDIR"])
+
+        assert result.exit_code == 0
+        assert "/scratch/plain" in result.output
+        assert "schema_version" not in result.output
+
+    def test_unknown_variable_exits_nonzero(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(config_group, ["get", "GMLST_NOT_A_THING"])
+
+        assert result.exit_code == 1
+        assert "Unknown variable" in result.output
 
 
 if __name__ == "__main__":

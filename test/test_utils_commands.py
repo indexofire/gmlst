@@ -199,6 +199,57 @@ def test_utils_extract_novel_from_json(tmp_path: Path) -> None:
     assert "N1\tsample_A\tn1\t5" in profile_file.read_text()
 
 
+def test_utils_extract_novel_from_enveloped_json(tmp_path: Path) -> None:
+    payload = [
+        {
+            "sample_id": "sample_A",
+            "scheme": "ecoli_1",
+            "st": None,
+            "allele_calls": {
+                "dnaN": {
+                    "allele_id": "101",
+                    "call_type": "novel",
+                    "novel_sequence": "ATGCATGC",
+                },
+                "gyrB": {
+                    "allele_id": "5",
+                    "call_type": "exact",
+                    "novel_sequence": None,
+                },
+            },
+        }
+    ]
+    result_json = tmp_path / "result.json"
+    result_json.write_text(
+        json.dumps({"schema_version": "gmlst-typing-v1", "data": payload}, indent=2)
+    )
+
+    out_dir = tmp_path / "novel"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "utils",
+            "extract",
+            "-i",
+            str(result_json),
+            "--novel-allele",
+            "--novel-profile",
+            "--data-dir",
+            str(out_dir),
+        ],
+    )
+    assert result.exit_code == 0
+
+    allele_file = out_dir / "dnaN_novel.fasta"
+    profile_file = out_dir / "profiles_novel.txt"
+    assert allele_file.exists()
+    assert profile_file.exists()
+    assert "dnaN_n1" in allele_file.read_text()
+    assert "N1\tsample_A\tn1\t5" in profile_file.read_text()
+
+
 def test_utils_extract_novel_from_tsv_with_samples_dir(
     monkeypatch,
     tmp_path: Path,

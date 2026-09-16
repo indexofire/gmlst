@@ -103,24 +103,19 @@ def test_collect_novel_typing_results_routes_calls_to_writers() -> None:
     ]
 
 
-def test_write_novel_outputs_announces_written_and_empty_states() -> None:
-    printed: list[str] = []
-    console = SimpleNamespace(print=lambda msg: printed.append(msg))
-
+def test_write_novel_outputs_announces_written_and_empty_states(capsys) -> None:
     allele_writer = SimpleNamespace(write=lambda: {"dnaN": "/tmp/dnaN_novel.fasta"})
     profile_writer = SimpleNamespace(write=lambda: None)
 
     write_novel_outputs(
         allele_writer=allele_writer,
         profile_writer=profile_writer,
-        console=console,
     )
 
-    assert printed == [
-        "[green]Novel alleles written:[/green]",
-        "  dnaN: /tmp/dnaN_novel.fasta",
-        "[yellow]No novel profiles detected.[/yellow]",
-    ]
+    captured = capsys.readouterr()
+    assert "Novel alleles written:" in captured.err
+    assert "dnaN: /tmp/dnaN_novel.fasta" in captured.err
+    assert "No novel profiles detected." in captured.err
 
 
 def test_create_novel_writers_returns_none_when_disabled() -> None:
@@ -142,7 +137,6 @@ def test_finalize_novel_typing_outputs_collects_then_writes() -> None:
     logger = SimpleNamespace(
         debug=lambda *args, **kwargs: None, info=lambda *args, **kwargs: None
     )
-    console = SimpleNamespace(print=lambda *_args, **_kwargs: None)
 
     class DummyAlleleWriter:
         def add_novel_allele(self, **kwargs):
@@ -176,7 +170,6 @@ def test_finalize_novel_typing_outputs_collects_then_writes() -> None:
         allele_writer=DummyAlleleWriter(),
         profile_writer=DummyProfileWriter(),
         logger=logger,
-        console=console,
     )
 
     assert calls == [

@@ -49,7 +49,6 @@ def test_execute_typing_run_parallel_preserves_input_order(
         chew_cds_gate=True,
         max_workers=2,
         on_result=lambda result: streamed.append(result.sample_id),
-        console=SimpleNamespace(print=lambda *_args, **_kwargs: None),
     )
 
     assert [result.sample_id for result in results] == ["b_sample", "a_sample"]

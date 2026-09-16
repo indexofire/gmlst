@@ -13,10 +13,11 @@ import click
 from gmlst.commands.common import (
     HELP_SETTINGS,
     cache_dir_option,
-    console,
     deprecated_scheme_option,
     emit_output_json,
+    emit_versioned_json,
     err_console,
+    status_console,
 )
 from gmlst.commands.scheme_common import (
     _exit_no_novel_data,
@@ -30,6 +31,7 @@ from gmlst.novel.service import (
     build_custom_scheme_metadata,
     merge_custom_scheme_update_metadata,
 )
+from gmlst.schema_versions import SCHEME_OP_V1
 
 
 @click.command("create", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -60,12 +62,22 @@ from gmlst.novel.service import (
     default="",
     help="Description for the custom scheme.",
 )
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    help="Output format for completion summary.",
+)
 @cache_dir_option
 def cmd_create(
     scheme_type: str,
     source: str,
     data_dir: Path,
     desc: str,
+    output_format: str,
     cache_dir: Path | None,
 ) -> None:
     """Create a custom scheme by merging public scheme with novel data.
@@ -113,7 +125,7 @@ def cmd_create(
         custom_id = _get_next_custom_id(cache)
         custom_name = f"custom_{custom_id}"
 
-        console.print(
+        status_console.print(
             f"Creating [cyan]{custom_name}[/cyan] based on [cyan]{source}[/cyan]..."
         )
 
@@ -188,11 +200,27 @@ def cmd_create(
         # Update local catalog
         _update_local_catalog(cache, custom_name, source, desc, len(source_scheme.loci))
 
-    console.print(f"[green]Created custom scheme:[/green] {custom_name}")
-    console.print(f"  Location: {custom_dir}")
-    console.print(f"  Based on: {source} ({source_provider})")
-    console.print(f"  Novel alleles: {sum(len(a) for a in novel_alleles.values())}")
-    console.print(f"  Novel profiles: {len(novel_profiles)}")
+    status_console.print(f"[green]Created custom scheme:[/green] {custom_name}")
+    status_console.print(f"  Location: {custom_dir}")
+    status_console.print(f"  Based on: {source} ({source_provider})")
+    status_console.print(
+        f"  Novel alleles: {sum(len(a) for a in novel_alleles.values())}"
+    )
+    status_console.print(f"  Novel profiles: {len(novel_profiles)}")
+    if output_format == "json":
+        emit_versioned_json(
+            {
+                "scheme": custom_name,
+                "path": str(custom_dir),
+                "n_loci": len(source_scheme.loci),
+                "source": source,
+                "source_provider": source_provider,
+                "novel_alleles_added": sum(len(a) for a in novel_alleles.values()),
+                "novel_profiles_added": len(novel_profiles),
+            },
+            None,
+            SCHEME_OP_V1,
+        )
 
 
 def _get_next_custom_id(cache: DatabaseCache) -> int:
@@ -271,7 +299,49 @@ def _update_local_catalog(
         "schemes": schemes,
     }
 
+    # Bare (un-enveloped) on purpose: this file is the local catalog format
+    # read back by gmlst itself (DatabaseCache.load_catalog, _get_next_custom_id).
     emit_output_json(payload, catalog_path)
+
+
+def _remove_from_local_catalog(cache: DatabaseCache, scheme_name: str) -> bool:
+    """Remove a scheme entry from the local catalog.
+
+    Symmetric counterpart of :func:`_update_local_catalog`; callers must hold
+    the ``_locked_local_catalog`` lock. Returns True when an entry was found
+    and removed.
+    """
+    catalog_path = cache.local_catalog_path()
+
+    if not catalog_path.exists():
+        return False
+
+    schemes: list[dict[str, object]] = []
+    try:
+        data = json.loads(catalog_path.read_text())
+        schemes = data.get("schemes", [])
+    except (OSError, json.JSONDecodeError) as exc:
+        logging.getLogger(__name__).warning(
+            "Failed to read local catalog for removal: %s", exc
+        )
+        return False
+
+    remaining = [s for s in schemes if s.get("scheme_name") != scheme_name]
+    if len(remaining) == len(schemes):
+        return False
+
+    payload = {
+        "provider": "local",
+        "scheme_type": "mlst",
+        "updated_at": utc_now_iso(),
+        "count": len(remaining),
+        "schemes": remaining,
+    }
+
+    # Bare (un-enveloped) on purpose: local catalog format (see
+    # _update_local_catalog for the rationale).
+    emit_output_json(payload, catalog_path)
+    return True
 
 
 @click.command(
@@ -289,11 +359,21 @@ def _update_local_catalog(
     type=click.Path(exists=True, file_okay=False, path_type=Path),
     help="Directory containing new *_novel.fasta and profiles_novel.txt.",
 )
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    help="Output format for completion summary.",
+)
 @cache_dir_option
 def cmd_update_custom(
     scheme: str | None,
     scheme_opt: str | None,
     data_dir: Path,
+    output_format: str,
     cache_dir: Path | None,
 ) -> None:
     """Update a custom scheme with additional novel data.
@@ -353,7 +433,7 @@ def cmd_update_custom(
             # non-numeric ST suffix (e.g. "N-old") — skip
             pass
 
-    console.print(f"Updating [cyan]{scheme}[/cyan]...")
+    status_console.print(f"Updating [cyan]{scheme}[/cyan]...")
 
     # Renumber new alleles and append to .tfa files
     allele_mapping = {}  # Maps old allele IDs to new ones
@@ -413,6 +493,17 @@ def cmd_update_custom(
     )
     cache.write_scheme_metadata(scheme, "local", meta)
 
-    console.print(f"[green]Updated custom scheme:[/green] {scheme}")
-    console.print(f"  New alleles added: {sum(len(a) for a in novel_alleles.values())}")
-    console.print(f"  New profiles added: {len(novel_profiles)}")
+    status_console.print(f"[green]Updated custom scheme:[/green] {scheme}")
+    status_console.print(
+        f"  New alleles added: {sum(len(a) for a in novel_alleles.values())}"
+    )
+    status_console.print(f"  New profiles added: {len(novel_profiles)}")
+    if output_format == "json":
+        emit_versioned_json(
+            {
+                "scheme": scheme,
+                "new_alleles_added": sum(len(a) for a in novel_alleles.values()),
+            },
+            None,
+            SCHEME_OP_V1,
+        )

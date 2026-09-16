@@ -8,19 +8,21 @@ import json
 import logging
 import sys
 from collections.abc import Callable, Iterator
+from typing import NoReturn
 
 from gmlst.commands.common import (
     _load_blocked_schemes,
     emit_output_csv,
-    emit_output_json,
     emit_output_text,
     emit_output_tsv,
+    emit_versioned_json,
     err_console,
 )
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.download import DownloadTool
 from gmlst.database.providers import AVAILABLE_PROVIDERS
 from gmlst.database.providers.base import SchemeInfo
+from gmlst.schema_versions import SCHEME_LIST_V1
 
 
 @contextlib.contextmanager
@@ -129,6 +131,24 @@ def _exit_scheme_not_found(scheme_name: str) -> None:
     sys.exit(1)
 
 
+def _exit_scheme_not_in_cache(
+    scheme_name: str, provider: str | None = None
+) -> NoReturn:
+    if provider is None:
+        err_console.print(
+            f"[red]Error:[/red] Scheme '{scheme_name}' not found in cache."
+        )
+    else:
+        err_console.print(
+            f"[red]Error:[/red] Scheme '{scheme_name}' not found in cache "
+            f"for provider '{provider}'."
+        )
+    err_console.print(
+        "Run [bold]gmlst scheme list --available[/bold] to see cached schemes."
+    )
+    sys.exit(1)
+
+
 def _exit_no_novel_data(*, show_expected_hint: bool) -> None:
     err_console.print("[red]Error:[/red] No novel data found in directory.")
     if show_expected_hint:
@@ -186,15 +206,19 @@ def emit_scheme_format(
     rows: list[dict],
     columns: list[str],
     text_fn: Callable[[list[dict]], str],
+    *,
+    json_schema_version: str = SCHEME_LIST_V1,
 ) -> bool:
     """Dispatch non-table output formats for scheme commands.
 
-    Returns True if the format was handled (caller should return).
+    ``json_schema_version`` selects the envelope constant for the json branch
+    (``gmlst-scheme-list-v1`` for list/search, ``gmlst-scheme-show-v1`` for
+    show). Returns True if the format was handled (caller should return).
     Returns False for table format (caller should render table).
     """
     mode = fmt.lower()
     if mode == "json":
-        emit_output_json(json_payload, None)
+        emit_versioned_json(json_payload, None, json_schema_version)
     elif mode == "tsv":
         emit_output_tsv(rows, columns, None)
     elif mode == "csv":

@@ -58,11 +58,15 @@ def primary_failed_stage(errors: list[dict[str, str]]) -> str:
 
 
 def stage_exit_code(stage: str) -> int:
-    """Map a failed pipeline stage to its distinct exit code (2-5, default 5)."""
+    """Map a failed pipeline stage to its distinct exit code (3-6, default 6).
+
+    Stage codes start at 3 so they never collide with click's usage-error
+    exit code 2 (bad flags/arguments).
+    """
     mapping = {
-        "input": 2,
-        "assembly": 3,
-        "prediction": 4,
-        "unknown": 5,
+        "input": 3,
+        "assembly": 4,
+        "prediction": 5,
+        "unknown": 6,
     }
-    return mapping.get(stage, 5)
+    return mapping.get(stage, 6)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from gmlst.commands.common import (
@@ -8,6 +9,7 @@ from gmlst.commands.common import (
     emit_output_table,
     emit_output_text,
     emit_output_tsv,
+    emit_versioned_json,
     render_delimited_rows,
     render_from_format,
 )
@@ -52,6 +54,26 @@ def test_emit_output_json_prints_when_no_output(capsys) -> None:
     assert wrote_file is False
     captured = capsys.readouterr()
     assert captured.out == '{\n  "a": 1\n}\n'
+
+
+def test_emit_versioned_json_wraps_payload_in_envelope(tmp_path: Path) -> None:
+    out = tmp_path / "out.json"
+    wrote_file = emit_versioned_json([{"a": 1}], out, "gmlst-test-v1")
+
+    assert wrote_file is True
+    assert json.loads(out.read_text()) == {
+        "schema_version": "gmlst-test-v1",
+        "data": [{"a": 1}],
+    }
+
+
+def test_emit_versioned_json_prints_when_no_output(capsys) -> None:
+    wrote_file = emit_versioned_json({"a": 1}, None, "gmlst-test-v1")
+
+    assert wrote_file is False
+    captured = capsys.readouterr()
+    envelope = json.loads(captured.out)
+    assert envelope == {"schema_version": "gmlst-test-v1", "data": {"a": 1}}
 
 
 def test_emit_output_table_prints_when_no_output() -> None:

@@ -135,7 +135,7 @@ export function newickBlob(newickString) {
  */
 export function buildGraphJsonPayload(schemaVersion, renderedGraph, source = "gmlst visual") {
   return {
-    schema_version: schemaVersion || "gmlst-visual-v1",
+    schema_version: schemaVersion || "gmlst-visual-export-v1",
     exported_from: source,
     graph: renderedGraph,
   }
@@ -194,7 +194,7 @@ export function heatmapJsonBlob(labels, loci, cells) {
  */
 export function buildSessionJsonPayload(state) {
   return {
-    schema_version: state.lastData?.export?.schema_version || "gmlst-visual-v1",
+    schema_version: state.lastData?.export?.schema_version || "gmlst-visual-export-v1",
     exported_from: "gmlst visual",
     inputs: {
       tsv: state.tsvText,

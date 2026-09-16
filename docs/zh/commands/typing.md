@@ -153,7 +153,7 @@ gmlst typing tgmlst [OPTIONS] SAMPLES...
 | `--hash-strategy [safe\|fast\|ultra\|strict\|blast]` | 选择 allele 识别使用的哈希策略。 | `safe` |
 | `--save-scheme PATH` | 把发现到的 scheme-free 方案写成 JSON。 | 无 |
 | `--load-scheme PATH` | 在分型前加载已有的 scheme-free 方案 JSON。 | 无 |
-| `--stats` | 输出 scheme-free 流程的时间和计数统计。 | 关闭 |
+| `--stats` | 把流程运行统计输出到标准错误（stderr）。 | 关闭 |
 | `--max-workers INTEGER` | 覆盖 scheme-free 流程的样本级并行数。 | 无 |
 | `-t, --threads INTEGER` | 控制 tgMLST 中 MMseqs 聚类线程数。 | 无 |
 | `--assemble-timeout FLOAT` | 覆盖 scheme-free 组装阶段超时时间，单位为秒。 | 无 |

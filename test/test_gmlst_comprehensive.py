@@ -135,7 +135,8 @@ def test_naming_conventions():
 
 def test_error_handling():
     result = run_command(gmlst_cmd("scheme", "list", "-p", "cgmlst", "--type", "mlst"))
-    assert "No schemes found" in result.stdout or "No local catalog" in result.stdout, (
+    combined = result.stdout + result.stderr
+    assert "No schemes found" in combined or "No local catalog" in combined, (
         "Invalid type filter should show a no-schemes-message"
     )
 

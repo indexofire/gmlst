@@ -15,6 +15,7 @@ from gmlst.commands.common import (
     emit_output_table,
     emit_output_text,
     emit_output_tsv,
+    err_console,
     render_from_format,
 )
 from gmlst.commands.utils_benchmark import BackendMetrics as BackendMetrics
@@ -276,13 +277,17 @@ def cmd_benchmark(
     if cgmlst_gate:
         if len(backend_list) != 1:
             raise click.UsageError("--cgmlst-gate requires exactly one backend")
-        gate_result = run_cgmlst_gate(
-            scheme_name=scheme,
-            sample_paths=prepare_sample_inputs(list(samples)),
-            backend=backend_list[0],
-            cache_root=cache_dir,
-            force_reindex=force_reindex,
-        )
+        try:
+            gate_result = run_cgmlst_gate(
+                scheme_name=scheme,
+                sample_paths=prepare_sample_inputs(list(samples)),
+                backend=backend_list[0],
+                cache_root=cache_dir,
+                force_reindex=force_reindex,
+            )
+        except Exception as exc:
+            err_console.print(f"[red]Error:[/red] {exc}")
+            sys.exit(1)
         text = render_from_format(
             output_format,
             {
@@ -337,14 +342,18 @@ def cmd_benchmark(
         return
 
     prepared_samples = prepare_sample_inputs(list(samples))
-    result = run_benchmark(
-        scheme_name=scheme,
-        sample_paths=prepared_samples,
-        backends=backend_list,
-        repeat=repeat,
-        cache_root=cache_dir,
-        force_reindex=force_reindex,
-    )
+    try:
+        result = run_benchmark(
+            scheme_name=scheme,
+            sample_paths=prepared_samples,
+            backends=backend_list,
+            repeat=repeat,
+            cache_root=cache_dir,
+            force_reindex=force_reindex,
+        )
+    except Exception as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        sys.exit(1)
     if output_format == "table":
         emit_output_table(
             output=output,

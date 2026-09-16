@@ -133,6 +133,7 @@ gmlst scheme [OPTIONS] COMMAND [ARGS]...
 - `show` — 显示 scheme 详情
 - `download` — 下载 scheme
 - `update` — 更新 scheme 或目录
+- `remove` — 从本地缓存删除 scheme
 - `create` — 从新等位基因创建自定义 scheme
 - `update-custom` — 更新自定义 scheme
 - `export` — 导出 scheme profile
@@ -179,6 +180,7 @@ gmlst scheme search PATTERN [OPTIONS]
 
 - `-p, --provider [provider|all]`
 - `-t, --type [mlst|cgmlst|wgmlst|rmlst|other|all]`
+- `-l, --limit INTEGER`（最多显示 N 条，默认不限制）
 - `--cache-dir PATH`
 
 示例：
@@ -201,7 +203,8 @@ gmlst scheme list [OPTIONS]
 - `-n, --name TEXT`（按物种名正则过滤）
 - `-f, --format [text|table|csv|tsv|json]`
 - `-a, --available`（仅显示已下载的）
-- `--pager`（分页显示）
+- `-l, --limit INTEGER`（最多显示 N 条，默认不限制）
+- `--pager`（分页显示；交互式，需要终端）
 - `--cache-dir PATH`
 
 ### scheme show
@@ -235,6 +238,39 @@ gmlst scheme update [OPTIONS]
 - `--cache-dir PATH`
 
 更新机制为**增量更新**：只下载有变化的 locus 和 profile，不是全部重新下载。
+
+### scheme remove
+
+```bash
+gmlst scheme remove SCHEME [OPTIONS]
+```
+
+从本地缓存删除已下载的 scheme。
+
+位置参数：
+
+- `SCHEME` — 方案名称（如 `saureus_1`、`custom_1`）
+
+选项：
+
+- `-s, --scheme TEXT`（已废弃，使用位置参数）
+- `-p, --provider TEXT`（默认从缓存自动检测）
+- `-y, --yes`（跳过确认提示）
+- `-f, --format [text|json]`（默认 `text`）
+- `--cache-dir PATH`
+
+行为：
+
+- 删除前显示 scheme 名称、provider、路径和大小，并请求确认。
+- 本地自定义 scheme（`custom_*`，provider 为 `local`）会同时从本地 catalog 中移除。
+- `--format json` 在删除成功后输出 `gmlst-scheme-op-v1` 信封：`{"scheme", "provider", "path", "removed": true}`。
+
+示例：
+
+```bash
+gmlst scheme remove saureus_1 --yes
+gmlst scheme remove custom_1 --format json
+```
 
 ### scheme create
 
@@ -375,3 +411,41 @@ gmlst visual web --open-browser
 - 支持基于元数据的节点着色
 - 支持 SVG 导出
 - 接受 gmlst TSV 和 GrapeTree 风格 profile（`#Strain` 首列）
+
+## JSON 输出信封
+
+gmlst 写入 stdout 或输出文件的每个 JSON 文档都包裹在带版本号的信封中，
+便于程序（以及 AI agent）在解析前进行版本校验：
+
+```json
+{
+  "schema_version": "<常量>",
+  "data": <原始 payload>
+}
+```
+
+TSV/CSV/text/jsonl 输出不使用信封。
+
+信封常量（定义在 `gmlst/schema_versions.py`）：
+
+| 常量 | 适用范围 |
+| --- | --- |
+| `gmlst-typing-v1` | `typing mlst` / `typing cgmlst --format json`（样本结果列表） |
+| `gmlst-tgmlst-profiles-v1` | `typing tgmlst --format json`（profile 列表） |
+| `gmlst-tgmlst-stats-v1` | `typing tgmlst --stats`（stderr 统计文档） |
+| `gmlst-scheme-list-v1` | `scheme list` / `scheme search --format json` |
+| `gmlst-scheme-show-v1` | `scheme show --format json` |
+| `gmlst-scheme-op-v1` | `scheme download` / `update` / `create` / `update-custom` / `remove --format json` 摘要 |
+| `gmlst-benchmark-v1` | `utils benchmark --format json` |
+| `gmlst-visual-mst-v1` | `visual mst --format json` |
+| `gmlst-visual-mst-summary-v1` | `visual mst --format summary` |
+| `gmlst-visual-matrix-v1` | `visual matrix --format json` |
+| `gmlst-visual-heatmap-v1` | `visual heatmap --format json` |
+| `gmlst-visual-compare-v1` | `visual compare --format json` |
+| `gmlst-visual-locus-diff-v1` | `visual locus-diff --format json` |
+
+`visual export` 使用自己已有的信封（`gmlst-visual-export-v1`，字段为
+`kind`/`payload` 而非 `data`）。
+
+往返兼容：`utils extract -i <typing json>` 同时接受新信封格式
+（`gmlst-typing-v1`，读取 `data`）和旧版本 gmlst 输出的裸列表格式。

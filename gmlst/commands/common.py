@@ -28,6 +28,7 @@ HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 # Shared console instances
 console = Console()
 err_console = Console(stderr=True)
+status_console = Console(stderr=True)
 
 
 def _natural_sort_key(scheme_name: str) -> tuple[str, int]:
@@ -80,6 +81,15 @@ def emit_output_text(output_text: str, output: Path | None) -> bool:
 def emit_output_json(data: Any, output: Path | None) -> bool:
     """Serialize *data* as indented JSON and emit via :func:`emit_output_text`."""
     return emit_output_text(json.dumps(data, indent=2), output)
+
+
+def emit_versioned_json(payload: Any, output: Path | None, schema_version: str) -> bool:
+    """Emit *payload* wrapped in a ``{"schema_version", "data"}`` envelope.
+
+    Version constants live in :mod:`gmlst.schema_versions`. Returns the same
+    bool semantics as :func:`emit_output_json` (True when written to a file).
+    """
+    return emit_output_json({"schema_version": schema_version, "data": payload}, output)
 
 
 def render_delimited_rows(
@@ -140,7 +150,10 @@ def emit_output_table(
 
 
 def make_progress() -> Progress:
-    """Create the shared rich progress bar (spinner, bar, M/N, elapsed time)."""
+    """Create the shared rich progress bar (spinner, bar, M/N, elapsed time).
+
+    Renders on stderr so progress bars never pollute stdout data streams.
+    """
     return Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -148,6 +161,7 @@ def make_progress() -> Progress:
         MofNCompleteColumn(),
         TaskProgressColumn(),
         TimeElapsedColumn(),
+        console=status_console,
     )
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ import click
 from gmlst.commands.common import (
     emit_output_json,
     emit_output_text,
+    emit_versioned_json,
     render_delimited_rows,
 )
 from gmlst.visual.mst_shared import validate_tsv_scale
@@ -39,7 +41,12 @@ def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
 
 
 def read_input_text(path: Path, *, label: str) -> str:
-    """Read a text input file, converting OS errors into a Click usage error."""
+    """Read a text input file, converting OS errors into a Click usage error.
+
+    A *path* of ``-`` reads the content from standard input instead.
+    """
+    if str(path) == "-":
+        return sys.stdin.read()
     try:
         return path.read_text()
     except OSError as exc:
@@ -50,6 +57,21 @@ def emit_json_payload(payload: dict[str, Any], *, output: Path | None) -> None:
     """Emit a JSON payload to *output* (or stdout), announcing file writes."""
     try:
         wrote_file = emit_output_json(payload, output)
+    except OSError as exc:
+        raise click.UsageError(f"Failed to write output file: {output}") from exc
+    if wrote_file and output is not None:
+        click.echo(f"Results written to {output}")
+
+
+def emit_versioned_json_payload(
+    payload: dict[str, Any],
+    *,
+    output: Path | None,
+    schema_version: str,
+) -> None:
+    """Emit a schema-versioned JSON payload (see :mod:`gmlst.schema_versions`)."""
+    try:
+        wrote_file = emit_versioned_json(payload, output, schema_version)
     except OSError as exc:
         raise click.UsageError(f"Failed to write output file: {output}") from exc
     if wrote_file and output is not None:

@@ -7,7 +7,18 @@ from types import SimpleNamespace
 from click.testing import CliRunner
 
 from gmlst.cli import main
-from gmlst.commands.utils import BackendMetrics, BenchmarkResult
+from gmlst.commands.utils import BackendMetrics, BenchmarkResult, to_json
+
+
+def test_to_json_wraps_metrics_in_schema_envelope(tmp_path: Path) -> None:
+    document = json.loads(to_json(_fake_result(tmp_path / "sample.fna")))
+
+    assert document["schema_version"] == "gmlst-benchmark-v1"
+    data = document["data"]
+    assert data["scheme"] == "saureus_1"
+    assert data["n_samples"] == 1
+    assert data["metrics"]["kma"]["backend"] == "kma"
+    assert data["metrics"]["kma"]["n_exact_st"] == 1
 
 
 def _fake_result(sample_path: Path) -> BenchmarkResult:

@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TextIO
 
+from gmlst.commands.common import status_console
+
 
 def open_stream_output(*, fmt: str, output: Path | None) -> TextIO | None:
     """Open *output* for line-by-line streaming when the format supports it.
@@ -83,7 +85,6 @@ def emit_final_typing_output(
     fmt: str,
     output: Path | None,
     emit_output_json_fn,
-    console,
 ) -> bool:
     """Write the collected json payload after all samples finish.
 
@@ -95,14 +96,14 @@ def emit_final_typing_output(
     output_data = [result.to_dict() for result in results]
     wrote_file = emit_output_json_fn(output_data, output)
     if wrote_file and output is not None:
-        console.print(f"Results written to [cyan]{output}[/cyan]")
+        status_console.print(f"Results written to [cyan]{output}[/cyan]")
     return True
 
 
-def announce_stream_output_written(*, output: Path | None, console) -> None:
+def announce_stream_output_written(*, output: Path | None) -> None:
     """Print the "Results written to ..." confirmation when output went to a file."""
     if output is not None:
-        console.print(f"Results written to [cyan]{output}[/cyan]")
+        status_console.print(f"Results written to [cyan]{output}[/cyan]")
 
 
 def close_stream_output(stream_file: TextIO | None) -> None:

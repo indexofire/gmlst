@@ -7,8 +7,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from rich.console import Console
-
+from gmlst.commands.common import status_console
 from gmlst.readers.sample import SampleInput, prepare_sample_inputs
 
 _DEFAULT_GENOME_SIZE = 5_000_000
@@ -87,7 +86,6 @@ def temp_root_from_output(output: Path | None) -> Generator[None, None, None]:
 def maybe_subsample_fastq(
     samples: list[Path | SampleInput],
     max_depth: float,
-    console: Console,
 ) -> list[Path | SampleInput]:
     """Subsample FASTQ samples whose estimated depth exceeds *max_depth*.
 
@@ -124,7 +122,7 @@ def maybe_subsample_fastq(
             continue
 
         target_reads = int(max_depth * _DEFAULT_GENOME_SIZE / 150)
-        console.print(
+        status_console.print(
             f"[yellow]Subsample:[/yellow] "
             f"{sample if isinstance(sample, Path) else sample.sample_id} "
             f"~{est_depth:.0f}x depth → {max_depth:.0f}x "

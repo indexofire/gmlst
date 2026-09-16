@@ -176,6 +176,7 @@ Subcommands:
 - `show`
 - `download`
 - `update`
+- `remove`
 - `create`
 - `update-custom`
 - `export`
@@ -223,6 +224,7 @@ Options:
 
 - `-p, --provider [<registered-provider>|local|all]`
 - `-t, --type [mlst|cgmlst|wgmlst|all]`
+- `-l, --limit INTEGER` (show at most N schemes; no limit by default)
 - `--cache-dir PATH`
 
 Example:
@@ -245,6 +247,8 @@ Typical options:
 - `-n, --name TEXT`
 - `-f, --format [text|table|csv|tsv|json]`
 - `-a, --available`
+- `-l, --limit INTEGER` (show at most N schemes; no limit by default)
+- `--pager` (interactive; requires a terminal)
 - `--cache-dir PATH`
 
 Blocked scheme configuration:
@@ -334,6 +338,39 @@ gmlst scheme list -p pubmlst
 export GMLST_PRIVATE_BIGSDB_URL="http://127.0.0.1:9000/api/db"
 export GMLST_PRIVATE_BIGSDB_NAME="labdb"
 gmlst scheme list -p labdb
+```
+
+### scheme remove
+
+```bash
+gmlst scheme remove SCHEME [OPTIONS]
+```
+
+Remove a downloaded scheme from the local cache.
+
+Positional argument:
+
+- `SCHEME` — scheme name (e.g., `saureus_1`, `custom_1`)
+
+Options:
+
+- `-s, --scheme TEXT` (deprecated, use positional argument)
+- `-p, --provider TEXT` (default: auto-detected from the cache)
+- `-y, --yes` (skip confirmation prompt)
+- `-f, --format [text|json]` (default: `text`)
+- `--cache-dir PATH`
+
+Behavior:
+
+- Shows the scheme name, provider, path, and size before asking for confirmation.
+- Custom local schemes (`custom_*`, provider `local`) are also removed from the local catalog.
+- `--format json` prints a `gmlst-scheme-op-v1` envelope with `{"scheme", "provider", "path", "removed": true}` after removal.
+
+Example:
+
+```bash
+gmlst scheme remove saureus_1 --yes
+gmlst scheme remove custom_1 --format json
 ```
 
 ### scheme create
@@ -587,3 +624,43 @@ Behavior:
 
 For deeper discrepancy-analysis and experimental helper scripts, see internal
 docs under [`docs/internal/`](https://github.com/indexofire/gmlst/tree/main/docs/internal).
+
+## JSON output envelope
+
+Every JSON document that gmlst writes to stdout or to an output file is
+wrapped in a versioned envelope so programs (and AI agents) can version-check
+a payload before parsing it:
+
+```json
+{
+  "schema_version": "<constant>",
+  "data": <previous payload>
+}
+```
+
+TSV/CSV/text/jsonl outputs are not enveloped.
+
+Envelope constants (defined in `gmlst/schema_versions.py`):
+
+| Constant | Applies to |
+| --- | --- |
+| `gmlst-typing-v1` | `typing mlst` / `typing cgmlst --format json` (list of sample results) |
+| `gmlst-tgmlst-profiles-v1` | `typing tgmlst --format json` (list of profiles) |
+| `gmlst-tgmlst-stats-v1` | `typing tgmlst --stats` (stderr stats document) |
+| `gmlst-scheme-list-v1` | `scheme list` / `scheme search --format json` |
+| `gmlst-scheme-show-v1` | `scheme show --format json` |
+| `gmlst-scheme-op-v1` | `scheme download` / `update` / `create` / `update-custom` / `remove --format json` summaries |
+| `gmlst-benchmark-v1` | `utils benchmark --format json` |
+| `gmlst-visual-mst-v1` | `visual mst --format json` |
+| `gmlst-visual-mst-summary-v1` | `visual mst --format summary` |
+| `gmlst-visual-matrix-v1` | `visual matrix --format json` |
+| `gmlst-visual-heatmap-v1` | `visual heatmap --format json` |
+| `gmlst-visual-compare-v1` | `visual compare --format json` |
+| `gmlst-visual-locus-diff-v1` | `visual locus-diff --format json` |
+
+`visual export` uses its own pre-existing envelope (`gmlst-visual-export-v1`,
+with `kind`/`payload` fields instead of `data`).
+
+Round-trip compatibility: `utils extract -i <typing json>` accepts both the
+enveloped form (`gmlst-typing-v1`, unwraps `data`) and the legacy bare list
+emitted by older gmlst versions.

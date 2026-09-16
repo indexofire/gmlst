@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from gmlst.commands.common import status_console
 from gmlst.readers.sample import SampleInput
 
 
@@ -19,7 +20,6 @@ def normalize_cgmlst_fastq_runtime(
     threads: int,
     contains_fastq_samples_fn,
     fastq_kma_auto_threads_fn,
-    console,
     err_console,
 ) -> tuple[str, str, int]:
     """Apply FASTQ-aware runtime adjustments, returning (backend, mode, threads).
@@ -33,7 +33,7 @@ def normalize_cgmlst_fastq_runtime(
 
     if contains_fastq and backend.lower() in ("blastn", "nucmer", "minimap2"):
         auto_backend = "kma"
-        console.print(
+        status_console.print(
             f"[yellow]Auto-switch:[/yellow] FASTQ input detected, "
             f"backend '{backend}' does not support reads. "
             f"Using [cyan]{auto_backend}[/cyan] "
@@ -50,7 +50,7 @@ def normalize_cgmlst_fastq_runtime(
         )
         sys.exit(1)
     if cgmlst_mode != "fast":
-        console.print(
+        status_console.print(
             "[yellow]Warning:[/yellow] FASTQ cgMLST ignores "
             "[cyan]--cgmlst-mode[/cyan]. Using default behavior."
         )
@@ -58,7 +58,7 @@ def normalize_cgmlst_fastq_runtime(
     if backend.lower() == "kma" and max_workers <= 1 and threads == 1:
         auto_threads = fastq_kma_auto_threads_fn()
         if auto_threads > 1:
-            console.print(
+            status_console.print(
                 "[yellow]Warning:[/yellow] FASTQ cgMLST with kma on "
                 "a single thread is slow. Auto-setting per-sample threads "
                 f"to [cyan]{auto_threads}[/cyan]."

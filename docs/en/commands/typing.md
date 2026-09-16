@@ -157,7 +157,7 @@ gmlst typing tgmlst [OPTIONS] SAMPLES...
 | `--hash-strategy [safe\|fast\|ultra\|strict\|blast]` | Hash and rescue strategy for scheme-free calling. | `safe` |
 | `--save-scheme PATH` | Save the discovered scheme for reuse. | - |
 | `--load-scheme PATH` | Reuse a previously saved tgMLST scheme. | - |
-| `--stats` | Print extra summary statistics. | `False` |
+| `--stats` | Print pipeline run stats to stderr. | `False` |
 | `--max-workers INTEGER` | Number of samples to process in parallel. | - |
 | `-t, --threads INTEGER` | Backend thread count. | - |
 | `--assemble-timeout FLOAT` | Timeout for assembly-related steps. | - |

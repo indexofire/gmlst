@@ -68,10 +68,188 @@ def test_visual_mst_subcommand_outputs_json_payload() -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert len(payload["nodes"]) == 2
-    assert len(payload["edges"]) == 1
-    assert payload["metadata_fields"] == ["SCHEME", "ST"]
-    assert payload["aggregate_profiles"] is True
+    assert payload["schema_version"] == "gmlst-visual-mst-v1"
+    data = payload["data"]
+    assert len(data["nodes"]) == 2
+    assert len(data["edges"]) == 1
+    assert data["metadata_fields"] == ["SCHEME", "ST"]
+    assert data["aggregate_profiles"] is True
+
+
+def test_visual_mst_format_summary_outputs_compact_digest() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        input_path = "profiles.tsv"
+        Path(input_path).write_text(
+            "\n".join(
+                [
+                    "FILE\tSCHEME\tST\tL1\tL2",
+                    "s1\tvpa\t11\t1\t1",
+                    "s2\tvpa\t12\t1\t2",
+                    "s3\tvpa\t13\t2\t2",
+                ]
+            )
+        )
+
+        result = runner.invoke(
+            main, ["visual", "mst", "--input", input_path, "--format", "summary"]
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "gmlst-visual-mst-summary-v1"
+    data = payload["data"]
+    assert data["sample_count"] == 3
+    assert "mst_summary" in data
+    assert "clusters" in data
+    assert data["method"] == "grapetree_classic"
+    assert data["include_missing"] is False
+    assert data["aggregate_profiles"] is True
+    assert data["cluster_edge_threshold"] == 15
+    assert data["outlier_weight"] == 50
+    assert data["cluster_count"] == 0
+    assert data["unclustered_samples"] == 3
+    assert data["truncated"] is False
+
+
+def test_visual_mst_format_summary_flags_truncated_cluster_cap() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        header = "\t".join(["FILE", "SCHEME", "ST", *[f"L{i}" for i in range(16)]])
+        lines = [header]
+        for group in range(21):
+            allele = str(group + 1)
+            for member in range(5):
+                lines.append(
+                    "\t".join([f"g{group}s{member}", "vpa", allele, *[allele] * 16])
+                )
+        input_path = "profiles.tsv"
+        Path(input_path).write_text("\n".join(lines))
+
+        result = runner.invoke(
+            main,
+            [
+                "visual",
+                "mst",
+                "--input",
+                input_path,
+                "--format",
+                "summary",
+                "--no-aggregate-profiles",
+            ],
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    data = payload["data"]
+    assert data["sample_count"] == 105
+    assert data["aggregate_profiles"] is False
+    assert data["truncated"] is True
+    assert data["cluster_count"] == 20
+    assert len(data["clusters"]) == 20
+    assert data["unclustered_samples"] == 5
+
+
+def test_visual_mst_subcommand_reads_input_from_stdin_dash() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["visual", "mst", "--input", "-"],
+        input="FILE\tSCHEME\tST\tL1\ns1\tvpa\t1\t1\n",
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "gmlst-visual-mst-v1"
+    data = payload["data"]
+    assert len(data["nodes"]) == 1
+    assert data["edges"] == []
+    assert data["metadata_fields"] == ["SCHEME", "ST"]
+
+
+@pytest.mark.parametrize(
+    ("command_args", "expected_header"),
+    [
+        (["matrix", "--input", "-", "--format", "tsv"], "sample_id\ts1\ts2"),
+        (
+            ["heatmap", "--input", "-", "--format", "tsv", "--no-aggregate-profiles"],
+            "sample_id\tL1\tL2",
+        ),
+        (
+            [
+                "locus-diff",
+                "--input",
+                "-",
+                "--left-label",
+                "s1",
+                "--right-label",
+                "s2",
+                "--format",
+                "tsv",
+            ],
+            "locus\tleft\tright\ttype",
+        ),
+    ],
+)
+def test_visual_subcommands_read_input_from_stdin_dash(
+    command_args: list[str], expected_header: str
+) -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["visual", *command_args],
+        input="FILE\tSCHEME\tST\tL1\tL2\ns1\tvpa\t11\t1\t1\ns2\tvpa\t12\t1\t2\n",
+    )
+
+    assert result.exit_code == 0
+    assert result.output.splitlines()[0] == expected_header
+
+
+def test_visual_compare_subcommand_reads_left_from_stdin_dash() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        right_path = Path("right.tsv")
+        right_path.write_text(
+            "\n".join(
+                [
+                    "FILE\tSCHEME\tST\tL1\tL2",
+                    "s1\tvpa\t11\t1\t1",
+                    "s2\tvpa\t21\t1\t2",
+                ]
+            )
+        )
+
+        result = runner.invoke(
+            main,
+            ["visual", "compare", "--left", "-", "--right", str(right_path)],
+            input="\n".join(
+                [
+                    "FILE\tSCHEME\tST\tL1\tL2",
+                    "s1\tvpa\t11\t1\t1",
+                    "s2\tvpa\t12\t1\t2",
+                ]
+            ),
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "gmlst-visual-compare-v1"
+    assert payload["data"]["summary"]["matched_samples"] == 2
+    assert payload["data"]["summary"]["different_st"] == 1
+
+
+def test_visual_mst_subcommand_empty_stdin_matches_empty_file_error() -> None:
+    runner = CliRunner()
+    stdin_result = runner.invoke(main, ["visual", "mst", "--input", "-"], input="")
+    with runner.isolated_filesystem():
+        empty_path = Path("empty.tsv")
+        empty_path.write_text("")
+        file_result = runner.invoke(main, ["visual", "mst", "--input", str(empty_path)])
+
+    assert stdin_result.exit_code == 2
+    assert stdin_result.exit_code == file_result.exit_code
+    assert stdin_result.output == file_result.output
+    assert "No TSV content provided" in stdin_result.output
 
 
 def test_visual_compare_subcommand_writes_output_file() -> None:
@@ -118,8 +296,9 @@ def test_visual_compare_subcommand_writes_output_file() -> None:
 
     assert result.exit_code == 0
     assert "Results written to" in result.output
-    assert payload["summary"]["matched_samples"] == 2
-    assert payload["summary"]["different_st"] == 1
+    assert payload["schema_version"] == "gmlst-visual-compare-v1"
+    assert payload["data"]["summary"]["matched_samples"] == 2
+    assert payload["data"]["summary"]["different_st"] == 1
 
 
 def test_visual_matrix_subcommand_supports_tsv_format() -> None:
@@ -1038,7 +1217,7 @@ def test_create_visual_app_api_mst_works_and_validates_input() -> None:
     assert payload["aggregate_profiles"] is True
     assert payload["layout"]["root_id"] == 0
     assert payload["layout"]["mode"] == "cluster-aware-tree"
-    assert payload["export"]["schema_version"] == "gmlst-visual-v1"
+    assert payload["export"]["schema_version"] == "gmlst-visual-export-v1"
     assert payload["export"]["formats"] == ["graph-json", "session-json"]
     assert payload["default_color_field"] is None
     assert payload["suggested_color_fields"] == []
@@ -1546,6 +1725,58 @@ def test_create_visual_app_api_compare_results_rejects_duplicate_sample_ids() ->
     )
     assert bad.status_code == 400
     assert bad.get_json() == {"error": "Duplicate sample ID in comparison input: s1"}
+
+
+def test_create_visual_app_api_compare_results_rejects_non_string_tsv_values() -> None:
+    app = create_visual_app(title="visual test")
+    client = app.test_client()
+
+    tsv = "FILE\tSCHEME\tST\tL1\ns1\tvpa\t1\t1"
+
+    bad_left = client.post(
+        "/api/compare-results",
+        json={"left_tsv": 123, "right_tsv": tsv},
+    )
+    assert bad_left.status_code == 400
+    assert bad_left.get_json() == {"error": "'left_tsv' must be a string"}
+
+    bad_right = client.post(
+        "/api/compare-results",
+        json={"left_tsv": tsv, "right_tsv": {"not": "a string"}},
+    )
+    assert bad_right.status_code == 400
+    assert bad_right.get_json() == {"error": "'right_tsv' must be a string"}
+
+
+def test_create_visual_app_api_unknown_route_returns_json_404() -> None:
+    app = create_visual_app(title="visual test")
+    client = app.test_client()
+
+    missing = client.get("/api/does-not-exist")
+    assert missing.status_code == 404
+    assert missing.content_type == "application/json"
+    assert "error" in missing.get_json()
+
+
+def test_create_visual_app_api_wrong_method_returns_json_405() -> None:
+    app = create_visual_app(title="visual test")
+    client = app.test_client()
+
+    wrong = client.get("/api/mst")
+    assert wrong.status_code == 405
+    assert wrong.content_type == "application/json"
+    assert "error" in wrong.get_json()
+
+
+def test_create_visual_app_api_oversized_body_returns_json_413() -> None:
+    app = create_visual_app(title="visual test")
+    app.config["MAX_CONTENT_LENGTH"] = 16
+    client = app.test_client()
+
+    oversized = client.post("/api/mst", json={"tsv": "x" * 200})
+    assert oversized.status_code == 413
+    assert oversized.content_type == "application/json"
+    assert "error" in oversized.get_json()
 
 
 def test_create_visual_app_api_malformed_json_returns_400() -> None:

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from pathlib import Path
 
 import click
 
-from gmlst.commands.common import emit_output_text
+from gmlst.commands.common import emit_output_text, err_console
 from gmlst.database.cache import DatabaseCache
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
 
@@ -26,16 +27,20 @@ def _extract_alleles_from_sample(
     if provider is None:
         provider = "pubmlst"
 
-    scheme_obj = cache.ensure_scheme(scheme_name, provider=provider)
-    from gmlst.core import run_typing
+    try:
+        scheme_obj = cache.ensure_scheme(scheme_name, provider=provider)
+        from gmlst.core import run_typing
 
-    results = run_typing(
-        sample_paths=[sample_path],
-        scheme_name=scheme_name,
-        backend=backend,
-        provider=provider,
-        cache_root=cache_dir,
-    )
+        results = run_typing(
+            sample_paths=[sample_path],
+            scheme_name=scheme_name,
+            backend=backend,
+            provider=provider,
+            cache_root=cache_dir,
+        )
+    except Exception as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        sys.exit(1)
     if not results:
         raise click.UsageError("No typing result produced for input sample")
 
@@ -130,7 +135,16 @@ def _extract_novel_from_json(
     novel_profile: bool,
     data_dir: Path,
 ) -> None:
-    payload = json.loads(input_path.read_text())
+    try:
+        payload = json.loads(input_path.read_text())
+    except json.JSONDecodeError as exc:
+        raise click.UsageError(
+            f"Invalid JSON in input file {input_path}: {exc.msg} "
+            f"(line {exc.lineno}, column {exc.colno})"
+        ) from exc
+    if isinstance(payload, dict) and isinstance(payload.get("data"), list):
+        # gmlst-typing-v1 envelope emitted by `typing --format json`.
+        payload = payload["data"]
     if not isinstance(payload, list):
         raise click.UsageError("Typing JSON result must be a list of sample objects")
     if not payload:
@@ -265,18 +279,22 @@ def _extract_novel_from_tsv_with_retyping(
     sample_paths = _resolve_sample_paths(sample_ids, samples_dir)
     chosen_provider = provider or "pubmlst"
     cache = DatabaseCache(cache_dir)
-    scheme_obj = cache.ensure_scheme(scheme_name, provider=chosen_provider)
-    from gmlst.core import run_typing
-    from gmlst.readers.sample import SampleInput
+    try:
+        scheme_obj = cache.ensure_scheme(scheme_name, provider=chosen_provider)
+        from gmlst.core import run_typing
+        from gmlst.readers.sample import SampleInput
 
-    typing_paths: list[Path | SampleInput] = list(sample_paths)
-    results = run_typing(
-        sample_paths=typing_paths,
-        scheme_name=scheme_name,
-        backend=backend,
-        provider=chosen_provider,
-        cache_root=cache_dir,
-    )
+        typing_paths: list[Path | SampleInput] = list(sample_paths)
+        results = run_typing(
+            sample_paths=typing_paths,
+            scheme_name=scheme_name,
+            backend=backend,
+            provider=chosen_provider,
+            cache_root=cache_dir,
+        )
+    except Exception as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        sys.exit(1)
 
     loci = scheme_obj.loci
 

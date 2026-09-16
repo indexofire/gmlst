@@ -134,6 +134,14 @@ MST 在这里有三个主要价值：
 
 ## CLI MST 命令
 
+### 管道输入
+
+`mst`/`matrix`/`heatmap`/`compare`/`locus-diff` 的文件参数均支持 `-` 从 stdin 读取，可将分型结果直接通过管道送入建树，无需临时文件：
+
+```bash
+gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary
+```
+
 ### 全量 JSON 输出
 
 ```bash
@@ -153,9 +161,17 @@ gmlst visual mst --input profiles.tsv --metadata meta.tsv --format summary --out
 | 字段 | 内容 | 分析价值 |
 |---|---|---|
 | `mst_summary` | 边数、权重最小/中位/最大值、零权重对数 | 树形概况与数据质量 |
-| `clusters` | 连通分量（边权≤15）、大小、主导元数据、纯度 | 群体结构与克隆复合体 |
+| `clusters` | 连通分量（边权 ≤ `cluster_edge_threshold`）、大小、主导元数据、纯度 | 群体结构与克隆复合体 |
+| `cluster_count` | 检测到的聚类数量（每簇 ≥5 个成员，最多报告 20 簇） | `clusters` 的完整性核对 |
+| `unclustered_samples` | 未落入任何已报告聚类的样本数 | 未聚类多样性的占比 |
+| `truncated` | 聚类数达到 20 簇上限而提前停止时为 `true` | `cluster_count` 是否只是下限 |
 | `top_variable_loci` | 错配频率最高的位点 | 分型标记物候选 |
-| `outliers` | 高边权（>50）连接的节点 | 高偏离/导入株、数据质量标记 |
+| `outliers` | 高边权（> `outlier_weight`）连接的节点 | 高偏离/导入株、数据质量标记 |
+| `method` | 构建 MST 的算法方法（`edmonds`、`grapetree_classic`、`grapetree_v2`） | 来源信息，复现树形所必需 |
+| `include_missing` | 是否将不对称缺失标记计为错配 | 距离指标的来源信息 |
+| `aggregate_profiles` | 建树前是否折叠重复谱型 | 解释节点数与样本数的差异 |
+| `cluster_edge_threshold` | 将样本划入同一聚类的最大边权（15） | 解读聚类语义 |
+| `outlier_weight` | 节点被标记为异常的最小边权（50） | 解读异常样本标记 |
 | `suggested_analysis` | 可执行的后续分析建议 | 分析路线图 |
 
 ### 其他 MST 相关命令

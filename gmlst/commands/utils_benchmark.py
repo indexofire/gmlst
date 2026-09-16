@@ -16,6 +16,7 @@ import click
 from gmlst.commands.common import render_delimited_rows
 from gmlst.database.cache import DatabaseCache
 from gmlst.readers.sample import SampleInput
+from gmlst.schema_versions import BENCHMARK_V1
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +230,7 @@ def to_tsv(result: BenchmarkResult) -> str:
 
 
 def to_json(result: BenchmarkResult) -> str:
-    """Render benchmark metrics as an indented JSON document."""
+    """Render benchmark metrics as an indented, schema-versioned JSON document."""
     payload = {
         "scheme": result.scheme,
         "n_samples": len(result.samples),
@@ -251,7 +252,7 @@ def to_json(result: BenchmarkResult) -> str:
             for backend, metric in sorted(result.metrics.items())
         },
     }
-    return json.dumps(payload, indent=2)
+    return json.dumps({"schema_version": BENCHMARK_V1, "data": payload}, indent=2)
 
 
 def run_cgmlst_gate(

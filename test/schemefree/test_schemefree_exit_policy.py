@@ -28,7 +28,7 @@ def test_schemefree_exit_code_partial_default() -> None:
 def test_schemefree_exit_code_partial_strict() -> None:
     errors = [{"stage": "assembly"}]
     assert schemefree_exit_decision(2, 1, errors, fail_on_error=True) == (
-        3,
+        4,
         "partial_failed_strict_assembly",
         "assembly",
     )
@@ -37,7 +37,7 @@ def test_schemefree_exit_code_partial_strict() -> None:
 def test_schemefree_exit_code_all_failed() -> None:
     errors = [{"stage": "prediction"}, {"stage": "prediction"}]
     assert schemefree_exit_decision(0, 2, errors, fail_on_error=False) == (
-        4,
+        5,
         "all_failed_prediction",
         "prediction",
     )
@@ -63,7 +63,12 @@ def testprimary_failed_stage_uses_count_then_priority() -> None:
 
 
 def teststage_exit_code_mapping() -> None:
-    assert stage_exit_code("input") == 2
-    assert stage_exit_code("assembly") == 3
-    assert stage_exit_code("prediction") == 4
-    assert stage_exit_code("anything") == 5
+    assert stage_exit_code("input") == 3
+    assert stage_exit_code("assembly") == 4
+    assert stage_exit_code("prediction") == 5
+    assert stage_exit_code("anything") == 6
+
+
+def teststage_exit_codes_do_not_collide_with_click_usage_error() -> None:
+    for stage in ("input", "assembly", "prediction", "unknown"):
+        assert stage_exit_code(stage) != 2

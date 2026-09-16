@@ -11,6 +11,8 @@ analytical conclusion an agent needs:
 * high-frequency variable loci (candidate typing markers)
 * outlier nodes (high-weight edges, likely divergent/imported strains)
 * actionable analysis suggestions
+* provenance + completeness (method, flags, thresholds, truncation) so the
+  summary is self-sufficient without the invoking command line
 
 Agents should use the summary for reasoning and drop to tool-based
 processing of the full JSON only when per-sample or per-edge detail is
@@ -24,19 +26,32 @@ from typing import Any
 
 _CLUSTER_EDGE_THRESHOLD = 15
 _OUTLIER_WEIGHT = 50
+_MIN_CLUSTER_SIZE = 5
 _MAX_CLUSTERS = 20
 _MAX_VARIABLE_LOCI = 10
 _MAX_OUTLIERS = 10
 
 
-def summarize_mst_payload(payload: dict[str, Any]) -> dict[str, Any]:
+def summarize_mst_payload(
+    payload: dict[str, Any],
+    *,
+    method: str | None = None,
+    include_missing: bool = False,
+) -> dict[str, Any]:
     """Condense a full MST payload into an agent-readable summary.
 
     Parameters
     ----------
     payload:
         The dict produced by ``build_mst_from_tsv`` (nodes, edges,
-        metadata_fields, …).
+        metadata_fields, aggregate_profiles, …).
+    method:
+        MST method that produced the payload (``edmonds``,
+        ``grapetree_classic``, or ``grapetree_v2``). Recorded verbatim so
+        the summary is interpretable without the invoking command line.
+    include_missing:
+        Whether asymmetric missing-token mismatches were counted when
+        building the tree (the CLI ``--include-missing`` flag).
 
     Returns
     -------
@@ -56,10 +71,21 @@ def summarize_mst_payload(payload: dict[str, Any]) -> dict[str, Any]:
         adjacency[src].append((tgt, weight))
         adjacency[tgt].append((src, weight))
 
+    clusters, truncated = _detect_clusters(nodes, adjacency, node_map, metadata_fields)
+    clustered_samples = sum(int(c["size"]) for c in clusters)
+
     return {
         "sample_count": len(nodes),
+        "method": method,
+        "include_missing": include_missing,
+        "aggregate_profiles": bool(payload.get("aggregate_profiles", False)),
+        "cluster_edge_threshold": _CLUSTER_EDGE_THRESHOLD,
+        "outlier_weight": _OUTLIER_WEIGHT,
         "mst_summary": _weight_stats(edges),
-        "clusters": _detect_clusters(nodes, adjacency, node_map, metadata_fields),
+        "clusters": clusters,
+        "cluster_count": len(clusters),
+        "unclustered_samples": len(nodes) - clustered_samples,
+        "truncated": truncated,
         "top_variable_loci": _variable_loci(edges),
         "outliers": _outliers(edges),
         "metadata_fields": metadata_fields,
@@ -86,10 +112,16 @@ def _detect_clusters(
     adjacency: dict[str, list[tuple[str, int]]],
     node_map: dict[str, dict[str, Any]],
     metadata_fields: list[str],
-) -> list[dict[str, Any]]:
-    """Find connected components joined by edges ≤ threshold."""
+) -> tuple[list[dict[str, Any]], bool]:
+    """Find connected components joined by edges ≤ threshold.
+
+    Returns the reported clusters (capped at ``_MAX_CLUSTERS``) and
+    whether that cap stopped collection while unvisited nodes remained
+    (i.e. more qualifying clusters may exist than were collected).
+    """
     visited: set[str] = set()
     clusters: list[dict[str, Any]] = []
+    truncated = False
 
     for node in nodes:
         label = str(node["label"])
@@ -107,7 +139,7 @@ def _detect_clusters(
                     stack.append(neighbor)
         visited |= component
 
-        if len(component) < 5:
+        if len(component) < _MIN_CLUSTER_SIZE:
             continue
 
         meta_counts: dict[str, Counter[str]] = {
@@ -132,10 +164,11 @@ def _detect_clusters(
                 )
         clusters.append(cluster_info)
         if len(clusters) >= _MAX_CLUSTERS:
+            truncated = any(str(n["label"]) not in visited for n in nodes)
             break
 
     clusters.sort(key=lambda c: -c["size"])
-    return clusters
+    return clusters, truncated
 
 
 def _variable_loci(edges: list[dict[str, Any]]) -> list[tuple[str, int]]:

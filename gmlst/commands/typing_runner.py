@@ -18,6 +18,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+from gmlst.commands.common import status_console
 from gmlst.readers.sample import SampleInput
 
 
@@ -33,6 +34,7 @@ def _make_progress(quiet: bool) -> Progress | None:
         TimeElapsedColumn(),
         TimeRemainingColumn(),
         transient=False,
+        console=status_console,
     )
 
 
@@ -61,7 +63,6 @@ def execute_typing_run(
     chew_cds_gate: bool,
     max_workers: int,
     on_result,
-    console,
     quiet: bool = False,
 ) -> list:
     """Run typing over all prepared samples, returning results in input order.
@@ -79,7 +80,7 @@ def execute_typing_run(
 
     if max_workers > 1 and total > 1:
         if threads != 1:
-            console.print(
+            status_console.print(
                 "[yellow]Warning:[/yellow] --max-workers uses sample-level "
                 "parallelism; forcing per-sample backend threads to 1."
             )

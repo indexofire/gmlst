@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from pathlib import Path
@@ -13,10 +14,10 @@ from gmlst.aligners import AVAILABLE_BACKENDS
 from gmlst.commands.common import (
     HELP_SETTINGS,
     cache_dir_option,
-    console,
-    emit_output_json,
     emit_output_text,
+    emit_versioned_json,
     err_console,
+    status_console,
 )
 from gmlst.commands.typing_fastq import (
     contains_fastq_samples,
@@ -49,6 +50,11 @@ from gmlst.database.cache import DatabaseCache
 from gmlst.database.schema import Scheme
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
 from gmlst.novel.service import create_novel_writers, finalize_novel_typing_outputs
+from gmlst.schema_versions import (
+    TGMLST_PROFILES_V1,
+    TGMLST_STATS_V1,
+    TYPING_RESULTS_V1,
+)
 from gmlst.schemefree import (
     SchemaFreeConfig,
     SchemeFreeTyper,
@@ -60,6 +66,11 @@ from gmlst.schemefree import (
 from gmlst.utils import setup_logging
 
 logger = logging.getLogger(__name__)
+
+
+def _emit_typing_results_json(data: object, output: Path | None) -> bool:
+    """Emit typing results wrapped in the ``gmlst-typing-v1`` envelope."""
+    return emit_versioned_json(data, output, TYPING_RESULTS_V1)
 
 
 if TYPE_CHECKING:
@@ -490,7 +501,7 @@ def cmd_typing_cgmlst(
     "--stats",
     "show_stats",
     is_flag=True,
-    help="Print schemefree pipeline timing and count stats.",
+    help="Print pipeline run stats to stderr.",
 )
 @click.option("--schemefree-stats", "show_stats", is_flag=True, hidden=True)
 @click.option(
@@ -717,9 +728,7 @@ def _run_mlst_like_typing(
 
     prepared_samples = prepare_sample_paths_for_pairing(samples)
     if max_fastq_depth > 0:
-        prepared_samples = maybe_subsample_fastq(
-            prepared_samples, max_fastq_depth, console
-        )
+        prepared_samples = maybe_subsample_fastq(prepared_samples, max_fastq_depth)
     backend, cgmlst_mode, threads = normalize_cgmlst_fastq_runtime(
         mode=mode,
         prepared_samples=prepared_samples,
@@ -730,7 +739,6 @@ def _run_mlst_like_typing(
         threads=threads,
         contains_fastq_samples_fn=contains_fastq_samples,
         fastq_kma_auto_threads_fn=fastq_kma_auto_threads,
-        console=console,
         err_console=err_console,
     )
 
@@ -744,7 +752,7 @@ def _run_mlst_like_typing(
     )
 
     if backend.lower() == "nucmer" and threads > 1:
-        console.print(
+        status_console.print(
             "[yellow]Warning:[/yellow] nucmer backend may ignore thread settings; "
             "multi-thread speedups are limited."
         )
@@ -791,7 +799,7 @@ def _run_mlst_like_typing(
         )
 
     if mode == "cgmlst" and backend.lower() == "kma" and threads == 1:
-        console.print(
+        status_console.print(
             "[yellow]Warning:[/yellow] cgMLST with kma is very slow on one thread. "
             "Use [cyan]-t[/cyan] (e.g. 8-16) for large schemes."
         )
@@ -831,7 +839,6 @@ def _run_mlst_like_typing(
                     chew_cds_gate=chew_cds_gate,
                     max_workers=max_workers,
                     on_result=_on_result,
-                    console=console,
                     quiet=quiet,
                 )
         except Exception as exc:
@@ -843,7 +850,6 @@ def _run_mlst_like_typing(
             allele_writer=allele_writer,
             profile_writer=profile_writer,
             logger=logger,
-            console=console,
         )
 
         # output results
@@ -851,13 +857,12 @@ def _run_mlst_like_typing(
             results=results,
             fmt=fmt,
             output=output,
-            emit_output_json_fn=emit_output_json,
-            console=console,
+            emit_output_json_fn=_emit_typing_results_json,
         ):
             return
 
         if streamed_output:
-            announce_stream_output_written(output=output, console=console)
+            announce_stream_output_written(output=output)
             return
 
     finally:
@@ -893,7 +898,14 @@ def _run_schemefree_typing(
     typer = SchemeFreeTyper(config)
 
     if load_scheme_path:
-        typer.load_scheme(load_scheme_path)
+        try:
+            typer.load_scheme(load_scheme_path)
+        except Exception as exc:
+            err_console.print(
+                f"[red]Error:[/red] Failed to load scheme from "
+                f"'{load_scheme_path}': {exc}"
+            )
+            sys.exit(1)
 
     profiles = typer.type_sample_files(samples)
     profile_dicts = [p.to_dict() for p in profiles]
@@ -902,7 +914,14 @@ def _run_schemefree_typing(
         typer.export_scheme(save_scheme_path)
 
     if fmt == "json":
-        output_text = profiles_to_json(profile_dicts)
+        # Wrap at the CLI boundary: schemefree io_handler stays a pure engine.
+        output_text = json.dumps(
+            {
+                "schema_version": TGMLST_PROFILES_V1,
+                "data": json.loads(profiles_to_json(profile_dicts)),
+            },
+            indent=2,
+        )
     elif fmt == "pretty":
         output_text = "\n".join(f"{p.sample_id}: {p.loci_count} loci" for p in profiles)
     else:
@@ -910,20 +929,27 @@ def _run_schemefree_typing(
 
     wrote_file = emit_output_text(output_text, output)
     if wrote_file and output is not None:
-        console.print(f"Results written to [cyan]{output}[/cyan]")
+        status_console.print(f"Results written to [cyan]{output}[/cyan]")
 
     if error_report_path:
         write_error_report_json(error_report_path, typer.last_run_errors)
-        console.print(f"Schemefree errors written to [cyan]{error_report_path}[/cyan]")
+        status_console.print(
+            f"Schemefree errors written to [cyan]{error_report_path}[/cyan]"
+        )
 
     if typer.last_run_errors:
         failed_count = len(typer.last_run_errors)
-        console.print(
+        status_console.print(
             f"[yellow]Schemefree warning:[/yellow] {failed_count} sample(s) failed."
         )
 
     if show_stats:
-        emit_output_json(typer.last_run_stats, None)
+        # Stats go to stderr so stdout carries exactly one parseable document.
+        stats_envelope = {
+            "schema_version": TGMLST_STATS_V1,
+            "data": typer.last_run_stats,
+        }
+        click.echo(json.dumps(stats_envelope, indent=2), err=True)
 
     exit_code, exit_reason, primary_failed_stage = schemefree_exit_decision(
         success_count=len(profiles),
@@ -941,7 +967,7 @@ def _run_schemefree_typing(
             "failed_by_stage": count_errors_by_stage(typer.last_run_errors),
         }
         write_summary_report_json(summary_report_path, summary_payload)
-        console.print(
+        status_console.print(
             f"Schemefree summary written to [cyan]{summary_report_path}[/cyan]"
         )
 

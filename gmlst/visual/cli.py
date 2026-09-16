@@ -9,11 +9,19 @@ from typing import Any
 
 import click
 
+from gmlst.schema_versions import (
+    VISUAL_COMPARE_V1,
+    VISUAL_HEATMAP_V1,
+    VISUAL_LOCUS_DIFF_V1,
+    VISUAL_MATRIX_V1,
+    VISUAL_MST_SUMMARY_V1,
+    VISUAL_MST_V1,
+)
 from gmlst.visual._cli_export import emit_export_payload
 from gmlst.visual._cli_helpers import (
     cli_catch_value_errors,
-    emit_json_payload,
     emit_rows_by_format,
+    emit_versioned_json_payload,
     heatmap_rows,
     matrix_rows,
     maybe_validate_tsv_scale,
@@ -90,13 +98,13 @@ def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
     "--input",
     "input_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Profile TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Profile TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--metadata",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Optional metadata TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Optional metadata TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--output",
@@ -107,10 +115,10 @@ def cmd_visual_web(host: str, port: int, open_browser: bool) -> None:
 @click.option(
     "--format",
     "output_format",
-    type=TABULAR_FORMATS,
+    type=MST_FORMATS,
     default="json",
     show_default=True,
-    help="Output format.",
+    help="Output format ('summary' emits a compact LLM-oriented digest).",
 )
 @click.option(
     "--include-missing/--no-include-missing",
@@ -165,12 +173,18 @@ def cmd_visual_mst(
                 "edges": edges,
                 "metadata_fields": metadata_fields,
                 "aggregate_profiles": aggregate_profiles,
-            }
+            },
+            method=method,
+            include_missing=include_missing,
         )
-        emit_json_payload(summary, output=output_path)
+        emit_versioned_json_payload(
+            summary,
+            output=output_path,
+            schema_version=VISUAL_MST_SUMMARY_V1,
+        )
         return
     if output_format.lower() == "json":
-        emit_json_payload(
+        emit_versioned_json_payload(
             {
                 "nodes": nodes,
                 "edges": edges,
@@ -178,6 +192,7 @@ def cmd_visual_mst(
                 "aggregate_profiles": aggregate_profiles,
             },
             output=output_path,
+            schema_version=VISUAL_MST_V1,
         )
         return
 
@@ -212,13 +227,13 @@ def cmd_visual_mst(
     "--input",
     "input_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Profile TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Profile TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--metadata",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Optional metadata TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Optional metadata TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--output",
@@ -270,7 +285,7 @@ def cmd_visual_matrix(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        emit_json_payload(
+        emit_versioned_json_payload(
             {
                 "labels": labels,
                 "matrix": matrix,
@@ -279,6 +294,7 @@ def cmd_visual_matrix(
                 "aggregate_profiles": aggregate_profiles,
             },
             output=output_path,
+            schema_version=VISUAL_MATRIX_V1,
         )
         return
 
@@ -304,13 +320,13 @@ def cmd_visual_matrix(
     "--input",
     "input_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Profile TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Profile TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--metadata",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Optional metadata TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Optional metadata TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--output",
@@ -354,7 +370,7 @@ def cmd_visual_heatmap(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        emit_json_payload(
+        emit_versioned_json_payload(
             {
                 "labels": labels,
                 "loci": loci,
@@ -364,6 +380,7 @@ def cmd_visual_heatmap(
                 "aggregate_profiles": aggregate_profiles,
             },
             output=output_path,
+            schema_version=VISUAL_HEATMAP_V1,
         )
         return
 
@@ -390,15 +407,15 @@ def cmd_visual_heatmap(
     "--left",
     "left_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Left typing result TSV/CSV file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Left typing result TSV/CSV file. Use '-' to read from stdin.",
 )
 @click.option(
     "--right",
     "right_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Right typing result TSV/CSV file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Right typing result TSV/CSV file. Use '-' to read from stdin.",
 )
 @click.option(
     "--output",
@@ -430,7 +447,11 @@ def cmd_visual_compare(
     maybe_validate_tsv_scale(ctx, right_tsv)
     comparison = build_result_comparison_from_tsv(left_tsv, right_tsv)
     if output_format.lower() == "json":
-        emit_json_payload(comparison, output=output_path)
+        emit_versioned_json_payload(
+            comparison,
+            output=output_path,
+            schema_version=VISUAL_COMPARE_V1,
+        )
         return
 
     summary = comparison["summary"]
@@ -460,13 +481,13 @@ def cmd_visual_compare(
     "--input",
     "input_path",
     required=True,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Profile TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Profile TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option(
     "--metadata",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Optional metadata TSV/CSV input file.",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, allow_dash=True),
+    help="Optional metadata TSV/CSV input file. Use '-' to read from stdin.",
 )
 @click.option("--left-label", required=True, help="Left sample label.")
 @click.option("--right-label", required=True, help="Right sample label.")
@@ -516,7 +537,11 @@ def cmd_visual_locus_diff(
         metadata_text=metadata_text,
     )
     if output_format.lower() == "json":
-        emit_json_payload(diff, output=output_path)
+        emit_versioned_json_payload(
+            diff,
+            output=output_path,
+            schema_version=VISUAL_LOCUS_DIFF_V1,
+        )
         return
 
     emit_rows_by_format(
