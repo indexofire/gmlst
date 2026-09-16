@@ -22,6 +22,7 @@ English | [简体中文](README_ZH.md)
 - 💾 **Cache-first operation**: downloaded schemes and built indexes are reused for offline or repeated runs.
 - 🧵 **Batch processing**: use sample-level workers and backend threads for high-throughput workflows.
 - 🧬 **CDS-aware calling**: cgMLST workflows can use Pyrodigal for CDS prediction and chewBBACA-compatible classification paths.
+- 🤖 **AI-agent friendly**: versioned JSON envelopes, data-only stdout, and stable exit codes make the CLI safe to drive from scripts and agents.
 
 ## Installation
 
@@ -65,6 +66,14 @@ gmlst scheme download saureus_1
 
 # Re-download with low concurrency (avoid 429 from rate-limited servers)
 gmlst scheme download saureus_1 --force -x 2
+
+# Refresh every cached scheme (asks for confirmation first)
+gmlst scheme update -a
+gmlst scheme update -a -y              # skip the Y/N prompt
+
+# Delete a cached scheme you no longer need
+gmlst scheme remove saureus_1
+gmlst scheme remove saureus_1 -y        # no confirmation prompt
 ```
 
 ### 2. Type one sample
@@ -208,7 +217,7 @@ gmlst typing tgmlst sample.fna --save-scheme tgmlst_scheme.json
 gmlst typing tgmlst another_sample.fna --load-scheme tgmlst_scheme.json --format json
 ```
 
-Useful options include `--hash-strategy`, `--summary-report`, `--error-report`, and `--fail-on-error`.
+Useful options include `--hash-strategy`, `--summary-report`, `--error-report`, and `--fail-on-error`. With `--stats`, the run statistics JSON is printed to stderr so stdout stays data-only.
 
 ## Visualization
 
@@ -225,6 +234,14 @@ gmlst visual web --host 0.0.0.0 --port 8787
 ```
 
 The web UI accepts TSV data, builds a minimum spanning tree, and serves a local Flask API with a Vue frontend.
+
+The `visual` subcommands also read profiles from stdin, so you can pipe typing results straight into an MST summary:
+
+```bash
+gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary
+```
+
+See the [Visualization Guide](docs/en/visual_guide.md) for the full set of `visual` commands (`mst`, `matrix`, `heatmap`, `compare`, `locus-diff`).
 
 ## Configuration
 
@@ -253,15 +270,18 @@ gmlst config init     # auto-load in every new shell (run once)
 source ~/.config/gmlst/env.sh   # apply now in current shell
 ```
 
-Use `gmlst config show` to view all 29 configuration variables with current values and defaults:
+Use `gmlst config show` to view all 29 configuration variables with current values and defaults. Secret values such as API keys are masked in this view (`first4****last4`) so they stay out of terminal logs:
 
 ```bash
-gmlst config show                          # grouped table view
+gmlst config show                          # grouped table view (secrets masked)
 gmlst config env                           # shell-exportable format
 gmlst config get GMLST_CACHE_DIR           # get a single variable
+gmlst config get GMLST_CACHE_DIR --format json  # {name, value, source, is_default}
 gmlst config set GMLST_CACHE_DIR /data     # write to ~/.config/gmlst/env.sh
 gmlst config init                          # add source line to shell rc (run once)
 ```
+
+In `config get --format json` output, `source` tells you where the value comes from: `file` (the `env.sh` config file), `env` (set in the environment any other way), or `default` (unset, built-in default, `is_default` true).
 
 Example:
 
@@ -295,7 +315,27 @@ The default TSV format uses compact markers per locus.
 | `1,1` | Same-allele copy expanded (with `--count-same-copy` flag) | ✅ Yes |
 | `-` | Missing locus | ❌ Incomplete |
 
-JSON output is the best choice when you want structured fields such as per-locus call metadata and `novel_sequence` extraction data.
+JSON output is the best choice when you want structured fields such as per-locus call metadata and `novel_sequence` extraction data. Every JSON document the CLI writes is wrapped in a versioned envelope, `{"schema_version": "<constant>", "data": <payload>}`, so scripts can version-check before parsing:
+
+```json
+{"schema_version": "gmlst-typing-v1", "data": [{"file": "sample.fasta", "scheme": "saureus_1", "...": "..."}]}
+```
+
+The full constant table lives in the [Command Reference](docs/en/commands.md#json-output-envelope).
+
+## Exit Codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Success (including partial `tgmlst` failures without `--fail-on-error`) |
+| 1 | Runtime failure (also `scheme update` when any provider or scheme update fails) |
+| 2 | Usage error, such as bad flags or an invalid regex in `scheme list --name` |
+| 3 | `tgmlst` input stage failure |
+| 4 | `tgmlst` assembly stage failure |
+| 5 | `tgmlst` prediction stage failure |
+| 6 | `tgmlst` unknown stage failure |
+
+Warnings, progress bars, and "Results written to" notices go to stderr; stdout carries data only.
 
 ## Multicopy Loci Notes
 

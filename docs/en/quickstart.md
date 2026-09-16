@@ -48,6 +48,19 @@ You can inspect the downloaded scheme afterward:
 gmlst scheme show -s saureus_1
 ```
 
+Later, you can refresh every cached scheme at once. `update -a` shows a Y/N confirmation listing the cached schemes before it starts; add `--yes` to skip the prompt:
+
+```bash
+gmlst scheme update -a
+gmlst scheme update -a --yes
+```
+
+And when you no longer need a scheme, remove it from the cache (it also asks for confirmation unless you pass `--yes`):
+
+```bash
+gmlst scheme remove saureus_1
+```
+
 ## Step 2: Type your first sample
 
 For an assembled genome in FASTA format, the most direct command is:
@@ -139,7 +152,18 @@ This writes a tab-separated table that is easy to open in spreadsheets or parse 
 gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 ```
 
-JSON output is useful for downstream automation, reporting, or novel allele extraction.
+JSON output is useful for downstream automation, reporting, or novel allele extraction. Every JSON document the CLI writes is wrapped in a versioned envelope, `{"schema_version": "<constant>", "data": <payload>}`, so scripts can version-check the payload before parsing it:
+
+```json
+{
+  "schema_version": "gmlst-typing-v1",
+  "data": [
+    {"file": "sample.fasta", "scheme": "saureus_1", "st": "1", "...": "..."}
+  ]
+}
+```
+
+The full list of envelope constants is in the [Command Reference](commands.md#json-output-envelope).
 
 ### Increase sample-level parallelism
 
@@ -212,6 +236,8 @@ gmlst typing tgmlst --format json sample.fasta -o tgmlst.json
 gmlst typing tgmlst --stats sample.fasta
 gmlst typing tgmlst --save-scheme discovered_scheme.json sample.fasta
 ```
+
+With `--stats`, the run statistics JSON is printed to stderr, so stdout keeps carrying typing data only.
 
 Scheme-free mode is helpful for exploratory workflows and cases where you want to derive a typing scheme from the data itself.
 
