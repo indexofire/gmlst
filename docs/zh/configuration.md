@@ -41,6 +41,16 @@ gmlst config init                    # 在 shell rc 文件中添加 source 行�
 source ~/.config/gmlst/env.sh        # 在当前 shell 中立即生效
 ```
 
+`config show` 会对敏感值做掩码处理：名称形如凭据的变量（`*_API_KEY`、token、secret、密码）只显示前 4 位和后 4 位（如 `abcd****ef01`），较短的值整体显示为 `********`。这可以避免 API key 意外出现在终端日志或截图里。未设置的变量不会被假掩码填充，因此可以直观区分"已设置"和"未设置"。掩码只影响 `config show` 的显示；`config get` 仍输出真实值，因为它面向脚本使用。
+
+`config get` 支持 `--format json`，输出带版本号的信封（`gmlst-config-get-v1`），适合脚本和 AI 智能体读取：
+
+```bash
+gmlst config get GMLST_CACHE_DIR --format json
+```
+
+返回的 `data` 包含 `name`、`value`、`source` 和 `is_default`。`source` 表示取值来源：`file` 表示当前值与 `env.sh` 配置文件中的 `export` 一致，`env` 表示变量以其他方式设置在环境中，`default` 表示未设置（使用内置默认值，此时 `is_default` 为 `true`）。
+
 ### 缓存
 
 缓存中会保存已下载的方案、目录缓存以及后端索引。只要方案和索引已经准备好，常规分型流程就可以在离线状态下重复运行。只有刷新目录、下载新方案这类操作仍然需要联网。

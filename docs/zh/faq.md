@@ -351,6 +351,39 @@ gmlst typing mlst -s saureus_1 --format tsv sample.fasta -o result.tsv
 gmlst typing mlst -s saureus_1 --format json sample.fasta -o result.json
 ```
 
+### 为什么警告出现在 stderr，stdout 里只有数据？
+
+这是 0.2.0 起明确的流纪律：stdout 只输出数据，警告、进度条、spinner 以及 "Results written to" 提示全部走 stderr。这样管道和重定向拿到的是纯净的可解析输出，例如：
+
+```bash
+gmlst typing mlst -s saureus_1 --format json sample.fasta | jq '.data[0]'
+```
+
+如果你想念这些提示信息，它们并没有丢，只是改到了 stderr，用 `2>` 可以单独查看或保存。
+
+### `schema_version` / JSON 信封是什么？
+
+自 0.2.0 起，所有 CLI JSON 输出统一包裹在带版本号的信封中：
+
+```json
+{
+  "schema_version": "gmlst-typing-v1",
+  "data": [ ... ]
+}
+```
+
+原始数据原样位于 `data` 字段，`schema_version` 标识载荷格式，程序可以在解释数据前先做版本校验。如果未来版本调整了载荷结构，常量也会随之变化，脚本和 AI 智能体可以据此发现格式漂移，而不是误读数据。TSV/CSV/text 输出不使用信封；`utils extract -i <typing json>` 同时接受新信封和旧版裸列表格式。完整常量列表见 [commands.md](commands.md#json-输出信封)。
+
+### `--stats` 的输出去哪了？
+
+`typing tgmlst --stats` 的统计 JSON 输出到 stderr（信封常量 `gmlst-tgmlst-stats-v1`），stdout 仍只有分型结果。所以直接在终端运行时两条流会交替出现，重定向 stdout 时统计信息不会混入结果文件。
+
+要把统计保存成纯净的 JSON 文件，可以配合 `-q` 抑制其他日志：
+
+```bash
+gmlst typing tgmlst --stats -q sample.fna -o profiles.tsv 2> stats.json
+```
+
 ### GrapeTree 导出失败怎么办？
 
 GrapeTree 导出面向公共方案，或通过 `gmlst scheme create` 构建的 custom scheme。如果失败，请先确认当前方案确实是下载得到的公共方案，或是按标准流程建立的自定义方案。
@@ -417,6 +450,22 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -t 8 sample.fna
 
 ## 常见错误信息
 
+### 退出码分别是什么含义？
+
+自 0.2.0 起，退出码语义是稳定的，可以据此编写脚本判断：
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功（包括未加 `--fail-on-error` 的 tgmlst 部分样本失败） |
+| `1` | 运行时失败（包括 `scheme update` 中任一 provider 或方案失败） |
+| `2` | 用法错误，例如非法参数，或 `scheme list --name` 传入非法正则 |
+| `3` | tgmlst 输入阶段失败 |
+| `4` | tgmlst 组装阶段失败 |
+| `5` | tgmlst 预测阶段失败 |
+| `6` | tgmlst 未知阶段失败 |
+
+tgmlst 的阶段码从 3 开始编号，避免与 shell 标准的用法错误退出码 2 冲突。当多个样本在不同阶段失败时，退出码反映占多数的失败阶段。要使 tgmlst 的部分样本失败也返回非零，请加 `--fail-on-error`。
+
 ### `Unknown backend 'X'`
 
 说明你请求的 backend 没有注册到 `gmlst/aligners/__init__.py`。可以先查看支持的后端名称：
@@ -443,6 +492,8 @@ gmlst scheme list
 ### `Failed to download` 相关错误
 
 这类错误通常指向网络问题，或 provider 端问题。可以先换一个 `--download-tool` 重试，再确认远端地址是否能访问。
+
+自 0.2.0 起，网络失败会先在 stderr 打印简洁的重试行（例如 `retry 1/3 [connection timeout] bigsdb.pasteur.fr — adk`），最终失败时错误信息带 `[network:<reason>]` 前缀，方便脚本按原因归类。
 
 ### `--verbose and --quiet cannot be used together`
 
