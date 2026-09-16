@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Planned
+## [Unreleased]
 
 ### Planned
 - Cache storage optimization: support compressed scheme artifacts for downloaded
@@ -20,9 +20,152 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
-### Scope Note
-- `0.1.x` remains focused on basic functionality verification and stability.
-- The compression + incremental-update work is deferred to `0.2.0`.
+## [0.2.0] - 2026-09-16
+
+The AI-agent friendliness release. JSON output is versioned, stdout carries
+data only, and exit codes are stable and machine-checkable, so scripts and
+AI agents can drive the CLI programmatically without parsing human-oriented
+chatter.
+
+### Added
+
+#### `scheme remove`
+- New command: `gmlst scheme remove <SCHEME>` deletes a downloaded scheme from
+  the local cache
+- Confirmation prompt before deletion; `--yes` (`-y`) skips it
+  (same flag as `scheme update -a`)
+- `-p/--provider` override (auto-detected from the cache by default)
+- `--format text|json` completion summary; the JSON form reports
+  `{"scheme", "provider", "path", "removed": true}` in a `gmlst-scheme-op-v1`
+  envelope
+- For `custom_N` schemes the local-catalog entry is removed as well
+
+#### JSON summaries for scheme write operations
+- `scheme download`, `scheme update`, `scheme create`, and
+  `scheme update-custom` accept `--format json` completion summaries
+  (envelope `gmlst-scheme-op-v1`):
+  - download: `{scheme, provider, scheme_type, path, n_loci}`
+  - update single scheme: `{scheme, provider, changed}`
+  - `update -a`: `{total, updated, unchanged, failed, results: [{scheme,
+    provider, status, error}]}`
+  - create: includes the generated `custom_N` scheme name
+  - update-custom: `{scheme, new_alleles_added}`
+
+#### `scheme update -a` confirmation
+- Updating all cached schemes now shows an interactive Y/N confirmation that
+  lists the cached schemes first
+- `--yes` (`-y`) skips the prompt for non-interactive use
+
+#### `scheme search --format`
+- `scheme search` now supports `text|table|csv|tsv|json` (previously table-only),
+  matching `scheme list`
+
+#### Result truncation control
+- `scheme list` and `scheme search` accept `--limit N` to cap the number of
+  schemes shown; a truncation note is printed on stderr
+- `scheme list --pager` is documented as interactive-only (requires a terminal)
+
+#### `config get --format json`
+- Emits an enveloped snapshot (`gmlst-config-get-v1`) with `{name, value,
+  source, is_default}`
+- `source` reports provenance: `file` when the value matches an export in the
+  `env.sh` config file, `env` when set any other way, `default` when unset
+
+#### Visual commands accept stdin
+- `visual mst`, `matrix`, `heatmap`, and `locus-diff` read profiles from stdin
+  with `--input -`
+- `visual compare` reads either side from stdin with `--left -` / `--right -`
+- Enables piping, for example:
+  `gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary`
+
+#### MST summary provenance
+- `visual mst --format summary` now includes a provenance block: `method`,
+  `include_missing`, `aggregate_profiles`, `cluster_edge_threshold` (15),
+  `outlier_weight` (50), `cluster_count`, `unclustered_samples`, `truncated`
+
+### Changed
+
+#### JSON output envelopes (BREAKING)
+- Every JSON document written to stdout or an output file is now wrapped as
+  `{"schema_version": "<constant>", "data": <payload>}` so programs can
+  version-check a payload before parsing it
+- Constants live in `gmlst/schema_versions.py`: `gmlst-typing-v1`,
+  `gmlst-tgmlst-profiles-v1`, `gmlst-tgmlst-stats-v1`, `gmlst-scheme-list-v1`,
+  `gmlst-scheme-show-v1`, `gmlst-scheme-op-v1`, `gmlst-benchmark-v1`,
+  `gmlst-visual-mst-v1`, `gmlst-visual-mst-summary-v1`, `gmlst-visual-matrix-v1`,
+  `gmlst-visual-heatmap-v1`, `gmlst-visual-compare-v1`,
+  `gmlst-visual-locus-diff-v1`, `gmlst-config-get-v1`
+- TSV/CSV/text output is unchanged and not enveloped
+- `utils extract -i <typing json>` still accepts the legacy bare list emitted
+  by older gmlst versions
+
+#### Stream discipline (BREAKING for parsers)
+- stdout now carries data only
+- Warnings, progress bars, spinners, and "Results written to" notices moved to
+  stderr
+- `typing tgmlst --stats` prints its stats JSON document to stderr
+  (`gmlst-tgmlst-stats-v1`), keeping stdout data-only
+
+#### Exit codes (BREAKING)
+- 0: success, including partial tgmlst failures without `--fail-on-error`
+- 1: runtime failure
+- 2: usage error, including an invalid regex in `scheme list --name`
+- 3/4/5/6: tgmlst stage failure for input/assembly/prediction/unknown
+  (shifted from the previous 2-5 range to avoid colliding with click's
+  usage-error exit 2)
+- `scheme update` now exits 1 when any provider or scheme update fails
+  (previously exited 0)
+
+#### Deterministic `scheme show --format json`
+- Volatile fields (`scheme_dir`, `downloaded_at`, `updated_at`) are stripped
+  from the JSON payload so repeated runs produce identical output; other
+  formats are unchanged
+
+#### Secret masking in `config show`
+- Values of secret-looking variables (`*_API_KEY`, tokens, secrets, passwords)
+  are masked as `first4****last4` (fully masked when short); unset secrets are
+  not masked
+
+#### Network error reporting
+- Downloads emit concise retry lines on stderr, for example
+  `retry 1/3 [connection timeout] bigsdb.pasteur.fr — adk`
+- Final failures are prefixed with `[network:<reason>]` for reliable grepping
+
+#### MST default method
+- Default MST method is now `grapetree_classic` (previously `grapetree_v2`)
+
+#### Web UI redesign
+- Refreshed visual web app built on design tokens with dark mode support
+- Added PNG export, multi-select sample compare, run statistics view, and a
+  timeline view
+
+### Fixed
+
+- **MST correctness**: `grapetree_v2` no longer produces an incorrect
+  super-root in tree construction
+- **Flask visual API**: HTTP-level 404/405/413 errors now return JSON bodies
+  instead of HTML error pages; export schema version string unified to
+  `gmlst-visual-export-v1`
+- **`-v/--verbose` help text**: now correctly states it enables INFO-level
+  logging
+- **WCAG contrast**: fixed contrast ratios in the web UI to meet accessibility
+  guidelines
+
+### Performance
+
+- **cgMLST overhaul**: default `typing cgmlst` runs about 5x faster
+- **`scheme update`**: fail-fast error handling and parallel locus counting
+- **`grapetree_v2` backend**: about 44% faster MST computation
+
+### Security
+
+- Additional SSRF and path-traversal defenses beyond the 0.1.1 hardening
+- Visual web app validates the HTTP `Host` header against a local allowlist
+  (`127.0.0.1`, `localhost`, `[::1]`) to defend against DNS rebinding
+
+### Removed
+
+- Dead legacy CLI code paths
 
 ## [0.1.5] - 2026-07-22
 
