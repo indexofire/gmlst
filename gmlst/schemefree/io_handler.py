@@ -73,22 +73,71 @@ def profiles_to_tsv(profiles: list[dict[str, Any]], include_header: bool = True)
 def write_scheme_json(
     output_path: Path,
     config: dict[str, Any],
-    loci: dict[str, list[str]],
+    loci: dict[str, dict[str, str]],
     profiles: dict[str, dict[str, Any]],
+    representatives: dict[str, str] | None = None,
 ) -> None:
-    """Write a reusable discovered scheme as ``{config, loci, profiles}`` JSON."""
+    """Write a reusable discovered scheme as JSON.
+
+    Shape: ``{config, loci, profiles, representatives}`` where ``loci``
+    maps locus_id -> {allele_id -> sequence hash} and ``representatives``
+    maps locus_id -> one representative sequence per locus.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "config": config,
         "loci": loci,
         "profiles": profiles,
+        "representatives": representatives or {},
     }
     output_path.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def read_scheme_json(input_path: Path) -> dict[str, Any]:
-    """Load a scheme JSON previously written by :func:`write_scheme_json`."""
-    return json.loads(input_path.read_text())
+    """Load a scheme JSON previously written by :func:`write_scheme_json`.
+
+    Legacy ``loci`` values written as allele-ID lists normalize to
+    ``{allele_id: ""}`` (no hashes); a missing ``representatives`` key
+    normalizes to ``{}`` so callers can detect legacy files.
+    """
+    scheme = json.loads(input_path.read_text())
+    if not isinstance(scheme, dict):
+        raise ValueError(f"Invalid scheme JSON (expected an object): {input_path}")
+
+    loci = scheme.get("loci", {})
+    if not isinstance(loci, dict):
+        raise ValueError(
+            f"Invalid scheme JSON ('loci' must be an object): {input_path}"
+        )
+
+    normalized_loci: dict[str, dict[str, str]] = {}
+    for locus_id, alleles in loci.items():
+        if isinstance(alleles, list):
+            normalized_loci[str(locus_id)] = {
+                str(allele_id): "" for allele_id in alleles
+            }
+        elif isinstance(alleles, dict):
+            normalized_loci[str(locus_id)] = {
+                str(allele_id): str(seq_hash) for allele_id, seq_hash in alleles.items()
+            }
+        else:
+            raise ValueError(
+                f"Invalid scheme JSON (locus '{locus_id}' must map allele IDs "
+                f"to hashes or list allele IDs): {input_path}"
+            )
+    scheme["loci"] = normalized_loci
+
+    representatives = scheme.get("representatives", {})
+    if representatives is None:
+        representatives = {}
+    if not isinstance(representatives, dict):
+        raise ValueError(
+            f"Invalid scheme JSON ('representatives' must be an object): {input_path}"
+        )
+    scheme["representatives"] = {
+        str(locus_id): str(sequence) for locus_id, sequence in representatives.items()
+    }
+    return scheme
 
 
 def write_error_report_json(output_path: Path, errors: list[dict[str, str]]) -> None:

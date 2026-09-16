@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from gmlst.schemefree.io_handler import (
     profiles_to_json,
     profiles_to_tsv,
@@ -41,14 +43,50 @@ def test_scheme_json_roundtrip(tmp_path: Path) -> None:
     write_scheme_json(
         output,
         config={"hash_strategy": "safe"},
-        loci={"locus_1": ["locus_1_1"]},
+        loci={"locus_1": {"locus_1_1": "deadbeef"}},
         profiles={"s1": {"sample_id": "s1", "profile": {"locus_1": "locus_1_1"}}},
+        representatives={"locus_1": "ATCG"},
     )
 
     loaded = read_scheme_json(output)
     assert loaded["config"]["hash_strategy"] == "safe"
-    assert loaded["loci"]["locus_1"] == ["locus_1_1"]
+    assert loaded["loci"]["locus_1"] == {"locus_1_1": "deadbeef"}
     assert loaded["profiles"]["s1"]["sample_id"] == "s1"
+    assert loaded["representatives"]["locus_1"] == "ATCG"
+
+
+def test_read_scheme_json_accepts_legacy_list_loci(tmp_path: Path) -> None:
+    output = tmp_path / "legacy_scheme.json"
+    output.write_text(
+        json.dumps(
+            {
+                "config": {"hash_strategy": "safe"},
+                "loci": {"locus_1": ["locus_1_1", "locus_1_2"]},
+                "profiles": {},
+            }
+        )
+    )
+
+    loaded = read_scheme_json(output)
+
+    assert loaded["loci"]["locus_1"] == {"locus_1_1": "", "locus_1_2": ""}
+    assert loaded["representatives"] == {}
+
+
+def test_read_scheme_json_rejects_non_object(tmp_path: Path) -> None:
+    output = tmp_path / "bad.json"
+    output.write_text("[1, 2, 3]")
+
+    with pytest.raises(ValueError, match="expected an object"):
+        read_scheme_json(output)
+
+
+def test_read_scheme_json_rejects_bad_loci_shape(tmp_path: Path) -> None:
+    output = tmp_path / "bad.json"
+    output.write_text(json.dumps({"loci": {"locus_1": 7}}))
+
+    with pytest.raises(ValueError, match="locus 'locus_1'"):
+        read_scheme_json(output)
 
 
 def test_write_error_report_json(tmp_path: Path) -> None:
