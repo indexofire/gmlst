@@ -102,20 +102,25 @@ class MMseqsClusterEngine:
         path.write_text("\n".join(lines) + "\n")
 
     def _parse_cluster_tsv(self, cluster_tsv: Path) -> dict[str, str]:
-        representative_to_locus: dict[str, str] = {}
+        cluster_members: dict[str, list[str]] = {}
         assignments: dict[str, str] = {}
-        locus_counter = 1
 
         for line in cluster_tsv.read_text().splitlines():
             if not line.strip():
                 continue
             representative, member = line.split("\t", maxsplit=1)
-            locus_id = representative_to_locus.get(representative)
-            if locus_id is None:
-                locus_id = f"locus_{locus_counter}"
-                representative_to_locus[representative] = locus_id
-                locus_counter += 1
-            assignments[member] = locus_id
+            cluster_members.setdefault(representative, []).append(member)
+
+        # Canonical locus numbering: representatives are ordered by their
+        # lexicographically smallest member gene key, so locus_1..locus_N are
+        # independent of the order lines appear in the mmseqs cluster TSV.
+        for locus_counter, representative in enumerate(
+            sorted(cluster_members, key=lambda rep: min(cluster_members[rep])),
+            start=1,
+        ):
+            locus_id = f"locus_{locus_counter}"
+            for member in cluster_members[representative]:
+                assignments[member] = locus_id
         return assignments
 
     def _fallback_cluster(self, genes: list[PredictedGene]) -> dict[str, str]:

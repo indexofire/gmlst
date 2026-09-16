@@ -23,6 +23,42 @@ def test_fallback_clustering_groups_identical_sequences(monkeypatch) -> None:
     assert assignments["s1|g1"] != assignments["s2|g2"]
 
 
+def test_parse_cluster_tsv_numbering_is_line_order_independent(
+    tmp_path: Path,
+) -> None:
+    engine = MMseqsClusterEngine(enable_fallback=False)
+
+    tsv_original = tmp_path / "original_cluster.tsv"
+    tsv_original.write_text("s1|g1\ts1|g1\ns1|g1\ts2|g1\ns2|g2\ts2|g2\n")
+    tsv_shuffled = tmp_path / "shuffled_cluster.tsv"
+    tsv_shuffled.write_text("s2|g2\ts2|g2\ns1|g1\ts2|g1\ns1|g1\ts1|g1\n")
+
+    assignments_original = engine._parse_cluster_tsv(tsv_original)
+    assignments_shuffled = engine._parse_cluster_tsv(tsv_shuffled)
+
+    assert assignments_original == assignments_shuffled
+    assert assignments_original["s1|g1"] == "locus_1"
+    assert assignments_original["s2|g1"] == "locus_1"
+    assert assignments_original["s2|g2"] == "locus_2"
+
+
+def test_parse_cluster_tsv_numbers_by_smallest_member_key(tmp_path: Path) -> None:
+    engine = MMseqsClusterEngine(enable_fallback=False)
+
+    tsv = tmp_path / "clusters.tsv"
+    tsv.write_text(
+        "s3|g1\ts3|g1\ns3|g1\ts3|g2\ns1|g1\ts1|g1\ns1|g1\ts2|g1\ns2|g9\ts2|g9\n"
+    )
+
+    assignments = engine._parse_cluster_tsv(tsv)
+
+    assert assignments["s1|g1"] == "locus_1"
+    assert assignments["s2|g1"] == "locus_1"
+    assert assignments["s2|g9"] == "locus_2"
+    assert assignments["s3|g1"] == "locus_3"
+    assert assignments["s3|g2"] == "locus_3"
+
+
 def test_mmseqs_path_parses_cluster_tsv(monkeypatch, tmp_path: Path) -> None:
     import gmlst.schemefree.cluster_engine as module
 
