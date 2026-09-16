@@ -38,7 +38,7 @@ def simulate(n_samples: int, seed: int) -> tuple[list[list[str]], list[dict]]:
     for clade_idx in range(n_clades):
         founder = [str(rng.randint(1, 4)) for _ in range(N_LOCI)]
         snv_rate = [0.02, 0.05, 0.10][clade_idx % 3]
-        for member_idx in range(per_clade):
+        for _member_idx in range(per_clade):
             profile = [
                 str(int(a) + 1) if rng.random() < snv_rate else a for a in founder
             ]
@@ -53,15 +53,11 @@ def simulate(n_samples: int, seed: int) -> tuple[list[list[str]], list[dict]]:
 
     # Singleton outliers: heavily diverged profiles
     for i in range(15):
-        profiles.append(
-            [str(rng.randint(50, 99)) for _ in range(N_LOCI)]
-        )
-        meta.append(
-            {"clade": f"SIN{i + 1:02d}", "source": "imported", "year": "2020"}
-        )
+        profiles.append([str(rng.randint(50, 99)) for _ in range(N_LOCI)])
+        meta.append({"clade": f"SIN{i + 1:02d}", "source": "imported", "year": "2020"})
 
     # Exact duplicates of a random existing sample (tests zero-weight edges)
-    for i in range(5):
+    for _i in range(5):
         src = rng.randrange(len(profiles))
         profiles.append(list(profiles[src]))
         meta.append(dict(meta[src]))
@@ -100,7 +96,8 @@ def main() -> None:
 
     tsv_path = args.output_dir / "profiles.tsv"
     with tsv_path.open("w") as fh:
-        fh.write("#Strain\t" + "\t".join([*locus_cols, "clade", "source", "year"]) + "\n")
+        header_cols = [*locus_cols, "clade", "source", "year"]
+        fh.write("#Strain\t" + "\t".join(header_cols) + "\n")
         for sid, profile, m in zip(sample_ids, profiles, meta, strict=True):
             fh.write(
                 "\t".join([sid, *profile, m["clade"], m["source"], m["year"]]) + "\n"

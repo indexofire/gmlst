@@ -97,7 +97,7 @@ def stage3_recovery_time() -> float:
 
     # Trigger rate limiting with a burst
     burst = 0
-    for i in range(15):
+    for _i in range(15):
         try:
             requests.get(
                 f"{PUBMLST_BASE}/pubmlst_abaumannii_seqdef/schemes",
@@ -169,8 +169,10 @@ def stage4_sequential_catalog(duration_budget: float = 600.0) -> tuple[int, int,
 
 
 def stage5_update_catalog() -> None:
-    print("\n[Stage 5] Real cache.update_catalog('pubmlst') — no timeout imposed",
-          flush=True)
+    print(
+        "\n[Stage 5] Real cache.update_catalog('pubmlst') — no timeout imposed",
+        flush=True,
+    )
     from gmlst.database.cache import DatabaseCache
 
     cache = DatabaseCache()
