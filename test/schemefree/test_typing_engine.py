@@ -348,3 +348,88 @@ class TestSchemeFreeFilePipeline:
         assert typer.last_run_errors[0]["sample_id"] == "s2"
         assert typer.last_run_errors[0]["stage"] == "prediction"
         assert typer.last_run_errors[0]["severity"] == "error"
+
+
+class TestSchemeFreeDeterminism:
+    """De novo locus numbering must not depend on run-to-run scheduling."""
+
+    SAMPLE_COUNT = 4
+
+    @staticmethod
+    def _order_sensitive_cluster(genes):
+        seq_to_locus: dict[str, str] = {}
+        assignments: dict[str, str] = {}
+        locus_counter = 0
+        for gene in genes:
+            locus_id = seq_to_locus.get(gene.sequence)
+            if locus_id is None:
+                locus_counter += 1
+                locus_id = f"locus_{locus_counter}"
+                seq_to_locus[gene.sequence] = locus_id
+            assignments[gene.key] = locus_id
+        return assignments
+
+    @classmethod
+    def _make_typer(cls, monkeypatch, tmp_path: Path, max_parallel_samples: int):
+        config = SchemaFreeConfig()
+        config.assembly.max_parallel_samples = max_parallel_samples
+        typer = SchemeFreeTyper(config)
+
+        def fake_predict(_path: Path, sample_id: str):
+            index = int(sample_id.removeprefix("s"))
+            return [
+                PredictedGene(sample_id, "g_shared", "ATCGATCG" * 6),
+                PredictedGene(sample_id, f"g_unique_{index}", f"GGGGTTTT{index * 7}"),
+            ]
+
+        monkeypatch.setattr(typer.gene_predictor, "predict", fake_predict)
+        monkeypatch.setattr(
+            typer.cluster_engine, "cluster_genes", cls._order_sensitive_cluster
+        )
+        return typer
+
+    @classmethod
+    def _sample_paths(cls, tmp_path: Path) -> list[Path]:
+        paths = []
+        for index in range(1, cls.SAMPLE_COUNT + 1):
+            path = tmp_path / f"s{index}.fna"
+            path.write_text(">c1\nATCG\n")
+            paths.append(path)
+        return paths
+
+    @classmethod
+    def _run_json(cls, monkeypatch, tmp_path: Path, max_parallel_samples: int) -> str:
+        typer = cls._make_typer(monkeypatch, tmp_path, max_parallel_samples)
+        results = typer.type_sample_files(cls._sample_paths(tmp_path))
+        return json.dumps([result.to_dict() for result in results])
+
+    def test_two_engine_runs_produce_identical_profiles(
+        self, monkeypatch, tmp_path: Path
+    ):
+        first = self._run_json(monkeypatch, tmp_path, max_parallel_samples=1)
+        second = self._run_json(monkeypatch, tmp_path, max_parallel_samples=1)
+
+        assert first == second
+
+    def test_parallel_run_matches_serial_run(self, monkeypatch, tmp_path: Path):
+        serial = self._run_json(monkeypatch, tmp_path, max_parallel_samples=1)
+        parallel = self._run_json(monkeypatch, tmp_path, max_parallel_samples=3)
+
+        assert parallel == serial
+
+    def test_parallel_run_preserves_input_sample_order(
+        self, monkeypatch, tmp_path: Path
+    ):
+        typer = self._make_typer(monkeypatch, tmp_path, max_parallel_samples=3)
+        results = typer.type_sample_files(self._sample_paths(tmp_path))
+
+        assert [result.sample_id for result in results] == [
+            f"s{index}" for index in range(1, self.SAMPLE_COUNT + 1)
+        ]
+        shared_locus = results[0].profile["locus_1"]
+        assert all(result.profile["locus_1"] == shared_locus for result in results)
+        assert set(results[0].profile) == {"locus_1", "locus_2"}
+        assert set(results[-1].profile) == {
+            "locus_1",
+            f"locus_{self.SAMPLE_COUNT + 1}",
+        }
