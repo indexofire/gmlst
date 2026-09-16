@@ -375,14 +375,15 @@ def download_file_requests(
             if attempt == retries:
                 dest.unlink(missing_ok=True)
                 raise RuntimeError(
-                    f"Download failed after {retries} attempts: {url}"
+                    f"[network:{_classify_network_error(exc)}] "
+                    f"cannot reach {_short_host(url)} after {retries} attempts — {url}"
                 ) from exc
             logger.warning(
-                "Download attempt %d/%d failed for %s: %s",
+                "retry %d/%d [%s] %s",
                 attempt,
                 retries,
-                url,
-                exc,
+                _classify_network_error(exc),
+                _short_host(url),
             )
             time.sleep(retry_delay)
 
@@ -396,6 +397,35 @@ def _non_retryable_status(exc: BaseException) -> int | None:
             if 400 <= status < 500 and status != 429:
                 return status
     return None
+
+
+def _classify_network_error(exc: BaseException) -> str:
+    """Categorize a requests exception into a short human-readable reason."""
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return "connection timeout"
+    if isinstance(exc, requests.exceptions.ReadTimeout):
+        return "read timeout"
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "connection error"
+    if isinstance(exc, requests.exceptions.HTTPError):
+        return (
+            f"HTTP {exc.response.status_code}"
+            if exc.response is not None
+            else "HTTP error"
+        )
+    if isinstance(exc, requests.exceptions.TooManyRedirects):
+        return "too many redirects"
+    if isinstance(exc, ValueError):
+        # covers requests JSONDecodeError (a ValueError subclass)
+        return "invalid JSON response"
+    return type(exc).__name__
+
+
+def _short_host(url: str) -> str:
+    """Extract hostname from a URL for concise error messages."""
+    from urllib.parse import urlparse
+
+    return urlparse(url).netloc or url
 
 
 def fetch_json(
@@ -430,14 +460,18 @@ def fetch_json(
                 ) from exc
             if attempt == retries:
                 raise RuntimeError(
-                    f"JSON fetch failed after {retries} attempts: {url}"
+                    f"[network:{_classify_network_error(exc)}] "
+                    f"cannot reach {_short_host(url)} after {retries} attempts — {url}"
                 ) from exc
             logger.warning(
-                "JSON fetch attempt %d/%d failed: %s - %s",
+                "retry %d/%d [%s] %s — %s",
                 attempt,
                 retries,
-                url,
-                exc,
+                _classify_network_error(exc),
+                _short_host(url),
+                url.split("/loci/")[-1].split("/alleles")[0]
+                if "/loci/" in url
+                else url.rstrip("/").split("/")[-1],
             )
             time.sleep(retry_delay)
     # unreachable, but satisfies type checkers

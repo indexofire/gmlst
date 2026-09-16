@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.table import Table
 
 from gmlst.commands.common import (
     HELP_SETTINGS,
@@ -527,6 +528,12 @@ def cmd_download(
     help="Update all cached scheme databases.",
 )
 @click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Skip confirmation prompt when updating all schemes.",
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
@@ -552,6 +559,7 @@ def cmd_download(
 def cmd_update(
     scheme: str | None,
     update_all_schemes: bool,
+    yes: bool,
     force: bool,
     token: str | None,
     download_tool: str,
@@ -599,6 +607,10 @@ def cmd_update(
             sys.exit(1)
         except Exception as exc:
             err_console.print(f"[red]Error:[/red] {exc}")
+            err_console.print(
+                "[dim]Hint: check network connectivity to the provider, "
+                "or try again later.[/dim]"
+            )
             sys.exit(1)
     elif update_all_schemes:
         cached_schemes = cache.list_cached()
@@ -614,6 +626,32 @@ def cmd_update(
                 "Refreshing provider catalogs before updating cached schemes ..."
             )
             refresh_all_catalogs(cache, token=token)
+
+        if not yes:
+            console.print(
+                f"\n[bold]Cached schemes to update ({len(cached_schemes)}):[/bold]"
+            )
+            table = Table(show_header=True, header_style="bold cyan", box=None)
+            table.add_column("Scheme", style="cyan")
+            table.add_column("Provider", style="dim")
+            table.add_column("Type", style="dim")
+            table.add_column("Downloaded", style="dim")
+            for item in cached_schemes:
+                table.add_row(
+                    str(item["scheme"]),
+                    str(item["provider"]),
+                    str(item.get("scheme_type", "?")),
+                    str(item.get("downloaded_at", "?"))[:10] or "?",
+                )
+            console.print(table)
+            console.print(
+                "\n[dim]Each scheme requires a network check and may download data. "
+                "This can take several minutes.[/dim]"
+            )
+            if not click.confirm("Proceed with updating all cached schemes?"):
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+            console.print()
 
         console.print(f"Updating {len(cached_schemes)} cached scheme database(s) ...")
         changed_count = 0
@@ -641,7 +679,7 @@ def cmd_update(
                 except Exception as exc:
                     failed_count += 1
                     progress.console.print(
-                        f"  [red]{scheme_name} ({provider}):[/red] {exc}"
+                        f"  [red]✗ {scheme_name}[/red] [dim]({provider})[/dim] — {exc}"
                     )
                     progress.advance(task)
                     continue

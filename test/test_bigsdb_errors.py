@@ -151,7 +151,13 @@ class TestGetJsonRetry:
 
         monkeypatch.setattr("gmlst.database.download._public_session", _FakeSession)
 
-        with pytest.raises(RuntimeError, match="JSON fetch failed"):
+        with pytest.raises(
+            RuntimeError,
+            match=(
+                r"\[network:connection error\] cannot reach rest\.pubmlst\.org "
+                r"after 3 attempts"
+            ),
+        ):
             bigsdb._get_json("https://rest.pubmlst.org/db")
 
 

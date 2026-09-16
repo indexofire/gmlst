@@ -953,7 +953,7 @@ def test_scheme_update_all_updates_cached_schemes(monkeypatch) -> None:
     runner = CliRunner()
     result = runner.invoke(
         main,
-        ["scheme", "update", "-a", "--download-tool", "aria2c", "-x", "10"],
+        ["scheme", "update", "-a", "-y", "--download-tool", "aria2c", "-x", "10"],
     )
 
     assert result.exit_code == 0
