@@ -48,6 +48,19 @@ gmlst scheme download -s saureus_1
 gmlst scheme show -s saureus_1
 ```
 
+日常维护可以用 `scheme update` 和 `scheme remove` 管理本地缓存：
+
+```bash
+# 更新所有已缓存的方案：先列出 scheme 清单，再请求 Y/N 确认
+gmlst scheme update -a
+
+# 脚本或批处理中跳过确认
+gmlst scheme update -a --yes
+
+# 删除不再需要的缓存方案（删除前会显示名称、provider、路径和大小并请求确认）
+gmlst scheme remove saureus_1
+```
+
 ## 第 2 步：对第一个样本做分型
 
 如果你的输入是组装后的 FASTA 文件，最直接的命令是：
@@ -141,6 +154,19 @@ gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 
 JSON 适合自动化分析、生成报告，或者后续提取 novel allele。
 
+自 0.2.0 起，所有 JSON 输出（stdout 和 `-o` 文件）都包裹在带版本号的信封中，原始数据位于 `data` 字段：
+
+```json
+{
+  "schema_version": "gmlst-typing-v1",
+  "data": [
+    { "sample_id": "sample1.fasta", "scheme": "saureus_1", "st": 1 }
+  ]
+}
+```
+
+解析脚本可以先读取 `schema_version` 再解释 `data`。TSV 输出不使用信封。完整常量列表见[命令参考](commands.md#json-输出信封)。
+
 ### 提高样本级并行度
 
 如果你需要处理很多样本，可以并行运行多个样本：
@@ -212,6 +238,8 @@ gmlst typing tgmlst --format json sample.fasta -o tgmlst.json
 gmlst typing tgmlst --stats sample.fasta
 gmlst typing tgmlst --save-scheme discovered_scheme.json sample.fasta
 ```
+
+注意 `--stats` 的统计 JSON 输出到 stderr（信封常量 `gmlst-tgmlst-stats-v1`），stdout 仍只有分型结果，两者不会混在一起。
 
 这种模式适合探索性分析，或者希望直接从数据中推导 typing scheme 的场景。
 

@@ -22,6 +22,7 @@
 - 💾 **缓存优先**：已下载的方案和已构建索引会复用，便于离线运行和重复分析。
 - 🧵 **批量处理**：支持样本级并行 worker 和后端线程配置。
 - 🧬 **CDS 感知调用**：cgMLST 工作流可结合 Pyrodigal 进行 CDS 预测，并支持 chewBBACA 风格分类路径。
+- 🤖 **AI 智能体友好**：stdout 只输出数据、JSON 带版本信封、退出码语义稳定，方便脚本和 AI 智能体程序化解析。
 
 ## 安装
 
@@ -53,7 +54,7 @@ conda install blast, minimap2, mummer4, kma
 # 查看缓存中和可用的方案
 gmlst scheme list
 
-# 分页查看缓存中和可用的方案
+# 分页查看缓存中和可用的方案（交互式终端专用）
 gmlst scheme list --pager
 
 # 只看某一个 provider，比如pubmlst.org的scheme
@@ -61,6 +62,13 @@ gmlst scheme list -p pubmlst
 
 # 下载方案到本地缓存
 gmlst scheme download -s saureus_1
+
+# 更新所有已缓存的方案：先列出清单，再请求 Y/N 确认
+gmlst scheme update -a
+gmlst scheme update -a --yes     # 跳过确认，适合脚本
+
+# 从缓存中删除方案（删除前同样会请求确认）
+gmlst scheme remove saureus_1
 ```
 
 ### 2. 对样本分型
@@ -213,6 +221,8 @@ gmlst typing tgmlst another_sample.fna --load-scheme tgmlst_scheme.json --format
 
 常用参数包括 `--hash-strategy`、`--summary-report`、`--error-report` 和 `--fail-on-error`。
 
+`--stats` 的运行统计 JSON 输出到 stderr（信封常量 `gmlst-tgmlst-stats-v1`），不会混入 stdout 的分型结果，重定向和管道可以放心使用。
+
 ## 可视化
 
 通过本地 Web 应用从 cgMLST 或 GrapeTree 风格表格构建 MST。
@@ -228,6 +238,15 @@ gmlst visual web --host 0.0.0.0 --port 8787
 ```
 
 网页界面接受 TSV 数据，构建最小生成树，并通过本地 Flask API 提供 Vue 前端。
+
+也可以不启动 Web 界面，直接从管道构建 MST。`visual mst/matrix/heatmap/locus-diff` 的 `--input -` 以及 `visual compare` 的 `--left -`/`--right -` 都支持从 stdin 读取：
+
+```bash
+# 分型结果直接通过管道送入 MST 摘要，无需临时文件
+gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary
+```
+
+`--format summary` 会输出面向 AI 智能体的紧凑摘要，并附带 `method`、`include_missing`、`aggregate_profiles`、`cluster_edge_threshold`、`outlier_weight` 等溯源字段。更多 CLI 可视化命令见[可视化指南](docs/zh/visual_guide.md)。
 
 ## 配置
 
@@ -248,6 +267,14 @@ gmlst config env                           # shell 可 source 的格式
 gmlst config get GMLST_CACHE_DIR           # 查看单个变量
 gmlst config set GMLST_CACHE_DIR /data     # 写入 ~/.config/gmlst/env.sh
 gmlst config init                          # 在 shell rc 文件中添加 source 行（只需运行一次）
+```
+
+`config show` 会对敏感值做掩码处理：`GMLST_*_API_KEY` 和 token 类变量只显示前 4 位和后 4 位（如 `abcd****ef01`），未设置的变量不会被假掩码填充，方便区分"已设置"和"未设置"。
+
+`config get --format json` 返回带版本号的信封（`gmlst-config-get-v1`），`data` 中包含 `name`、`value`、`source` 和 `is_default`。`source` 表示取值来源：`file`（来自 env.sh 配置文件）、`env`（来自当前 shell 环境）或 `default`（未设置，使用内置默认值，此时 `is_default` 为 `true`）：
+
+```bash
+gmlst config get GMLST_CACHE_DIR --format json
 ```
 
 关键环境变量：
@@ -300,6 +327,37 @@ gmlst scheme list -p labdb
 | `-` | 位点缺失 | ❌ 不完整 |
 
 如果要保留结构化字段，例如每个位点的调用元数据和 `novel_sequence` 信息，建议使用 JSON 输出。
+
+### JSON 输出信封（0.2.0 起）
+
+自 0.2.0 起，所有 CLI JSON 输出（stdout 或 `-o` 输出文件）统一包裹在带版本号的信封中，程序可以在解释 `data` 之前先校验 `schema_version`：
+
+```json
+{
+  "schema_version": "gmlst-typing-v1",
+  "data": [
+    { "sample_id": "sample1.fasta", "scheme": "saureus_1", "st": 1 }
+  ]
+}
+```
+
+原来的数据原样移入 `data` 字段。TSV/CSV/text 输出不使用信封；`utils extract` 仍兼容旧版 gmlst 输出的裸数组格式。完整信封常量列表见[命令参考](docs/zh/commands.md#json-输出信封)。
+
+与之配套的流纪律：stdout 只输出数据，警告、进度条、spinner 和 "Results written to" 提示全部走 stderr，管道和重定向不会被污染。
+
+### 退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功（包括未加 `--fail-on-error` 的 tgmlst 部分样本失败） |
+| `1` | 运行时失败（包括 `scheme update` 中任一 provider 或方案失败） |
+| `2` | 用法错误，例如非法参数，或 `scheme list --name` 传入非法正则 |
+| `3` | tgmlst 输入阶段失败 |
+| `4` | tgmlst 组装阶段失败 |
+| `5` | tgmlst 预测阶段失败 |
+| `6` | tgmlst 未知阶段失败 |
+
+tgmlst 的阶段退出码从 3 开始编号，避免与 click 的用法错误退出码 2 冲突。
 
 ## 多拷贝位点说明
 
