@@ -20,6 +20,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.3.0] - 2026-09-17
+
+### Added
+- Split-gene fragment joining for `typing mlst`/`cgmlst` with the `blastn` and
+  `minimap2` backends: when a locus has no single valid call because the gene
+  is broken across assembly contigs, per-contig fragment alignments are joined.
+  Contigs overlapping inside the gene with agreeing sequence are tiled into one
+  reconstructed alignment that can be called exactly; disjoint contigs never
+  yield an exact call (a junction indel is invisible) but the partial call
+  reports the combined coverage of all fragments.
+- `--min-join-overlap INTEGER` on `typing mlst`/`cgmlst`: minimum
+  allele-coordinate overlap (bp) required to join fragments (default 10,
+  `0` = most permissive; overlap sequence must still agree exactly).
+- Typing JSON now lists per-fragment evidence (`contig`, `allele_start`,
+  `allele_end`) and the combined coverage for loci informed by joint evidence.
+
+### Fixed
+- `--novel-profile` no longer records profiles that the scheme already knows:
+  collection now skips samples whose ST resolved (and incomplete or conflicting
+  profiles), so `profiles_novel.txt` only contains genuine novel ST candidates.
+
+### Changed
+- Documentation: batch-typing performance guidance now recommends
+  `--max-workers` (measured on 639 assemblies: minimap2 55 s → 9 s, blastn
+  97 s → 31 s, nucmer 270 s → 76 s, kma 330 s → 48 s with 16 workers) and
+  corrects the earlier claim that KMA benefits from `-t` on assemblies.
+
 ## [0.2.1] - 2026-09-17
 
 ### Fixed
