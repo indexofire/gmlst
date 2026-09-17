@@ -216,6 +216,16 @@ gmlst typing mlst -s saureus_1 --format pretty sample.fasta
 
 JSON 输出里会包含更详细的位点信息。
 
+### 一个基因被断在两个 contig 之间会怎样？
+
+使用 `blastn` 和 `minimap2` 后端时，gmlst 会对断裂位点的逐 contig 片段比对做联合拼接。
+在基因内部重叠且重叠区序列一致的 contigs 会被平铺重构为一条完整比对，可产生 exact 调用；
+仅仅是首尾相接（无重叠）的 contigs 无法证明接合区，因此该位点保持 `?` 部分调用 —
+但其报告的覆盖度是全部片段的联合覆盖度，且 JSON 输出会列出每个片段
+（`contig`、`allele_start`、`allele_end`）。拼接绝不会跨越未采样缺口伪造 exact 调用。
+所需最小重叠可用 `--min-join-overlap` 调整（默认 10 bp）。对于频繁干净断裂基因的组装，
+回到原始 reads 用 `-b kma` 分型仍是最稳妥的路径 — 读段级共识可由大量重叠读段重构等位基因。
+
 ### 结果里出现 `1,2` 这样的 multicopy allele
 
 这表示同一个 locus 找到了多个冲突命中，常见于重复序列、重复位点，或比对不够明确的情况。
@@ -437,12 +447,26 @@ export GMLST_TMPDIR="$PWD/.tmp/gmlst"
 
 很多独立样本时，优先考虑样本级并行。单样本很重时，再加后端线程。
 
+`--max-workers N` 与 `-t/--threads` 是互补而非可叠加的关系：`--max-workers > 1` 时每样本的后端线程强制为 1 并打印警告。样本多时一律优先 `--max-workers` — 尤其是配合 `kma` 和 `nucmer` 后端：它们的单样本比对完全无法利用多线程（实测 `kma -t 1` 与 `-t 16` 相差仅 ~5%）。
+
 例如：
 
 ```bash
-gmlst typing mlst -s saureus_1 --max-workers 8 samples/*.fasta -o results.tsv
+# 样本多：样本级并行（对所有后端都最快）
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 samples/*.fasta -o results.tsv
+
+# 单个重样本（大 cgMLST 方案）：后端线程
 gmlst typing cgmlst -s vparahaemolyticus_3 -t 8 sample.fna
 ```
+
+在 639 个百日咳杆菌组装上以 16 workers 实测（谱型与串行完全一致）：
+
+| 后端 | 串行（`-t 16`） | `--max-workers 16` |
+| --- | --- | --- |
+| minimap2 | 55 s | **9 s** |
+| blastn | 97 s | **31 s** |
+| nucmer | 270 s | **76 s** |
+| kma | 330 s | **48 s** |
 
 ### 是否建议分批处理？
 

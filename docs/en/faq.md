@@ -216,6 +216,20 @@ gmlst typing mlst -s saureus_1 --format pretty sample.fasta
 
 The JSON output gives more detail for each locus.
 
+### A gene is split across two contigs — what happens?
+
+With the `blastn` and `minimap2` backends, gmlst joins the per-contig fragment
+alignments of a split locus. Contigs that overlap inside the gene with agreeing
+sequence are tiled into one reconstructed alignment that can be called exactly;
+contigs that merely abut (no overlap) can never prove the junction, so the locus
+stays a partial `?` call — but its reported coverage is the combined coverage of
+all fragments, and JSON output lists every fragment
+(`contig`, `allele_start`, `allele_end`). The join never fabricates an exact
+call across an unsampled gap. Raise or lower the required overlap with
+`--min-join-overlap` (default 10 bp). For assemblies that break genes cleanly
+and often, typing the original reads with `-b kma` remains the most robust
+path — read-level consensus reconstructs alleles from many overlapping reads.
+
 ### I see multicopy alleles like `1,2`
 
 That means multiple conflicting hits were found for the locus. This can happen with duplicated loci, repeated sequence, or ambiguous mapping.
@@ -433,12 +447,26 @@ There is no single answer, but these are good starting points:
 
 Use sample-level parallelism for many independent samples and backend threads for expensive per-sample work.
 
+`--max-workers N` and `-t/--threads` are complementary, not combinable: with `--max-workers > 1`, per-sample backend threads are forced to 1 and a warning is printed. Prefer `--max-workers` whenever you have many samples — especially with the `kma` and `nucmer` backends, whose single-sample alignment cannot use extra threads at all (measured: `kma -t 1` vs `-t 16` differ by ~5%).
+
 Examples:
 
 ```bash
-gmlst typing mlst -s saureus_1 --max-workers 8 samples/*.fasta -o results.tsv
+# Many samples: sample-level parallelism (fastest for every backend)
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 samples/*.fasta -o results.tsv
+
+# One expensive sample (large cgMLST scheme): backend threads
 gmlst typing cgmlst -s vparahaemolyticus_3 -t 8 sample.fna
 ```
+
+Measured on 639 *B. pertussis* assemblies with 16 workers (profiles identical to serial runs):
+
+| Backend | Serial (`-t 16`) | `--max-workers 16` |
+| --- | --- | --- |
+| minimap2 | 55 s | **9 s** |
+| blastn | 97 s | **31 s** |
+| nucmer | 270 s | **76 s** |
+| kma | 330 s | **48 s** |
 
 ### Should I process samples in batches?
 

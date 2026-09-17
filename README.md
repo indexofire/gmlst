@@ -93,13 +93,27 @@ gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fna
 
 ### 3. Batch processing
 
+`--max-workers N` types N samples in parallel and is the main speed lever for batch runs. It is distinct from `-t/--threads`: `-t` parallelizes a single backend invocation, while `--max-workers` fans out across samples (per-sample backend threads are forced to 1). The `kma` and `nucmer` backends cannot use `-t` effectively, so `--max-workers` is the only way to speed them up.
+
 ```bash
-# Write TSV output for many assemblies
-gmlst typing mlst -s saureus_1 --max-workers 8 samples/*.fasta -o results.tsv
+# Batch typing with 16 samples in parallel
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 samples/*.fasta -o results.tsv
+
+# FASTQ batches: combine with the kma backend
+gmlst typing mlst -s saureus_1 -b kma -t 1 --max-workers 16 samples/*_R1.fastq.gz -o results.tsv
 
 # Save machine-readable JSON for downstream novel extraction
 gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 ```
+
+Measured on 639 *B. pertussis* assemblies (16 workers, results identical to serial runs):
+
+| Backend | Serial (`-t 16`) | `--max-workers 16` |
+| --- | --- | --- |
+| minimap2 | 55 s | **9 s** |
+| blastn | 97 s | **31 s** |
+| nucmer | 270 s | **76 s** |
+| kma | 330 s | **48 s** |
 
 ### 4. Understand the output
 
@@ -314,6 +328,15 @@ The default TSV format uses compact markers per locus.
 | `1,2` | **Conflicting** multicopy — different alleles detected at different loci copies | ❌ Ambiguous |
 | `1,1` | Same-allele copy expanded (with `--count-same-copy` flag) | ✅ Yes |
 | `-` | Missing locus | ❌ Incomplete |
+
+### Genes split across contigs
+
+Fragmented assemblies often break a housekeeping gene across two contigs. For the `blastn` and `minimap2` backends, gmlst joins the per-contig fragment alignments of such a locus:
+
+- **Overlapping fragments** (the contigs overlap inside the gene and the overlap sequence agrees) are tiled into one reconstructed alignment, which can yield a normal exact call.
+- **Disjoint fragments** never produce an exact call — an indel at the unsampled junction is invisible — but the partial `?` call reports the combined coverage of all fragments, and JSON output lists each fragment (`contig`, `allele_start`, `allele_end`).
+
+The minimum allele-coordinate overlap required to join fragments defaults to 10 bp and is tunable with `--min-join-overlap` (`0` = most permissive; overlap sequence must still agree exactly).
 
 JSON output is the best choice when you want structured fields such as per-locus call metadata and `novel_sequence` extraction data. Every JSON document the CLI writes is wrapped in a versioned envelope, `{"schema_version": "<constant>", "data": <payload>}`, so scripts can version-check before parsing:
 

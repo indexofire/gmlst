@@ -22,6 +22,7 @@ gmlst typing mlst [OPTIONS] SAMPLES...
 | `--min-id FLOAT` | 最小百分比 identity。 | `95.0` |
 | `--min-cov FLOAT` | 最小 allele 覆盖度，范围 0 到 1。 | `0.95` |
 | `--min-depth FLOAT` | 最小 read depth，仅用于 FASTQ。 | `10.0` |
+| `--min-join-overlap INTEGER` | 拼接断裂基因两侧 contig 片段所需的最小等位基因坐标重叠（bp）。 | `10` |
 | `--format [tsv\|json\|pretty]` | 输出格式。 | `tsv` |
 | `-o, --output PATH` | 把结果写入文件。 | 无 |
 | `--cache-dir PATH` | 覆盖缓存目录。 | 无 |
@@ -67,6 +68,7 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | `--min-id FLOAT` | 最小百分比 identity。 | `95.0` |
 | `--min-cov FLOAT` | 最小 allele 覆盖度，范围 0 到 1。 | `0.95` |
 | `--min-depth FLOAT` | 最小 read depth，仅用于 FASTQ。 | `10.0` |
+| `--min-join-overlap INTEGER` | 拼接断裂基因两侧 contig 片段所需的最小等位基因坐标重叠（bp）。 | `10` |
 | `--format [tsv\|json\|pretty]` | 输出格式。 | `tsv` |
 | `-o, --output PATH` | 把结果写入文件。 | 无 |
 | `--cache-dir PATH` | 覆盖缓存目录。 | 无 |

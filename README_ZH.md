@@ -88,13 +88,27 @@ gmlst typing cgmlst -s vparahaemolyticus_3 --cgmlst-mode fast sample.fasta
 
 ### 3. 批量处理
 
+`--max-workers N` 让 N 个样本并行分型，是批量运行的主要提速手段。它与 `-t/--threads` 不同：`-t` 并行化单次后端调用，`--max-workers` 在样本间展开（此时每样本的后端线程强制为 1）。`kma` 和 `nucmer` 后端无法有效利用 `-t`，因此 `--max-workers` 是它们唯一的提速方式。
+
 ```bash
-# 批量处理多个组装文件并输出 TSV
-gmlst typing mlst -s saureus_1 --max-workers 8 -o results.tsv samples/*.fasta 
+# 16 个样本并行批量分型
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 -o results.tsv samples/*.fasta
+
+# FASTQ 批量：配合 kma 后端
+gmlst typing mlst -s saureus_1 -b kma -t 1 --max-workers 16 -o results.tsv samples/*_R1.fastq.gz
 
 # 保存成 JSON 格式，便于后续 novel 提取，或者投喂数据给AI
 gmlst typing mlst -s saureus_1 --format json samples/*.fasta -o results.json
 ```
+
+在 639 个百日咳杆菌组装上实测（16 workers，结果与串行完全一致）：
+
+| 后端 | 串行（`-t 16`） | `--max-workers 16` |
+| --- | --- | --- |
+| minimap2 | 55 s | **9 s** |
+| blastn | 97 s | **31 s** |
+| nucmer | 270 s | **76 s** |
+| kma | 330 s | **48 s** |
 
 ### 4. 理解输出结果
 
@@ -325,6 +339,15 @@ gmlst scheme list -p labdb
 | `1,2` | **冲突性**多拷贝——不同等位基因出现在不同拷贝上 | ❌ 模糊 |
 | `1,1` | 同等位基因拷贝展开（使用 `--count-same-copy` 标志） | ✅ 是 |
 | `-` | 位点缺失 | ❌ 不完整 |
+
+### 基因断裂横跨 contigs
+
+碎片化组装常把看家基因断在两个 contig 之间。对 `blastn` 和 `minimap2` 后端，gmlst 会对该位点的逐 contig 片段比对做联合拼接：
+
+- **重叠断裂**（contigs 在基因内部重叠且重叠区序列一致）会被平铺重构为一条完整比对，可产生正常的 exact 调用。
+- **衔接断裂**（无重叠）绝不产生 exact 调用 — 接合处不可见的 indel 无法排除 — 但 `?` 部分调用会报告全部片段的联合覆盖度，JSON 输出并列出每个片段（`contig`、`allele_start`、`allele_end`）。
+
+触发拼接所需的最小等位基因坐标重叠默认 10 bp，可用 `--min-join-overlap` 调整（`0` = 最宽松；重叠区序列仍须完全一致）。
 
 如果要保留结构化字段，例如每个位点的调用元数据和 `novel_sequence` 信息，建议使用 JSON 输出。
 

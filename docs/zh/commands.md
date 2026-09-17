@@ -61,6 +61,7 @@ gmlst typing tgmlst sample.fna
 - `-o, --output PATH`
 - `-t, --threads INTEGER`
 - `--max-workers INTEGER`（样本级并行数）
+- `--min-join-overlap INTEGER`（拼接断裂基因所需的最小等位基因重叠碱基数，默认 10；0 = 最激进）
 - `--max-depth INTEGER`（FASTQ 最大深度，默认 100，0=禁用）
 - `--detail` — 在 TSV 输出中显示 contig 位置信息（仅 FASTA）
 - `-q, --quiet`

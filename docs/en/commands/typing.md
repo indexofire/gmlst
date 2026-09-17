@@ -22,6 +22,7 @@ gmlst typing mlst [OPTIONS] SAMPLES...
 | `--min-id FLOAT` | Minimum percent identity for confident allele calls. | `95.0` |
 | `--min-cov FLOAT` | Minimum coverage fraction for confident allele calls. | `0.95` |
 | `--min-depth FLOAT` | Minimum depth threshold for depth-aware workflows. | `10.0` |
+| `--min-join-overlap INTEGER` | Minimum allele-coordinate overlap (bp) to join contig fragments of a split gene into one call. | `10` |
 | `--format [tsv\|json\|pretty]` | Output format. | `tsv` |
 | `-o, --output PATH` | Write results to a file instead of stdout. | - |
 | `--cache-dir PATH` | Override the scheme cache directory. | - |
@@ -70,6 +71,7 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | `--min-id FLOAT` | Minimum percent identity for confident allele calls. | `95.0` |
 | `--min-cov FLOAT` | Minimum coverage fraction for confident allele calls. | `0.95` |
 | `--min-depth FLOAT` | Minimum depth threshold for depth-aware workflows. | `10.0` |
+| `--min-join-overlap INTEGER` | Minimum allele-coordinate overlap (bp) to join contig fragments of a split gene into one call. | `10` |
 | `--format [tsv\|json\|pretty]` | Output format. | `tsv` |
 | `-o, --output PATH` | Write results to a file instead of stdout. | - |
 | `--cache-dir PATH` | Override the scheme cache directory. | - |
