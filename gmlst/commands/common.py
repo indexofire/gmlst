@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -281,14 +280,6 @@ def backend_option(default: str):
         )(f)
 
     return decorator
-
-
-def exit_with_error(msg: str, hint: str | None = None) -> None:
-    """Print error message and exit with code 1."""
-    err_console.print(f"[red]Error:[/red] {msg}")
-    if hint:
-        err_console.print(hint)
-    sys.exit(1)
 
 
 def deprecated_scheme_option(f):

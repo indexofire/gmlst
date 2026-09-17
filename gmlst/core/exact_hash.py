@@ -46,7 +46,6 @@ def load_or_build_exact_hash_indexes_impl(
     precomputed_dir = scheme_precomputed_dir_fn(allele_files)
     meta_file = precomputed_dir / "exact_hash_meta.json"
     dna_file = precomputed_dir / "dna_hash_index.json"
-    legacy_dna_file = precomputed_dir / "dna_hash_index.pkl"
     current_fingerprint = allele_files_fingerprint_fn(allele_files)
 
     def memo_key() -> tuple | None:
@@ -87,7 +86,6 @@ def load_or_build_exact_hash_indexes_impl(
         dna_index = build_allele_hash_index_fn(allele_sequences)
         dna_json = json.dumps(dna_index)
         dna_file.write_text(dna_json)
-        legacy_dna_file.write_text(dna_json)
         write_json_metadata(meta_file, {"fingerprint": current_fingerprint})
         logger.info("Wrote precomputed exact-hash index to %s", precomputed_dir)
         key = memo_key()
