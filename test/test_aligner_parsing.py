@@ -301,6 +301,24 @@ class TestParseBlastOutput:
         matches, _fragments = _parse_blast_output(blast, self.loci)
         assert matches[0].strand == "-"
 
+    def test_fragment_coords_normalized_when_qstart_qend_swapped(
+        self, tmp_path: Path
+    ) -> None:
+        """Regression: defensive normalization of query coordinates.
+
+        Real blastn emits qstart < qend, but a swapped pair must not produce
+        a negative allele interval; normalize to [min-1, max).
+        """
+        blast = tmp_path / "hits.tsv"
+        self._write_blast(
+            blast,
+            [self._make_row("arcC_1", pident=100.0, qstart=480, qend=1)],
+        )
+        _matches, fragments = _parse_blast_output(blast, self.loci)
+        assert len(fragments) == 1
+        assert fragments[0].allele_start == 0
+        assert fragments[0].allele_end == 480
+
     def test_multiple_loci(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
         self._write_blast(

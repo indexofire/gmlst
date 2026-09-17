@@ -28,7 +28,14 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
-from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
+from gmlst.aligners.base import (
+    AlignmentResult,
+    AlleleMatch,
+    build_alignment_result,
+    cap_fragments,
+    select_best_matches,
+    split_allele_id,
+)
 from gmlst.fasta_io import merge_fasta_files
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
@@ -40,8 +47,6 @@ _MIN_BLAST_IDENTITY = 80
 _OUTFMT = (
     "6 qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore sseq"
 )
-
-_MAX_FRAGMENTS_PER_LOCUS = 100
 
 
 class BlastnAligner:
@@ -175,16 +180,13 @@ class BlastnAligner:
             )
 
         runtime = time.perf_counter() - t0
-        called_loci = {m.locus for m in matches}
-        failed = [loc for loc in loci if loc not in called_loci]
-
-        return AlignmentResult(
+        return build_alignment_result(
             sample_id=sample_id,
-            matches=matches,
-            failed_loci=failed,
             backend=self.name,
-            runtime_seconds=runtime,
+            matches=matches,
             fragments=fragments,
+            loci=loci,
+            runtime_seconds=runtime,
         )
 
 
@@ -219,17 +221,16 @@ def _parse_blast_output(
       already allele-oriented for minus-strand hits (BLAST sseq).
     """
     loci_set = set(loci)
-    # best[(locus, allele_id)] = AlleleMatch
-    best: dict[tuple[str, str], AlleleMatch] = {}
-    copies: dict[tuple[str, str], set[tuple[str, str, str]]] = {}
+    copies: defaultdict[tuple[str, str], set[tuple[str, int, int]]] = defaultdict(set)
     fragments: list[AlleleMatch] = []
+    allele_id_cache: dict[str, tuple[str, str]] = {}
 
     if not path.exists():
         return [], []
 
     with path.open() as fh:
         for line in fh:
-            line = line.strip()
+            line = line.rstrip("\n")
             if not line or line.startswith("#"):
                 continue
             parts = line.split("\t")
@@ -242,28 +243,31 @@ def _parse_blast_output(
             qlen = int(parts[4])
 
             # Parse locus + allele from query id (e.g. "arcC_1")
-            locus, allele_id = split_allele_id(qseqid)
+            cached_ids = allele_id_cache.get(qseqid)
+            if cached_ids is None:
+                cached_ids = split_allele_id(qseqid)
+                allele_id_cache[qseqid] = cached_ids
+            locus, allele_id = cached_ids
             if locus not in loci_set:
                 continue
 
             coverage = aln_len / qlen if qlen > 0 else 0.0
             key = (locus, allele_id)
-            if count_same_copy:
-                sseqid = parts[1]
-                sstart = parts[7]
-                send = parts[8]
-                start, end = (sstart, send) if sstart <= send else (send, sstart)
-                copies.setdefault(key, set()).add((sseqid, start, end))
 
             sseqid = parts[1]
             sstart = int(parts[7])
             send = int(parts[8])
+            if count_same_copy:
+                start, end = (sstart, send) if sstart <= send else (send, sstart)
+                copies[key].add((sseqid, start, end))
+
             strand = "-" if sstart > send else "+"
             seq_start = min(sstart, send)
             seq_end = max(sstart, send)
             sequence = parts[11] if len(parts) > 11 else None
             qstart = int(parts[5])
             qend = int(parts[6])
+            score = float(parts[10])
 
             fragments.append(
                 AlleleMatch(
@@ -272,58 +276,39 @@ def _parse_blast_output(
                     identity=pident,
                     coverage=coverage,
                     alignment_length=aln_len,
-                    score=float(parts[10]),
+                    score=score,
                     sequence=sequence,
                     strand=strand,
                     query_contig=sseqid,
                     query_start=seq_start,
                     query_end=seq_end,
                     allele_length=qlen,
-                    allele_start=qstart - 1,
-                    allele_end=qend,
+                    allele_start=min(qstart, qend) - 1,
+                    allele_end=max(qstart, qend),
                 )
             )
 
-            existing = best.get(key)
-            if existing is None or (
-                pident > existing.identity
-                or (pident == existing.identity and coverage > existing.coverage)
-            ):
-                best[key] = AlleleMatch(
-                    locus=locus,
-                    allele_id=allele_id,
-                    identity=pident,
-                    coverage=coverage,
-                    alignment_length=aln_len,
-                    score=float(parts[10]),
-                    sequence=sequence,
-                    strand=strand,
-                    query_contig=sseqid,
-                    query_start=seq_start,
-                    query_end=seq_end,
-                )
+    best = [
+        AlleleMatch(
+            locus=frag.locus,
+            allele_id=frag.allele_id,
+            identity=frag.identity,
+            coverage=frag.coverage,
+            alignment_length=frag.alignment_length,
+            score=frag.score,
+            sequence=frag.sequence,
+            strand=frag.strand,
+            query_contig=frag.query_contig,
+            query_start=frag.query_start,
+            query_end=frag.query_end,
+        )
+        for frag in select_best_matches(fragments)
+    ]
+    capped = cap_fragments(fragments)
 
     if count_same_copy:
-        for key, match in best.items():
-            match.copy_count = max(1, len(copies.get(key, set())))
+        for match in best:
+            key = (match.locus, match.allele_id)
+            match.copy_count = max(1, len(copies.get(key, ())))
 
-    return list(best.values()), _cap_fragments(fragments)
-
-
-def _cap_fragments(
-    fragments: list[AlleleMatch],
-    limit: int = _MAX_FRAGMENTS_PER_LOCUS,
-) -> list[AlleleMatch]:
-    """Keep at most *limit* fragments per locus, best (identity, length) first.
-
-    Identity leads because imperfect alleles spawn many shifted HSPs that
-    are slightly longer than the exact allele's fragments.
-    """
-    grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
-    for fragment in fragments:
-        grouped[fragment.locus].append(fragment)
-    capped: list[AlleleMatch] = []
-    for locus_frags in grouped.values():
-        locus_frags.sort(key=lambda f: (f.identity, f.alignment_length), reverse=True)
-        capped.extend(locus_frags[:limit])
-    return capped
+    return best, capped

@@ -31,18 +31,22 @@ from __future__ import annotations
 import logging
 import os
 import time
-from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
-from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
+from gmlst.aligners.base import (
+    AlignmentResult,
+    AlleleMatch,
+    build_alignment_result,
+    cap_fragments,
+    select_best_matches,
+    split_allele_id,
+)
 from gmlst.fasta_io import iter_fasta_records, merge_fasta_files
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger(__name__)
-
-_MAX_FRAGMENTS_PER_LOCUS = 100
 
 _COMPLEMENT = str.maketrans("ACGTUNacgtun", "TGCAANtgcaan")
 
@@ -173,16 +177,13 @@ class Minimap2Aligner:
         matches, fragments = self._align_fasta(sample_path, index_path, loci)
 
         runtime = time.perf_counter() - t0
-        called_loci = {m.locus for m in matches}
-        failed = [loc for loc in loci if loc not in called_loci]
-
-        return AlignmentResult(
+        return build_alignment_result(
             sample_id=sample_id,
-            matches=matches,
-            failed_loci=failed,
             backend=self.name,
-            runtime_seconds=runtime,
+            matches=matches,
             fragments=fragments,
+            loci=loci,
+            runtime_seconds=runtime,
         )
 
     def _align_fasta(
@@ -232,10 +233,13 @@ def _parse_paf(
     *fragments* records every PAF row with ``sequence`` set to the
     allele-oriented contig slice (reverse-complemented for ``-`` strand),
     so downstream join logic never needs to re-orient anything.
+
+    Contig slicing/reverse-complementing is deferred to after the
+    per-locus fragment cap: only surviving fragments pay for it.
     """
     loci_set = set(loci)
-    best: dict[tuple[str, str], AlleleMatch] = {}
     fragments: list[AlleleMatch] = []
+    allele_id_cache: dict[str, tuple[str, str]] = {}
 
     if not path.exists():
         return [], []
@@ -258,7 +262,11 @@ def _parse_paf(
             nmatch = int(cols[9])
             blen = int(cols[10])
 
-            locus, allele_id = split_allele_id(allele_name)
+            cached_ids = allele_id_cache.get(allele_name)
+            if cached_ids is None:
+                cached_ids = split_allele_id(allele_name)
+                allele_id_cache[allele_name] = cached_ids
+            locus, allele_id = cached_ids
             if locus not in loci_set:
                 continue
 
@@ -270,12 +278,6 @@ def _parse_paf(
                     break
             total_aligned = nmatch + nm
             identity = (nmatch / total_aligned * 100.0) if total_aligned > 0 else 0.0
-            key = (locus, allele_id)
-
-            contig_seq = contigs.get(contig_name)
-            block = contig_seq[contig_start:contig_end] if contig_seq else None
-            if block is not None and strand == "-":
-                block = _revcomp(block)
 
             fragments.append(
                 AlleleMatch(
@@ -293,46 +295,39 @@ def _parse_paf(
                     allele_length=qlen,
                     allele_start=qstart,
                     allele_end=qend,
-                    sequence=block,
                 )
             )
 
-            existing = best.get(key)
-            if (
-                existing is None
-                or identity > existing.identity
-                or (identity == existing.identity and coverage > existing.coverage)
-            ):
-                best[key] = AlleleMatch(
-                    locus=locus,
-                    allele_id=allele_id,
-                    identity=identity,
-                    coverage=coverage,
-                    strand=strand,
-                    alignment_length=blen,
-                    score=identity * coverage,
-                    query_contig=contig_name,
-                    query_contig_length=contig_len,
-                    query_start=min(contig_start, contig_end),
-                    query_end=max(contig_start, contig_end),
-                    allele_length=qlen,
-                    allele_start=min(qstart, qend),
-                    allele_end=max(qstart, qend),
-                )
+    best: list[AlleleMatch] = []
+    for frag in select_best_matches(fragments):
+        assert frag.query_start is not None and frag.query_end is not None
+        assert frag.allele_start is not None and frag.allele_end is not None
+        best.append(
+            AlleleMatch(
+                locus=frag.locus,
+                allele_id=frag.allele_id,
+                identity=frag.identity,
+                coverage=frag.coverage,
+                strand=frag.strand,
+                alignment_length=frag.alignment_length,
+                score=frag.score,
+                query_contig=frag.query_contig,
+                query_contig_length=frag.query_contig_length,
+                query_start=min(frag.query_start, frag.query_end),
+                query_end=max(frag.query_start, frag.query_end),
+                allele_length=frag.allele_length,
+                allele_start=min(frag.allele_start, frag.allele_end),
+                allele_end=max(frag.allele_start, frag.allele_end),
+            )
+        )
 
-    return list(best.values()), _cap_fragments(fragments)
+    capped = cap_fragments(fragments)
+    for frag in capped:
+        assert frag.query_contig is not None
+        contig_seq = contigs.get(frag.query_contig)
+        block = contig_seq[frag.query_start : frag.query_end] if contig_seq else None
+        if block is not None and frag.strand == "-":
+            block = _revcomp(block)
+        frag.sequence = block
 
-
-def _cap_fragments(
-    fragments: list[AlleleMatch],
-    limit: int = _MAX_FRAGMENTS_PER_LOCUS,
-) -> list[AlleleMatch]:
-    """Keep at most *limit* fragments per locus, best (identity, length) first."""
-    grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
-    for fragment in fragments:
-        grouped[fragment.locus].append(fragment)
-    capped: list[AlleleMatch] = []
-    for locus_frags in grouped.values():
-        locus_frags.sort(key=lambda f: (f.identity, f.alignment_length), reverse=True)
-        capped.extend(locus_frags[:limit])
-    return capped
+    return best, capped

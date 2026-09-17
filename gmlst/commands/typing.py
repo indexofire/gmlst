@@ -10,14 +10,17 @@ from typing import TYPE_CHECKING
 
 import click
 
-from gmlst.aligners import AVAILABLE_BACKENDS
 from gmlst.commands.common import (
     HELP_SETTINGS,
-    cache_dir_option,
+    backend_option,
     emit_output_text,
     emit_versioned_json,
     err_console,
+    novel_data_options,
     status_console,
+    typing_output_options,
+    typing_parallel_options,
+    typing_threshold_options,
 )
 from gmlst.commands.typing_fastq import (
     contains_fastq_samples,
@@ -58,7 +61,6 @@ from gmlst.schema_versions import (
 from gmlst.schemefree import (
     SchemaFreeConfig,
     SchemeFreeTyper,
-    profiles_to_json,
     profiles_to_tsv,
     write_error_report_json,
     write_summary_report_json,
@@ -99,59 +101,10 @@ def cmd_typing() -> None:
     required=True,
     help="MLST scheme name, e.g. 'saureus_1', 'ecoli_1'.",
 )
-@click.option(
-    "--backend",
-    "-b",
-    default="blastn",
-    show_default=True,
-    type=click.Choice(AVAILABLE_BACKENDS, case_sensitive=False),
-    help="Alignment backend to use.",
-)
-@click.option(
-    "--min-id", default=95.0, show_default=True, help="Minimum percent identity."
-)
-@click.option(
-    "--min-cov", default=0.95, show_default=True, help="Minimum allele coverage (0-1)."
-)
-@click.option(
-    "--min-depth", default=10.0, show_default=True, help="Min read depth (FASTQ only)."
-)
-@click.option(
-    "--min-join-overlap",
-    default=10,
-    show_default=True,
-    type=click.IntRange(min=0),
-    help="Minimum allele-coordinate overlap (bp) required to join contig "
-    "fragments of a split gene into one call.",
-)
-@click.option(
-    "--format",
-    "fmt",
-    default="tsv",
-    show_default=True,
-    type=click.Choice(["tsv", "json", "pretty"]),
-    help="Output format.",
-)
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
-)
-@cache_dir_option
-@click.option("--force-reindex", is_flag=True, help="Rebuild aligner index.")
-@click.option("--no-header", is_flag=True, help="Suppress TSV header line")
-@click.option(
-    "--threads",
-    "-t",
-    default=1,
-    show_default=True,
-    help="Number of alignment threads (backend-dependent).",
-)
-@click.option(
-    "--max-workers",
-    type=click.IntRange(min=1),
-    default=1,
-    show_default=True,
-    help="Number of samples to type in parallel (mlst/cgmlst).",
-)
+@backend_option("blastn")
+@typing_threshold_options
+@typing_output_options
+@typing_parallel_options
 @click.option(
     "--count-same-copy",
     is_flag=True,
@@ -174,23 +127,7 @@ def cmd_typing() -> None:
     is_flag=True,
     help="Show contig position info in TSV output (FASTA only).",
 )
-@click.option(
-    "--novel-allele",
-    is_flag=True,
-    help="Save novel allele sequences to {locus}_novel.fasta files.",
-)
-@click.option(
-    "--novel-profile",
-    is_flag=True,
-    help="Save novel ST profiles to profiles_novel.txt (requires --novel-allele).",
-)
-@click.option(
-    "--data-dir",
-    "--output-dir",
-    "output_dir",
-    type=click.Path(path_type=Path),
-    help="Directory for novel allele/profile output files (default: cwd).",
-)
+@novel_data_options
 def cmd_typing_mlst(
     samples: tuple[Path, ...],
     scheme: str,
@@ -256,14 +193,7 @@ def cmd_typing_mlst(
     required=True,
     help="cgMLST/wgMLST scheme name, e.g. 'vparahaemolyticus_3'.",
 )
-@click.option(
-    "--backend",
-    "-b",
-    default="minimap2",
-    show_default=True,
-    type=click.Choice(AVAILABLE_BACKENDS, case_sensitive=False),
-    help="Alignment backend to use.",
-)
+@backend_option("minimap2")
 @click.option(
     "--cgmlst-mode",
     type=click.Choice(
@@ -278,51 +208,9 @@ def cmd_typing_mlst(
     show_default=True,
     help="cgMLST workflow mode.",
 )
-@click.option(
-    "--min-id", default=95.0, show_default=True, help="Minimum percent identity."
-)
-@click.option(
-    "--min-cov", default=0.95, show_default=True, help="Minimum allele coverage (0-1)."
-)
-@click.option(
-    "--min-depth", default=10.0, show_default=True, help="Min read depth (FASTQ only)."
-)
-@click.option(
-    "--min-join-overlap",
-    default=10,
-    show_default=True,
-    type=click.IntRange(min=0),
-    help="Minimum allele-coordinate overlap (bp) required to join contig "
-    "fragments of a split gene into one call.",
-)
-@click.option(
-    "--format",
-    "fmt",
-    default="tsv",
-    show_default=True,
-    type=click.Choice(["tsv", "json", "pretty"]),
-    help="Output format.",
-)
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
-)
-@cache_dir_option
-@click.option("--force-reindex", is_flag=True, help="Rebuild aligner index.")
-@click.option("--no-header", is_flag=True, help="Suppress TSV header line")
-@click.option(
-    "--threads",
-    "-t",
-    default=1,
-    show_default=True,
-    help="Number of alignment threads (backend-dependent).",
-)
-@click.option(
-    "--max-workers",
-    type=click.IntRange(min=1),
-    default=1,
-    show_default=True,
-    help="Number of samples to type in parallel (mlst/cgmlst).",
-)
+@typing_threshold_options
+@typing_output_options
+@typing_parallel_options
 @click.option(
     "--count-same-copy",
     is_flag=True,
@@ -358,23 +246,7 @@ def cmd_typing_mlst(
     is_flag=True,
     help="Disable cgMLST assembly prefilter and use full-locus backend indexing.",
 )
-@click.option(
-    "--novel-allele",
-    is_flag=True,
-    help="Save novel allele sequences to {locus}_novel.fasta files.",
-)
-@click.option(
-    "--novel-profile",
-    is_flag=True,
-    help="Save novel ST profiles to profiles_novel.txt (requires --novel-allele).",
-)
-@click.option(
-    "--data-dir",
-    "--output-dir",
-    "output_dir",
-    type=click.Path(path_type=Path),
-    help="Directory for novel allele/profile output files (default: cwd).",
-)
+@novel_data_options
 @click.option(
     "--cds-coordinates-out",
     type=click.Path(path_type=Path),
@@ -891,6 +763,53 @@ def _run_mlst_like_typing(
         close_stream_output(stream_file)
 
 
+def _normalize_allele_call(locus: str, call: object) -> str:
+    """Normalize one allele call to the schemefree JSON string form.
+
+    Mirrors ``gmlst.schemefree.io_handler._normalize_allele_call`` so the
+    CLI can build the JSON payload in memory without a dumps/loads
+    round-trip through the engine module.
+    """
+    if call is None:
+        return "0"
+    if isinstance(call, int):
+        return str(call)
+
+    call_str = str(call).strip()
+    if call_str in {"", "-"}:
+        return "0"
+    if call_str.isdigit():
+        return call_str
+
+    prefix = f"{locus}_"
+    if call_str.startswith(prefix):
+        suffix = call_str[len(prefix) :]
+        if suffix.isdigit():
+            return suffix
+
+    return call_str
+
+
+def _normalize_profile_dicts(
+    profile_dicts: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Apply the schemefree ``profiles_to_json`` normalization in memory.
+
+    Equivalence is locked by ``test_typing_serialization_round_trip``.
+    """
+    normalized: list[dict[str, object]] = []
+    for profile in profile_dicts:
+        profile_copy = dict(profile)
+        calls_map = profile_copy.get("profile")
+        if isinstance(calls_map, dict):
+            profile_copy["profile"] = {
+                locus: _normalize_allele_call(locus, call)
+                for locus, call in calls_map.items()
+            }
+        normalized.append(profile_copy)
+    return normalized
+
+
 def _run_schemefree_typing(
     samples: list[Path],
     hash_strategy: str,
@@ -930,24 +849,25 @@ def _run_schemefree_typing(
             sys.exit(1)
 
     profiles = typer.type_sample_files(samples)
-    profile_dicts = [p.to_dict() for p in profiles]
 
     if save_scheme_path:
         typer.export_scheme(save_scheme_path)
 
-    if fmt == "json":
-        # Wrap at the CLI boundary: schemefree io_handler stays a pure engine.
-        output_text = json.dumps(
-            {
-                "schema_version": TGMLST_PROFILES_V1,
-                "data": json.loads(profiles_to_json(profile_dicts)),
-            },
-            indent=2,
-        )
-    elif fmt == "pretty":
+    if fmt == "pretty":
         output_text = "\n".join(f"{p.sample_id}: {p.loci_count} loci" for p in profiles)
     else:
-        output_text = profiles_to_tsv(profile_dicts, include_header=not no_header)
+        profile_dicts = [p.to_dict() for p in profiles]
+        if fmt == "json":
+            # Wrap at the CLI boundary: schemefree io_handler stays a pure engine.
+            output_text = json.dumps(
+                {
+                    "schema_version": TGMLST_PROFILES_V1,
+                    "data": _normalize_profile_dicts(profile_dicts),
+                },
+                indent=2,
+            )
+        else:
+            output_text = profiles_to_tsv(profile_dicts, include_header=not no_header)
 
     wrote_file = emit_output_text(output_text, output)
     if wrote_file and output is not None:

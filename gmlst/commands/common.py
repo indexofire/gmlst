@@ -21,6 +21,7 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 
+from gmlst.aligners import AVAILABLE_BACKENDS
 from gmlst.database.cache import _load_blocked_schemes as _load_blocked_schemes
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
@@ -172,6 +173,114 @@ def cache_dir_option(f):
         type=click.Path(path_type=Path),
         help="Override cache directory.",
     )(f)
+
+
+def typing_threshold_options(f):
+    """Click decorator factory adding the shared typing threshold options."""
+    f = click.option(
+        "--min-join-overlap",
+        default=10,
+        show_default=True,
+        type=click.IntRange(min=0),
+        help="Minimum allele-coordinate overlap (bp) required to join contig "
+        "fragments of a split gene into one call.",
+    )(f)
+    f = click.option(
+        "--min-depth",
+        default=10.0,
+        show_default=True,
+        help="Min read depth (FASTQ only).",
+    )(f)
+    f = click.option(
+        "--min-cov",
+        default=0.95,
+        show_default=True,
+        help="Minimum allele coverage (0-1).",
+    )(f)
+    f = click.option(
+        "--min-id", default=95.0, show_default=True, help="Minimum percent identity."
+    )(f)
+    return f
+
+
+def typing_output_options(f):
+    """Click decorator factory adding the shared typing output options.
+
+    Emits ``--format``, ``--output``, ``--cache-dir``, ``--force-reindex``,
+    and ``--no-header`` in that help order (shared by mlst/cgmlst).
+    """
+    f = click.option("--no-header", is_flag=True, help="Suppress TSV header line")(f)
+    f = click.option("--force-reindex", is_flag=True, help="Rebuild aligner index.")(f)
+    f = cache_dir_option(f)
+    f = click.option(
+        "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
+    )(f)
+    f = click.option(
+        "--format",
+        "fmt",
+        default="tsv",
+        show_default=True,
+        type=click.Choice(["tsv", "json", "pretty"]),
+        help="Output format.",
+    )(f)
+    return f
+
+
+def typing_parallel_options(f):
+    """Click decorator factory adding the shared typing parallelism options."""
+    f = click.option(
+        "--max-workers",
+        type=click.IntRange(min=1),
+        default=1,
+        show_default=True,
+        help="Number of samples to type in parallel (mlst/cgmlst).",
+    )(f)
+    f = click.option(
+        "--threads",
+        "-t",
+        default=1,
+        show_default=True,
+        help="Number of alignment threads (backend-dependent).",
+    )(f)
+    return f
+
+
+def novel_data_options(f):
+    """Click decorator factory adding the shared novel-data output options."""
+    f = click.option(
+        "--data-dir",
+        "--output-dir",
+        "output_dir",
+        type=click.Path(path_type=Path),
+        help="Directory for novel allele/profile output files (default: cwd).",
+    )(f)
+    f = click.option(
+        "--novel-profile",
+        is_flag=True,
+        help="Save novel ST profiles to profiles_novel.txt (requires --novel-allele).",
+    )(f)
+    f = click.option(
+        "--novel-allele",
+        is_flag=True,
+        help="Save novel allele sequences to {locus}_novel.fasta files.",
+    )(f)
+    return f
+
+
+def backend_option(default: str):
+    """Click decorator factory adding the ``--backend`` option with a custom default."""
+
+    def decorator(f):
+        return click.option(
+            "--backend",
+            "-b",
+            default=default,
+            show_default=True,
+            type=click.Choice(AVAILABLE_BACKENDS, case_sensitive=False),
+            help="Alignment backend to use.",
+        )(f)
+
+    return decorator
 
 
 def exit_with_error(msg: str, hint: str | None = None) -> None:

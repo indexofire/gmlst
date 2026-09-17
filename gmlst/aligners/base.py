@@ -64,7 +64,6 @@ class AlleleMatch:
     """0-based aligned start on allele/template."""
     allele_end: int | None = None
     """0-based aligned end on allele/template."""
-    """Length of the alignment block in bases."""
 
     @property
     def call_type(self) -> CallType:
@@ -132,13 +131,11 @@ class AlignmentResult:
         return self._matches_by_locus.get(locus, [])
 
     def fragments_for(self, locus: str) -> list[AlleleMatch]:
-        """Return all raw fragment HSPs for a single locus, longest-first."""
+        """Return all raw fragment HSPs for a single locus, in file order."""
         if self._fragments_by_locus is None:
             grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
             for fragment in self.fragments:
                 grouped[fragment.locus].append(fragment)
-            for frags in grouped.values():
-                frags.sort(key=lambda f: f.alignment_length, reverse=True)
             self._fragments_by_locus = dict(grouped)
         return self._fragments_by_locus.get(locus, [])
 
@@ -224,3 +221,66 @@ def split_allele_id(qseqid: str) -> tuple[str, str]:
             locus, allele_id = qseqid.rsplit(sep, 1)
             return locus, allele_id
     return qseqid, "1"
+
+
+_MAX_FRAGMENTS_PER_LOCUS = 100
+"""Upper bound on fragment HSPs kept per locus after parsing."""
+
+
+def cap_fragments(
+    fragments: list[AlleleMatch],
+    limit: int = _MAX_FRAGMENTS_PER_LOCUS,
+) -> list[AlleleMatch]:
+    """Keep at most *limit* fragments per locus, best (identity, length) first.
+
+    Identity leads because imperfect alleles spawn many shifted HSPs that
+    are slightly longer than the exact allele's fragments.
+    """
+    grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
+    for fragment in fragments:
+        grouped[fragment.locus].append(fragment)
+    capped: list[AlleleMatch] = []
+    for locus_frags in grouped.values():
+        locus_frags.sort(key=lambda f: (f.identity, f.alignment_length), reverse=True)
+        capped.extend(locus_frags[:limit])
+    return capped
+
+
+def select_best_matches(rows: list[AlleleMatch]) -> list[AlleleMatch]:
+    """Return the best row per (locus, allele_id): identity desc, coverage desc.
+
+    Full ties keep the first-seen row; output follows first-occurrence
+    order of each (locus, allele_id) key.
+    """
+    best: dict[tuple[str, str], AlleleMatch] = {}
+    for row in rows:
+        key = (row.locus, row.allele_id)
+        existing = best.get(key)
+        if (
+            existing is None
+            or row.identity > existing.identity
+            or (row.identity == existing.identity and row.coverage > existing.coverage)
+        ):
+            best[key] = row
+    return list(best.values())
+
+
+def build_alignment_result(
+    sample_id: str,
+    backend: str,
+    matches: list[AlleleMatch],
+    fragments: list[AlleleMatch],
+    loci: list[str],
+    runtime_seconds: float,
+) -> AlignmentResult:
+    """Assemble an :class:`AlignmentResult` with failed loci derived from *matches*."""
+    called_loci = {m.locus for m in matches}
+    failed = [loc for loc in loci if loc not in called_loci]
+    return AlignmentResult(
+        sample_id=sample_id,
+        matches=matches,
+        failed_loci=failed,
+        backend=backend,
+        runtime_seconds=runtime_seconds,
+        fragments=fragments,
+    )

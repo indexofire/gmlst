@@ -79,6 +79,27 @@ def execute_typing_run(
     progress = _make_progress(quiet and total > 1)
     show_progress = progress is not None and total > 1
 
+    base_kwargs: dict[str, Any] = {
+        "scheme_name": scheme_name,
+        "backend": backend,
+        "provider": provider,
+        "scheme_type": scheme_type,
+        "cgmlst_mode": cgmlst_mode,
+        "cache_root": cache_root,
+        "min_identity": min_identity,
+        "min_coverage": min_coverage,
+        "min_depth": min_depth,
+        "min_join_overlap": min_join_overlap,
+        "count_same_copy": count_same_copy,
+        "prefilter_enabled": prefilter_enabled,
+        "prefilter_k": prefilter_k,
+        "prefilter_top_n": prefilter_top_n,
+        "prefilter_min_loci_fraction": prefilter_min_loci_fraction,
+        "cds_coordinates_out": cds_coordinates_out,
+        "call_policy": call_policy,
+        "chew_cds_gate": chew_cds_gate,
+    }
+
     if max_workers > 1 and total > 1:
         if threads != 1:
             status_console.print(
@@ -88,52 +109,18 @@ def execute_typing_run(
         if backend.lower() in {"kma", "minimap2"}:
             _ = run_typing_fn(
                 sample_paths=[],
-                scheme_name=scheme_name,
-                backend=backend,
-                provider=provider,
-                scheme_type=scheme_type,
-                cgmlst_mode=cgmlst_mode,
-                cache_root=cache_root,
-                min_identity=min_identity,
-                min_coverage=min_coverage,
-                min_depth=min_depth,
-                min_join_overlap=min_join_overlap,
+                **base_kwargs,
                 force_reindex=force_reindex,
                 threads=1,
-                count_same_copy=count_same_copy,
-                prefilter_enabled=prefilter_enabled,
-                prefilter_k=prefilter_k,
-                prefilter_top_n=prefilter_top_n,
-                prefilter_min_loci_fraction=prefilter_min_loci_fraction,
-                cds_coordinates_out=cds_coordinates_out,
-                call_policy=call_policy,
-                chew_cds_gate=chew_cds_gate,
                 on_result=None,
             )
 
         def _worker(sample_entry: Path | object) -> list:
             return run_typing_fn(
                 sample_paths=[sample_entry],
-                scheme_name=scheme_name,
-                backend=backend,
-                provider=provider,
-                scheme_type=scheme_type,
-                cgmlst_mode=cgmlst_mode,
-                cache_root=cache_root,
-                min_identity=min_identity,
-                min_coverage=min_coverage,
-                min_depth=min_depth,
-                min_join_overlap=min_join_overlap,
+                **base_kwargs,
                 force_reindex=False,
                 threads=1,
-                count_same_copy=count_same_copy,
-                prefilter_enabled=prefilter_enabled,
-                prefilter_k=prefilter_k,
-                prefilter_top_n=prefilter_top_n,
-                prefilter_min_loci_fraction=prefilter_min_loci_fraction,
-                cds_coordinates_out=cds_coordinates_out,
-                call_policy=call_policy,
-                chew_cds_gate=chew_cds_gate,
                 on_result=None,
             )
 
@@ -197,26 +184,9 @@ def execute_typing_run(
 
         results = run_typing_fn(
             sample_paths=prepared_samples,
-            scheme_name=scheme_name,
-            backend=backend,
-            provider=provider,
-            scheme_type=scheme_type,
-            cgmlst_mode=cgmlst_mode,
-            cache_root=cache_root,
-            min_identity=min_identity,
-            min_coverage=min_coverage,
-            min_depth=min_depth,
-            min_join_overlap=min_join_overlap,
+            **base_kwargs,
             force_reindex=force_reindex,
             threads=threads,
-            count_same_copy=count_same_copy,
-            prefilter_enabled=prefilter_enabled,
-            prefilter_k=prefilter_k,
-            prefilter_top_n=prefilter_top_n,
-            prefilter_min_loci_fraction=prefilter_min_loci_fraction,
-            cds_coordinates_out=cds_coordinates_out,
-            call_policy=call_policy,
-            chew_cds_gate=chew_cds_gate,
             on_result=_progress_on_result if show_progress else on_result,
         )
 
