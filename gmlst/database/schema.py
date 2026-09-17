@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 import csv
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from gmlst.fasta_io import iter_fasta_records
+from gmlst.scheme_load_cache import memoized, register_memo
 from gmlst.utils import open_text
+
+ProfileRows = tuple[tuple[int, dict[str, str]], ...]
+ProfileTable = dict[tuple[str, ...], int]
+
+# Shared per-process: results are immutable after build and never mutated.
+_PROFILE_ROWS_MEMO: OrderedDict[tuple, ProfileRows] = OrderedDict()
+_PROFILE_TABLE_MEMO: OrderedDict[tuple, ProfileTable] = OrderedDict()
+register_memo("profile_rows", _PROFILE_ROWS_MEMO)
+register_memo("profile_tables", _PROFILE_TABLE_MEMO)
 
 # ---------------------------------------------------------------------------
 # Allele
@@ -104,23 +115,7 @@ class Scheme:
         if self.profile_file is None:
             self._profiles_loaded = True
             return
-
-        with open_text(self.profile_file) as fh:
-            reader = csv.DictReader(fh, delimiter="\t")
-            for row in reader:
-                st_str = row.get("ST") or row.get("st")
-                if st_str is None:
-                    continue
-                try:
-                    st = int(st_str)
-                except ValueError:
-                    continue
-                if any(
-                    loc not in row or row.get(loc) in (None, "") for loc in self.loci
-                ):
-                    continue
-                key = tuple(str(row[loc]) for loc in self.loci)
-                self._profiles[key] = st
+        self._profiles = _load_profile_table(self.profile_file, tuple(self.loci))
         self._profiles_loaded = True
 
     def lookup_st(self, allele_ids: dict[str, str]) -> int | None:
@@ -134,6 +129,52 @@ class Scheme:
         self._load_profiles()
         key = tuple(allele_ids.get(loc, "-") for loc in self.loci)
         return self._profiles.get(key)
+
+
+# ---------------------------------------------------------------------------
+# Memoized profile parsing helpers
+# ---------------------------------------------------------------------------
+
+
+def _file_stat_key(path: Path) -> tuple[str, int, int]:
+    stat = path.stat()
+    return (str(path), stat.st_mtime_ns, stat.st_size)
+
+
+def _read_profile_rows(path: Path) -> ProfileRows:
+    """Parse the profile TSV into ``(st, row)`` pairs, memoized by file identity."""
+
+    def build() -> ProfileRows:
+        rows: list[tuple[int, dict[str, str]]] = []
+        with open_text(path) as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            for row in reader:
+                st_str = row.get("ST") or row.get("st")
+                if st_str is None:
+                    continue
+                try:
+                    st = int(st_str)
+                except ValueError:
+                    continue
+                rows.append((st, row))
+        return tuple(rows)
+
+    return memoized(_PROFILE_ROWS_MEMO, _file_stat_key(path), build)
+
+
+def _load_profile_table(path: Path, loci: tuple[str, ...]) -> ProfileTable:
+    """Build the ``locus-tuple -> ST`` table for *loci*, memoized per file."""
+
+    def build() -> ProfileTable:
+        profiles: ProfileTable = {}
+        for st, row in _read_profile_rows(path):
+            if any(loc not in row or row.get(loc) in (None, "") for loc in loci):
+                continue
+            profiles[tuple(str(row[loc]) for loc in loci)] = st
+        return profiles
+
+    key = (*_file_stat_key(path), loci)
+    return memoized(_PROFILE_TABLE_MEMO, key, build)
 
 
 # ---------------------------------------------------------------------------

@@ -198,6 +198,16 @@ class STResult:
 
     def to_dict(self) -> dict:
         """Convert result to dictionary."""
+        is_novel = False
+        is_complete = True
+        has_conflicting_multicopy = False
+        for call in self.locus_calls.values():
+            if call.call_type != "exact":
+                is_novel = True
+            if call.call_type in ("missing", "partial"):
+                is_complete = False
+            if call.multiple_hits:
+                has_conflicting_multicopy = True
         return {
             "sample_id": self.sample_id,
             "scheme": self.scheme,
@@ -206,9 +216,9 @@ class STResult:
                 locus: _locus_call_to_dict(call)
                 for locus, call in self.locus_calls.items()
             },
-            "is_novel": self.is_novel,
-            "is_complete": self.is_complete,
-            "has_conflicting_multicopy": self.has_conflicting_multicopy,
+            "is_novel": is_novel,
+            "is_complete": is_complete,
+            "has_conflicting_multicopy": has_conflicting_multicopy,
             "backend": self.backend,
             "runtime_seconds": self.runtime_seconds,
             "call_policy": self.call_policy,

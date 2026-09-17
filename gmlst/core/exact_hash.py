@@ -11,9 +11,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import OrderedDict
 from pathlib import Path
 
 from gmlst.metadata_io import read_json_metadata, write_json_metadata
+from gmlst.scheme_load_cache import memo_store, register_memo
+
+ExactHashIndex = dict[str, list[tuple[str, str]]]
+
+# Shared per-process: results are immutable after build and never mutated.
+_INDEX_LOAD_MEMO: OrderedDict[tuple, ExactHashIndex] = OrderedDict()
+register_memo("exact_hash_index", _INDEX_LOAD_MEMO)
 
 
 def load_or_build_exact_hash_indexes_impl(
@@ -24,7 +32,7 @@ def load_or_build_exact_hash_indexes_impl(
     allele_files_fingerprint_fn,
     build_allele_hash_index_fn,
     logger,
-) -> dict[str, list[tuple[str, str]]]:
+) -> ExactHashIndex:
     """Return the scheme DNA-hash index, rebuilding and persisting if stale.
 
     Loads the cached index from the scheme's ``pre_computed`` directory when
@@ -32,6 +40,8 @@ def load_or_build_exact_hash_indexes_impl(
     rebuilds the index from *allele_sequences*, writes it (JSON plus a
     legacy ``.pkl``-named copy for older readers), and records the new
     fingerprint. Corrupt caches are logged and rebuilt rather than raised.
+    Successful loads are memoized per process keyed by index-file identity
+    plus the allele fingerprint; rebuilds refresh that identity.
     """
     precomputed_dir = scheme_precomputed_dir_fn(allele_files)
     meta_file = precomputed_dir / "exact_hash_meta.json"
@@ -39,37 +49,50 @@ def load_or_build_exact_hash_indexes_impl(
     legacy_dna_file = precomputed_dir / "dna_hash_index.pkl"
     current_fingerprint = allele_files_fingerprint_fn(allele_files)
 
-    if meta_file.exists() and dna_file.exists():
+    def memo_key() -> tuple | None:
+        try:
+            stat = dna_file.stat()
+        except OSError:
+            return None
+        return (str(dna_file), stat.st_mtime_ns, stat.st_size, current_fingerprint)
+
+    def load_cached() -> ExactHashIndex | None:
+        if not (meta_file.exists() and dna_file.exists()):
+            return None
         try:
             cached_meta = read_json_metadata(meta_file, default={})
-            if cached_meta.get("fingerprint") == current_fingerprint:
-                dna_index = {
-                    str(digest): [
-                        (str(locus), str(allele_id)) for locus, allele_id in hits
-                    ]
-                    for digest, hits in json.loads(dna_file.read_text()).items()
-                }
-                logger.info(
-                    "Loaded precomputed exact-hash index from %s",
-                    precomputed_dir,
-                )
-                return dna_index
+            if cached_meta.get("fingerprint") != current_fingerprint:
+                return None
+            dna_index = {
+                str(digest): [(str(locus), str(allele_id)) for locus, allele_id in hits]
+                for digest, hits in json.loads(dna_file.read_text()).items()
+            }
         except (OSError, json.JSONDecodeError, KeyError, ValueError):
             logger.warning(
                 "Failed to load precomputed index from %s, rebuilding",
                 precomputed_dir,
                 exc_info=True,
             )
+            return None
+        logger.info("Loaded precomputed exact-hash index from %s", precomputed_dir)
+        return dna_index
 
-    dna_index = build_allele_hash_index_fn(allele_sequences)
-    dna_json = json.dumps(dna_index)
-    dna_file.write_text(dna_json)
-    legacy_dna_file.write_text(dna_json)
-    write_json_metadata(meta_file, {"fingerprint": current_fingerprint})
-    logger.info(
-        "Wrote precomputed exact-hash index to %s",
-        precomputed_dir,
-    )
+    key = memo_key()
+    if key is not None and key in _INDEX_LOAD_MEMO:
+        _INDEX_LOAD_MEMO.move_to_end(key)
+        return _INDEX_LOAD_MEMO[key]
+
+    dna_index = load_cached()
+    if dna_index is None:
+        dna_index = build_allele_hash_index_fn(allele_sequences)
+        dna_json = json.dumps(dna_index)
+        dna_file.write_text(dna_json)
+        legacy_dna_file.write_text(dna_json)
+        write_json_metadata(meta_file, {"fingerprint": current_fingerprint})
+        logger.info("Wrote precomputed exact-hash index to %s", precomputed_dir)
+        key = memo_key()
+    if key is not None:
+        memo_store(_INDEX_LOAD_MEMO, key, dna_index)
     return dna_index
 
 

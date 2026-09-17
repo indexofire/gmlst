@@ -328,13 +328,15 @@ class DatabaseCache:
 
         # Discover allele files (.tfa from bigsdb/enterobase, .fasta from cgmlst.org)
         allele_files: dict[str, Path] = {}
+        loci_set = set(loci)
         for pattern in ("*.tfa", "*.fasta"):
             for f in sorted(scheme_dir.glob(pattern)):
                 locus = f.stem
                 if locus not in allele_files:  # .tfa takes priority
                     allele_files[locus] = f
-                    if locus not in loci:
+                    if locus not in loci_set:
                         loci.append(locus)
+                        loci_set.add(locus)
 
         if not allele_files:
             raise FileNotFoundError(

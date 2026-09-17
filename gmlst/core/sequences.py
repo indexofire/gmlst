@@ -8,10 +8,18 @@ targeted alignment.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections import OrderedDict
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from gmlst.fasta_io import iter_fasta_records, iter_fasta_sequences
+from gmlst.scheme_load_cache import memoized, register_memo
+
+SplitAlleleHeaderFn = Callable[[str], tuple[str, str]]
+
+# Shared per-process: results are immutable after build and never mutated.
+_ALLELE_SEQUENCE_MEMO: OrderedDict[tuple, dict[str, dict[str, str]]] = OrderedDict()
+register_memo("allele_sequences", _ALLELE_SEQUENCE_MEMO)
 
 
 def split_allele_header_impl(header: str) -> tuple[str, str]:
@@ -30,6 +38,19 @@ def iter_fasta_sequences_impl(path: Path) -> Iterator[str]:
     yield from iter_fasta_sequences(path)
 
 
+def _allele_files_stat_key(
+    allele_files: dict[str, Path],
+    split_allele_header_fn: SplitAlleleHeaderFn,
+    max_per_locus: int,
+) -> tuple:
+    """Build a memo key from per-file ``(size, mtime_ns)`` identity."""
+    stats = []
+    for locus, path in sorted(allele_files.items()):
+        stat = path.stat()
+        stats.append((locus, str(path), stat.st_size, stat.st_mtime_ns))
+    return (split_allele_header_fn, max_per_locus, tuple(stats))
+
+
 def load_scheme_allele_sequences_impl(
     allele_files: dict[str, Path],
     *,
@@ -40,17 +61,24 @@ def load_scheme_allele_sequences_impl(
 
     When *max_per_locus* is positive, at most that many records are read
     per locus (file order), bounding memory for very large schemes.
+    Results are memoized per process keyed on allele-file stats and
+    treated as immutable by all callers.
     """
-    sequences: dict[str, dict[str, str]] = {}
-    for locus, path in allele_files.items():
-        locus_seqs: dict[str, str] = {}
-        for count, (header, sequence) in enumerate(iter_fasta_records(path)):
-            _, allele_id = split_allele_header_fn(header)
-            locus_seqs[allele_id] = sequence
-            if max_per_locus > 0 and count + 1 >= max_per_locus:
-                break
-        sequences[locus] = locus_seqs
-    return sequences
+
+    def build() -> dict[str, dict[str, str]]:
+        sequences: dict[str, dict[str, str]] = {}
+        for locus, path in allele_files.items():
+            locus_seqs: dict[str, str] = {}
+            for count, (header, sequence) in enumerate(iter_fasta_records(path)):
+                _, allele_id = split_allele_header_fn(header)
+                locus_seqs[allele_id] = sequence
+                if max_per_locus > 0 and count + 1 >= max_per_locus:
+                    break
+            sequences[locus] = locus_seqs
+        return sequences
+
+    key = _allele_files_stat_key(allele_files, split_allele_header_fn, max_per_locus)
+    return memoized(_ALLELE_SEQUENCE_MEMO, key, build)
 
 
 def load_representative_allele_sequences_impl(
