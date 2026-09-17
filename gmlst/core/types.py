@@ -102,6 +102,7 @@ class TypingContext:
     min_identity: float = 95.0
     min_coverage: float = 0.95
     min_depth: float = 10.0
+    min_join_overlap: int = 10
     threads: int = 1
     count_same_copy: bool = False
     kma_fastq_mem_mode: bool = False

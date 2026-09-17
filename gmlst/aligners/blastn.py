@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
@@ -39,6 +40,8 @@ _MIN_BLAST_IDENTITY = 80
 _OUTFMT = (
     "6 qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore sseq"
 )
+
+_MAX_FRAGMENTS_PER_LOCUS = 100
 
 
 class BlastnAligner:
@@ -165,7 +168,7 @@ class BlastnAligner:
                     str(self.threads),
                 ],
             )
-            matches = _parse_blast_output(
+            matches, fragments = _parse_blast_output(
                 out_file,
                 loci,
                 count_same_copy=self.count_same_copy,
@@ -181,6 +184,7 @@ class BlastnAligner:
             failed_loci=failed,
             backend=self.name,
             runtime_seconds=runtime,
+            fragments=fragments,
         )
 
 
@@ -194,24 +198,34 @@ def _parse_blast_output(
     loci: list[str],
     *,
     count_same_copy: bool = False,
-) -> list[AlleleMatch]:
-    """Parse BLAST tabular output and return :class:`AlleleMatch` objects.
+) -> tuple[list[AlleleMatch], list[AlleleMatch]]:
+    """Parse BLAST tabular output into best matches plus raw fragments.
 
     Fields (format 6 custom)::
 
-        qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore
+        qseqid sseqid pident length qlen qstart qend sstart send evalue bitscore sseq
 
     The query id encodes locus and allele as ``<locus>_<allele_id>``.
     We take the **best hit per (locus, allele_id)** pair — highest identity,
-    then longest alignment.
+    then longest alignment — for *matches* (semantics unchanged), and
+    additionally record **every HSP row** in *fragments* for joint
+    reconstruction of loci split across contigs.
+
+    Fragment coordinate conventions (shared with minimap2):
+
+    * ``allele_start``/``allele_end`` — 0-based half-open on the allele
+      (BLAST qstart/qend are 1-based inclusive).
+    * ``sequence`` — aligned genome block in ALIGNMENT orientation, i.e.
+      already allele-oriented for minus-strand hits (BLAST sseq).
     """
     loci_set = set(loci)
     # best[(locus, allele_id)] = AlleleMatch
     best: dict[tuple[str, str], AlleleMatch] = {}
     copies: dict[tuple[str, str], set[tuple[str, str, str]]] = {}
+    fragments: list[AlleleMatch] = []
 
     if not path.exists():
-        return []
+        return [], []
 
     with path.open() as fh:
         for line in fh:
@@ -241,19 +255,40 @@ def _parse_blast_output(
                 start, end = (sstart, send) if sstart <= send else (send, sstart)
                 copies.setdefault(key, set()).add((sseqid, start, end))
 
+            sseqid = parts[1]
+            sstart = int(parts[7])
+            send = int(parts[8])
+            strand = "-" if sstart > send else "+"
+            seq_start = min(sstart, send)
+            seq_end = max(sstart, send)
+            sequence = parts[11] if len(parts) > 11 else None
+            qstart = int(parts[5])
+            qend = int(parts[6])
+
+            fragments.append(
+                AlleleMatch(
+                    locus=locus,
+                    allele_id=allele_id,
+                    identity=pident,
+                    coverage=coverage,
+                    alignment_length=aln_len,
+                    score=float(parts[10]),
+                    sequence=sequence,
+                    strand=strand,
+                    query_contig=sseqid,
+                    query_start=seq_start,
+                    query_end=seq_end,
+                    allele_length=qlen,
+                    allele_start=qstart - 1,
+                    allele_end=qend,
+                )
+            )
+
             existing = best.get(key)
             if existing is None or (
                 pident > existing.identity
                 or (pident == existing.identity and coverage > existing.coverage)
             ):
-                sseqid = parts[1]
-                sstart = int(parts[7])
-                send = int(parts[8])
-                strand = "-" if sstart > send else "+"
-                seq_start = min(sstart, send)
-                seq_end = max(sstart, send)
-                sequence = parts[11] if len(parts) > 11 else None
-
                 best[key] = AlleleMatch(
                     locus=locus,
                     allele_id=allele_id,
@@ -272,4 +307,23 @@ def _parse_blast_output(
         for key, match in best.items():
             match.copy_count = max(1, len(copies.get(key, set())))
 
-    return list(best.values())
+    return list(best.values()), _cap_fragments(fragments)
+
+
+def _cap_fragments(
+    fragments: list[AlleleMatch],
+    limit: int = _MAX_FRAGMENTS_PER_LOCUS,
+) -> list[AlleleMatch]:
+    """Keep at most *limit* fragments per locus, best (identity, length) first.
+
+    Identity leads because imperfect alleles spawn many shifted HSPs that
+    are slightly longer than the exact allele's fragments.
+    """
+    grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
+    for fragment in fragments:
+        grouped[fragment.locus].append(fragment)
+    capped: list[AlleleMatch] = []
+    for locus_frags in grouped.values():
+        locus_frags.sort(key=lambda f: (f.identity, f.alignment_length), reverse=True)
+        capped.extend(locus_frags[:limit])
+    return capped

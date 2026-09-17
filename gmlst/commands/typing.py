@@ -117,6 +117,14 @@ def cmd_typing() -> None:
     "--min-depth", default=10.0, show_default=True, help="Min read depth (FASTQ only)."
 )
 @click.option(
+    "--min-join-overlap",
+    default=10,
+    show_default=True,
+    type=click.IntRange(min=0),
+    help="Minimum allele-coordinate overlap (bp) required to join contig "
+    "fragments of a split gene into one call.",
+)
+@click.option(
     "--format",
     "fmt",
     default="tsv",
@@ -190,6 +198,7 @@ def cmd_typing_mlst(
     min_id: float,
     min_cov: float,
     min_depth: float,
+    min_join_overlap: int,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -216,6 +225,7 @@ def cmd_typing_mlst(
         min_id=min_id,
         min_cov=min_cov,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
         fmt=fmt,
         output=output,
         cache_dir=cache_dir,
@@ -276,6 +286,14 @@ def cmd_typing_mlst(
 )
 @click.option(
     "--min-depth", default=10.0, show_default=True, help="Min read depth (FASTQ only)."
+)
+@click.option(
+    "--min-join-overlap",
+    default=10,
+    show_default=True,
+    type=click.IntRange(min=0),
+    help="Minimum allele-coordinate overlap (bp) required to join contig "
+    "fragments of a split gene into one call.",
 )
 @click.option(
     "--format",
@@ -390,6 +408,7 @@ def cmd_typing_cgmlst(
     min_id: float,
     min_cov: float,
     min_depth: float,
+    min_join_overlap: int,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -422,6 +441,7 @@ def cmd_typing_cgmlst(
         min_id=min_id,
         min_cov=min_cov,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
         fmt=fmt,
         output=output,
         cache_dir=cache_dir,
@@ -674,6 +694,7 @@ def _run_mlst_like_typing(
     min_id: float,
     min_cov: float,
     min_depth: float,
+    min_join_overlap: int = 10,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -827,6 +848,7 @@ def _run_mlst_like_typing(
                     min_identity=min_id,
                     min_coverage=min_cov,
                     min_depth=min_depth,
+                    min_join_overlap=min_join_overlap,
                     force_reindex=force_reindex,
                     threads=threads,
                     count_same_copy=count_same_copy,

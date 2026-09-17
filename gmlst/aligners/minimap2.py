@@ -31,15 +31,26 @@ from __future__ import annotations
 import logging
 import os
 import time
+from collections import defaultdict
 from pathlib import Path
 from typing import Literal
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch, split_allele_id
-from gmlst.fasta_io import merge_fasta_files
+from gmlst.fasta_io import iter_fasta_records, merge_fasta_files
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import require_tool, run_cmd, temp_dir
 
 logger = logging.getLogger(__name__)
+
+_MAX_FRAGMENTS_PER_LOCUS = 100
+
+_COMPLEMENT = str.maketrans("ACGTUNacgtun", "TGCAANtgcaan")
+
+
+def _revcomp(seq: str) -> str:
+    """Reverse-complement a nucleotide string."""
+    return seq.translate(_COMPLEMENT)[::-1]
+
 
 _FASTA_PRESET = os.getenv("GMLST_MINIMAP2_FASTA_PRESET", "asm5")
 _FASTA_SPEED_PROFILES: dict[str, list[str]] = {
@@ -159,7 +170,7 @@ class Minimap2Aligner:
         sample_id = SampleInput.from_path(sample_path).sample_id
         t0 = time.perf_counter()
 
-        matches = self._align_fasta(sample_path, index_path, loci)
+        matches, fragments = self._align_fasta(sample_path, index_path, loci)
 
         runtime = time.perf_counter() - t0
         called_loci = {m.locus for m in matches}
@@ -171,11 +182,12 @@ class Minimap2Aligner:
             failed_loci=failed,
             backend=self.name,
             runtime_seconds=runtime,
+            fragments=fragments,
         )
 
     def _align_fasta(
         self, genome: Path, index_dir: Path, loci: list[str]
-    ) -> list[AlleleMatch]:
+    ) -> tuple[list[AlleleMatch], list[AlleleMatch]]:
         """allele sequences → genome assembly (asm5 preset)."""
         alleles_fasta = index_dir / "alleles.fasta"
         with temp_dir("gmlst_mm2_") as tmp:
@@ -196,9 +208,11 @@ class Minimap2Aligner:
                     str(alleles_fasta),  # query (alleles)
                 ]
             )
+            contigs = {name: seq for name, seq in iter_fasta_records(genome)}
             return _parse_paf(
                 paf,
                 loci,
+                contigs,
             )
 
 
@@ -210,13 +224,21 @@ class Minimap2Aligner:
 def _parse_paf(
     path: Path,
     loci: list[str],
-) -> list[AlleleMatch]:
-    """Parse PAF for FASTA mode where the query is the allele sequence."""
+    contigs: dict[str, str],
+) -> tuple[list[AlleleMatch], list[AlleleMatch]]:
+    """Parse PAF for FASTA mode where the query is the allele sequence.
+
+    *matches* keeps the best hit per (locus, allele) — semantics unchanged.
+    *fragments* records every PAF row with ``sequence`` set to the
+    allele-oriented contig slice (reverse-complemented for ``-`` strand),
+    so downstream join logic never needs to re-orient anything.
+    """
     loci_set = set(loci)
     best: dict[tuple[str, str], AlleleMatch] = {}
+    fragments: list[AlleleMatch] = []
 
     if not path.exists():
-        return []
+        return [], []
 
     with path.open() as fh:
         for line in fh:
@@ -250,6 +272,31 @@ def _parse_paf(
             identity = (nmatch / total_aligned * 100.0) if total_aligned > 0 else 0.0
             key = (locus, allele_id)
 
+            contig_seq = contigs.get(contig_name)
+            block = contig_seq[contig_start:contig_end] if contig_seq else None
+            if block is not None and strand == "-":
+                block = _revcomp(block)
+
+            fragments.append(
+                AlleleMatch(
+                    locus=locus,
+                    allele_id=allele_id,
+                    identity=identity,
+                    coverage=coverage,
+                    strand=strand,
+                    alignment_length=blen,
+                    score=identity * coverage,
+                    query_contig=contig_name,
+                    query_contig_length=contig_len,
+                    query_start=contig_start,
+                    query_end=contig_end,
+                    allele_length=qlen,
+                    allele_start=qstart,
+                    allele_end=qend,
+                    sequence=block,
+                )
+            )
+
             existing = best.get(key)
             if (
                 existing is None
@@ -273,4 +320,19 @@ def _parse_paf(
                     allele_end=max(qstart, qend),
                 )
 
-    return list(best.values())
+    return list(best.values()), _cap_fragments(fragments)
+
+
+def _cap_fragments(
+    fragments: list[AlleleMatch],
+    limit: int = _MAX_FRAGMENTS_PER_LOCUS,
+) -> list[AlleleMatch]:
+    """Keep at most *limit* fragments per locus, best (identity, length) first."""
+    grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
+    for fragment in fragments:
+        grouped[fragment.locus].append(fragment)
+    capped: list[AlleleMatch] = []
+    for locus_frags in grouped.values():
+        locus_frags.sort(key=lambda f: (f.identity, f.alignment_length), reverse=True)
+        capped.extend(locus_frags[:limit])
+    return capped

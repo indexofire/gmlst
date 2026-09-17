@@ -34,6 +34,32 @@ def _with_detail(base: str, call: LocusCall, detail: bool) -> str:
     return f"{base};{contig}:{start}-{end}:{strand}"
 
 
+def _locus_call_to_dict(call: LocusCall) -> dict:
+    """Serialize one :class:`LocusCall`, including fragment evidence when set."""
+    m = call.best_match
+    payload: dict = {
+        "allele_id": call.allele_id,
+        "call_type": call.call_type,
+        "allele_ids": call.allele_ids,
+        "multiple_hits": call.multiple_hits,
+        "copy_count": call.copy_count,
+        "novel_sequence": call.novel_sequence,
+        "identity": m.identity if m else None,
+        "coverage": m.coverage if m else None,
+        "strand": m.strand if m else None,
+        "query_contig": m.query_contig if m else None,
+        "query_contig_length": m.query_contig_length if m else None,
+        "query_start": m.query_start if m else None,
+        "query_end": m.query_end if m else None,
+        "allele_length": m.allele_length if m else None,
+        "allele_start": m.allele_start if m else None,
+        "allele_end": m.allele_end if m else None,
+    }
+    if call.fragments is not None:
+        payload["fragments"] = call.fragments
+    return payload
+
+
 @dataclass
 class STResult:
     """Final MLST typing result for one sample."""
@@ -177,36 +203,7 @@ class STResult:
             "scheme": self.scheme,
             "st": self.st,
             "allele_calls": {
-                locus: {
-                    "allele_id": call.allele_id,
-                    "call_type": call.call_type,
-                    "allele_ids": call.allele_ids,
-                    "multiple_hits": call.multiple_hits,
-                    "copy_count": call.copy_count,
-                    "novel_sequence": call.novel_sequence,
-                    "identity": call.best_match.identity if call.best_match else None,
-                    "coverage": call.best_match.coverage if call.best_match else None,
-                    "strand": call.best_match.strand if call.best_match else None,
-                    "query_contig": call.best_match.query_contig
-                    if call.best_match
-                    else None,
-                    "query_contig_length": (
-                        call.best_match.query_contig_length if call.best_match else None
-                    ),
-                    "query_start": call.best_match.query_start
-                    if call.best_match
-                    else None,
-                    "query_end": call.best_match.query_end if call.best_match else None,
-                    "allele_length": (
-                        call.best_match.allele_length if call.best_match else None
-                    ),
-                    "allele_start": call.best_match.allele_start
-                    if call.best_match
-                    else None,
-                    "allele_end": call.best_match.allele_end
-                    if call.best_match
-                    else None,
-                }
+                locus: _locus_call_to_dict(call)
                 for locus, call in self.locus_calls.items()
             },
             "is_novel": self.is_novel,

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from gmlst.aligners.base import AlignmentResult, AlleleMatch
+from gmlst.calling.fragment_join import join_locus_fragments
 
 CallType = Literal["exact", "closest", "novel", "partial", "missing"]
 
@@ -31,6 +32,8 @@ class LocusCall:
     copy_count: int = 1
     novel_sequence: str | None = None
     """Extracted sequence when call_type is 'novel'."""
+    fragments: list[dict[str, object]] | None = None
+    """Per-fragment placement when joint fragment evidence informed the call."""
 
 
 def call_best_allele(
@@ -39,6 +42,8 @@ def call_best_allele(
     min_identity: float = MIN_IDENTITY,
     min_coverage: float = MIN_COVERAGE,
     min_depth: float = MIN_DEPTH,
+    fragments: list[AlleleMatch] | None = None,
+    min_join_overlap: int = 10,
 ) -> LocusCall:
     """Select the best allele from a list of hits for one locus.
 
@@ -52,6 +57,11 @@ def call_best_allele(
         Minimum allele coverage fraction threshold (default 0.95).
     min_depth:
         Minimum mean read depth for FASTQ inputs (ignored when depth is None).
+    fragments:
+        Raw per-HSP fragments for this locus.  When no single match passes
+        thresholds, overlapping fragments may be reconstructed into one
+        synthetic match that re-enters the normal selection below; disjoint
+        fragments only upgrade the partial call's reported coverage.
 
     Returns
     -------
@@ -80,17 +90,55 @@ def call_best_allele(
         valid.append(m)
 
     if not valid:
+        joined = (
+            join_locus_fragments(
+                fragments,
+                min_identity=min_identity,
+                min_coverage=min_coverage,
+                min_join_overlap=min_join_overlap,
+            )
+            if fragments
+            else None
+        )
+        if joined is not None and joined.synthetic is not None:
+            retry = call_best_allele(
+                [*matches, joined.synthetic],
+                min_identity=min_identity,
+                min_coverage=min_coverage,
+                min_depth=min_depth,
+            )
+            if retry.call_type != "missing":
+                retry.fragments = joined.fragment_coords
+                return retry
         # Check whether anything came close (partial coverage)
         if matches and max(m.coverage for m in matches) >= min_coverage * 0.5:
             best = _rank_matches(matches)[0]
+            best_match = best
+            allele_id = best.allele_id
+            allele_ids = [best.allele_id]
+            copy_count = best.copy_count
+            fragments_payload: list[dict[str, object]] | None = None
+            if (
+                joined is not None
+                and joined.kind == "joint"
+                and joined.template is not None
+            ):
+                # The chimeric-guarded group is stronger evidence than any
+                # single fragment, so the partial call follows it.
+                best_match = replace(joined.template, coverage=joined.joint_coverage)
+                allele_id = joined.allele_id
+                allele_ids = [joined.allele_id]
+                copy_count = joined.template.copy_count
+                fragments_payload = joined.fragment_coords
             return LocusCall(
                 locus=locus,
-                allele_id=best.allele_id,
+                allele_id=allele_id,
                 call_type="partial",
-                confidence=_confidence(best),
-                best_match=best,
-                allele_ids=[best.allele_id],
-                copy_count=best.copy_count,
+                confidence=_confidence(best_match),
+                best_match=best_match,
+                allele_ids=allele_ids,
+                copy_count=copy_count,
+                fragments=fragments_payload,
             )
         return LocusCall(
             locus=locus,
@@ -144,7 +192,11 @@ def call_all_loci(
     calls: dict[str, LocusCall] = {}
     for locus in loci:
         hits = result.matches_for(locus)
-        locus_call = call_best_allele(hits, **thresholds)
+        locus_call = call_best_allele(
+            hits,
+            fragments=result.fragments_for(locus),
+            **thresholds,
+        )
         if not locus_call.locus:
             locus_call = LocusCall(
                 locus=locus,

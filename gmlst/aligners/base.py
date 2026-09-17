@@ -100,7 +100,18 @@ class AlignmentResult:
     failed_loci: list[str] = field(default_factory=list)
     backend: str = ""
     runtime_seconds: float = 0.0
+    fragments: list[AlleleMatch] = field(default_factory=list)
+    """Raw per-HSP fragment hits (before best-per-(locus, allele) collapse).
+
+    Backends that cannot report fragments simply leave this empty; the
+    ``matches`` list semantics are unaffected.
+    """
     _matches_by_locus: dict[str, list[AlleleMatch]] | None = field(
+        default=None,
+        init=False,
+        repr=False,
+    )
+    _fragments_by_locus: dict[str, list[AlleleMatch]] | None = field(
         default=None,
         init=False,
         repr=False,
@@ -119,6 +130,17 @@ class AlignmentResult:
                 )
             self._matches_by_locus = dict(grouped)
         return self._matches_by_locus.get(locus, [])
+
+    def fragments_for(self, locus: str) -> list[AlleleMatch]:
+        """Return all raw fragment HSPs for a single locus, longest-first."""
+        if self._fragments_by_locus is None:
+            grouped: dict[str, list[AlleleMatch]] = defaultdict(list)
+            for fragment in self.fragments:
+                grouped[fragment.locus].append(fragment)
+            for frags in grouped.values():
+                frags.sort(key=lambda f: f.alignment_length, reverse=True)
+            self._fragments_by_locus = dict(grouped)
+        return self._fragments_by_locus.get(locus, [])
 
 
 # ---------------------------------------------------------------------------

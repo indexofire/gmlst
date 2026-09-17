@@ -192,24 +192,25 @@ class TestParseBlastOutput:
         return "\t".join(fields)
 
     def test_missing_file_returns_empty(self, tmp_path: Path) -> None:
-        result = _parse_blast_output(tmp_path / "nonexistent", self.loci)
-        assert result == []
+        matches, fragments = _parse_blast_output(tmp_path / "nonexistent", self.loci)
+        assert matches == []
+        assert fragments == []
 
     def test_empty_file_returns_empty(self, tmp_path: Path) -> None:
         blast = tmp_path / "empty.tsv"
         blast.write_text("")
-        result = _parse_blast_output(blast, self.loci)
-        assert result == []
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert matches == []
 
     def test_single_valid_hit(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
         self._write_blast(blast, [self._make_row("arcC_1", pident=100.0)])
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 1
-        assert result[0].locus == "arcC"
-        assert result[0].allele_id == "1"
-        assert result[0].identity == 100.0
-        assert result[0].coverage == 1.0
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 1
+        assert matches[0].locus == "arcC"
+        assert matches[0].allele_id == "1"
+        assert matches[0].identity == 100.0
+        assert matches[0].coverage == 1.0
 
     def test_best_hit_wins_on_identity(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -220,9 +221,9 @@ class TestParseBlastOutput:
                 self._make_row("arcC_1", pident=99.0, length=400, qlen=480),
             ],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 1
-        assert result[0].identity == 99.0
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 1
+        assert matches[0].identity == 99.0
 
     def test_best_hit_same_identity_higher_coverage_wins(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -233,15 +234,15 @@ class TestParseBlastOutput:
                 self._make_row("arcC_1", pident=98.0, length=460, qlen=480),
             ],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 1
-        assert result[0].coverage == pytest.approx(460 / 480)
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 1
+        assert matches[0].coverage == pytest.approx(460 / 480)
 
     def test_skips_unknown_locus(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
         self._write_blast(blast, [self._make_row("glpF_1", pident=100.0)])
-        result = _parse_blast_output(blast, self.loci)
-        assert result == []
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert matches == []
 
     def test_skips_comment_and_empty_lines(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -253,8 +254,8 @@ class TestParseBlastOutput:
                 self._make_row("arcC_1", pident=100.0),
             ],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 1
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 1
 
     def test_skips_short_lines(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -265,8 +266,8 @@ class TestParseBlastOutput:
                 self._make_row("arcC_1", pident=100.0),
             ],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 1
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 1
 
     def test_count_same_copy_sets_copy_count(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -277,15 +278,19 @@ class TestParseBlastOutput:
                 self._make_row("arcC_1", sseqid="contig2", sstart=200, send=679),
             ],
         )
-        result = _parse_blast_output(blast, self.loci, count_same_copy=True)
-        assert len(result) == 1
-        assert result[0].copy_count == 2
+        matches, _fragments = _parse_blast_output(
+            blast, self.loci, count_same_copy=True
+        )
+        assert len(matches) == 1
+        assert matches[0].copy_count == 2
 
     def test_count_same_copy_default_is_one(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
         self._write_blast(blast, [self._make_row("arcC_1", pident=100.0)])
-        result = _parse_blast_output(blast, self.loci, count_same_copy=True)
-        assert result[0].copy_count == 1
+        matches, _fragments = _parse_blast_output(
+            blast, self.loci, count_same_copy=True
+        )
+        assert matches[0].copy_count == 1
 
     def test_reverse_strand_detected(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -293,8 +298,8 @@ class TestParseBlastOutput:
             blast,
             [self._make_row("arcC_1", pident=100.0, sstart=579, send=100)],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert result[0].strand == "-"
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert matches[0].strand == "-"
 
     def test_multiple_loci(self, tmp_path: Path) -> None:
         blast = tmp_path / "hits.tsv"
@@ -305,9 +310,9 @@ class TestParseBlastOutput:
                 self._make_row("aroE_5", pident=97.0, length=450, qlen=450),
             ],
         )
-        result = _parse_blast_output(blast, self.loci)
-        assert len(result) == 2
-        loci_found = {m.locus for m in result}
+        matches, _fragments = _parse_blast_output(blast, self.loci)
+        assert len(matches) == 2
+        loci_found = {m.locus for m in matches}
         assert loci_found == {"arcC", "aroE"}
 
 
