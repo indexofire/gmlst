@@ -167,11 +167,13 @@ The full list of envelope constants is in the [Command Reference](commands.md#js
 
 ### Increase sample-level parallelism
 
-If you are processing many samples, you can run multiple samples in parallel:
+If you are processing many samples, run them in parallel with `--max-workers N` (match N to your CPU cores):
 
 ```bash
-gmlst typing mlst -s saureus_1 --max-workers 4 samples/*.fasta -o results.tsv
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 samples/*.fasta -o results.tsv
 ```
+
+`--max-workers` and `-t/--threads` parallelize different things: `-t` speeds up a single backend invocation, while `--max-workers` types N samples at once (per-sample backend threads drop to 1). The `kma` and `nucmer` backends gain nothing from `-t`, so for those `--max-workers` is the only speedup. Measured on 639 assemblies with 16 workers: minimap2 55 s → 9 s, blastn 97 s → 31 s, nucmer 270 s → 76 s, kma 330 s → 48 s; profiles are identical to serial runs.
 
 ## Step 5: FASTQ paired-end input
 

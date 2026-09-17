@@ -235,10 +235,11 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -b nucmer flagged_sample.fasta
 
 ## 性能建议
 
-- 方案大或样本多时，给 BLASTN、KMA、minimap2 设置 `-t/--threads`。
-- 批量处理很多样本时，用 `--max-workers` 做样本级并行。
+- `-t/--threads` 对 minimap2 和 blastn 有效。`kma` 和 `nucmer` 的单样本比对无法利用多线程（实测 `-t 1` 与 `-t 16` 无差别），对这两个后端只能靠样本级并行提速。
+- 批量处理很多样本时，用 `--max-workers N`（N 取 CPU 核心数）做样本级并行；`--max-workers > 1` 时每样本的后端线程会强制为 1。
+- 639 个组装、16 workers 实测：minimap2 55 s → 9 s、blastn 97 s → 31 s、nucmer 270 s → 76 s、kma 330 s → 48 s。
 - 大型 FASTA cgMLST 可以先用 `minimap2` 跑主流程，只对标记位点或标记样本做回退确认。
-- FASTQ cgMLST 配合 KMA 时，除非在调试，否则尽量不要长期使用单线程。
+- FASTQ cgMLST 配合 KMA 时，除非在调试，否则尽量不要长期使用单 worker。
 - 大批量任务建议用 `-o` 把输出直接写到文件，而不是全部打到终端。
 - 重复任务尽量复用已缓存的方案和索引，第一次建索引会慢一些，之后会轻很多。
 - 临时空间较慢或较小的时候，可以用 `GMLST_TMPDIR` 把临时文件放到更合适的位置。

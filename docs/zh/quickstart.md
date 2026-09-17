@@ -169,11 +169,13 @@ JSON 适合自动化分析、生成报告，或者后续提取 novel allele。
 
 ### 提高样本级并行度
 
-如果你需要处理很多样本，可以并行运行多个样本：
+如果需要处理很多样本，用 `--max-workers N` 并行分型（N 取 CPU 核心数）：
 
 ```bash
-gmlst typing mlst -s saureus_1 --max-workers 4 samples/*.fasta -o results.tsv
+gmlst typing mlst -s saureus_1 -t 1 --max-workers 16 samples/*.fasta -o results.tsv
 ```
+
+`--max-workers` 与 `-t/--threads` 并行的是不同层面：`-t` 加速单次后端调用，`--max-workers` 同时分型 N 个样本（此时每样本后端线程降为 1）。`kma` 和 `nucmer` 后端无法从 `-t` 获益，对它们而言 `--max-workers` 是唯一的提速手段。在 639 个组装上以 16 workers 实测：minimap2 55 s → 9 s、blastn 97 s → 31 s、nucmer 270 s → 76 s、kma 330 s → 48 s，谱型与串行完全一致。
 
 ## 第 5 步：FASTQ 双端输入
 

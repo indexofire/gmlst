@@ -233,10 +233,11 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -b nucmer flagged_sample.fasta
 
 ## Performance Tips
 
-- Use `-t/--threads` on BLASTN, KMA, and minimap2 runs that process large schemes or batches.
-- Use `--max-workers` for sample-level parallelism when typing many samples.
+- `-t/--threads` speeds up minimap2 and blastn. The `kma` and `nucmer` backends cannot use extra threads for a single sample (measured: no difference between `-t 1` and `-t 16`), so for those backends sample-level parallelism is the only speedup.
+- Use `--max-workers N` (N = CPU cores) for sample-level parallelism when typing many samples; with `--max-workers > 1`, per-sample backend threads are forced to 1.
+- Measured on 639 assemblies, 16 workers: minimap2 55 s → 9 s, blastn 97 s → 31 s, nucmer 270 s → 76 s, kma 330 s → 48 s.
 - For large cgMLST on FASTA, start with `minimap2` and only fall back on flagged loci or flagged samples.
-- For FASTQ cgMLST with KMA, avoid single-thread runs unless you are debugging.
+- For FASTQ cgMLST with KMA, avoid single-worker runs unless you are debugging.
 - Keep output on disk with `-o` during large runs instead of printing everything to the terminal.
 - Reuse cached schemes and indexes for repeat typing. The first run pays the indexing cost, later runs are cheaper.
 - If temporary storage is slow or cramped, move temp files with `GMLST_TMPDIR`.
