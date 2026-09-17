@@ -61,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   declarations. Behavior is locked by golden parser fixtures and CLI help
   snapshots.
 
+### Removed
+- Dead code found by a project-wide scan: the unused
+  `gmlst/calling/confidence.py` module, the unused `exit_with_error`
+  helper, and the write-only legacy `dna_hash_index.pkl` double-write.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added
