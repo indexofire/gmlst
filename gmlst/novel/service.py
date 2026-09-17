@@ -125,7 +125,15 @@ def collect_novel_typing_results(
                             sample_name,
                         )
 
-        if profile_writer:
+        # Only complete, unambiguous profiles missing from the scheme's
+        # profile table are novel ST candidates; a resolved ST means the
+        # scheme already knows this exact combination.
+        if (
+            profile_writer
+            and result.st is None
+            and result.is_complete
+            and not result.has_conflicting_multicopy
+        ):
             allele_calls = {
                 locus: (call.allele_id or "-")
                 for locus, call in result.locus_calls.items()

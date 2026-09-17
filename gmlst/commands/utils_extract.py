@@ -186,7 +186,7 @@ def _extract_novel_from_json(
             else:
                 profile_map[locus] = "-"
 
-        if profile_writer is not None:
+        if profile_writer is not None and entry.get("st") is None:
             profile_writer.add_profile(sample=sample_id, allele_calls=profile_map)
 
     if allele_writer is not None:
@@ -241,6 +241,11 @@ def _extract_novel_profile_from_tsv(*, input_path: Path, data_dir: Path) -> None
                     allele_calls[locus] = "-"
                 else:
                     allele_calls[locus] = value
+            # Rows with a resolved ST already exist in the scheme's profile
+            # table; only unmatched combinations are novel ST candidates.
+            st_value = str(row.get("ST", "")).strip()
+            if st_value.isdigit():
+                continue
             writer.add_profile(sample=sample, allele_calls=allele_calls)
         writer.write()
 
@@ -315,7 +320,12 @@ def _extract_novel_from_tsv_with_retyping(
                 allele_calls[locus] = call.allele_id
             else:
                 allele_calls[locus] = "-"
-        if profile_writer is not None:
+        if (
+            profile_writer is not None
+            and result.st is None
+            and result.is_complete
+            and not result.has_conflicting_multicopy
+        ):
             profile_writer.add_profile(
                 sample=result.sample_id, allele_calls=allele_calls
             )

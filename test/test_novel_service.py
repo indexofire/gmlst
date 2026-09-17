@@ -78,6 +78,9 @@ def test_collect_novel_typing_results_routes_calls_to_writers() -> None:
 
     result = SimpleNamespace(
         sample_id="sample1",
+        st=None,
+        is_complete=True,
+        has_conflicting_multicopy=False,
         locus_calls={
             "dnaN": SimpleNamespace(
                 call_type="novel", novel_sequence="ATGC", allele_id="n1"
@@ -158,6 +161,9 @@ def test_finalize_novel_typing_outputs_collects_then_writes() -> None:
 
     result = SimpleNamespace(
         sample_id="sample1",
+        st=None,
+        is_complete=True,
+        has_conflicting_multicopy=False,
         locus_calls={
             "dnaN": SimpleNamespace(
                 call_type="novel", novel_sequence="ATGC", allele_id="n1"
@@ -178,3 +184,50 @@ def test_finalize_novel_typing_outputs_collects_then_writes() -> None:
         "write_alleles",
         "write_profiles",
     ]
+
+
+def test_collect_skips_profiles_with_known_st() -> None:
+    profiled: list[str] = []
+    logger = SimpleNamespace(
+        debug=lambda *args, **kwargs: None, info=lambda *args, **kwargs: None
+    )
+
+    class DummyProfileWriter:
+        def add_profile(self, **kwargs):
+            profiled.append(kwargs["sample"])
+            return None
+
+        def write(self):
+            return None
+
+    class DummyAlleleWriter:
+        def add_novel_allele(self, **kwargs):
+            return None
+
+        def write(self):
+            return None
+
+    def _result(sample_id: str, st: int | None) -> SimpleNamespace:
+        return SimpleNamespace(
+            sample_id=sample_id,
+            st=st,
+            is_complete=True,
+            has_conflicting_multicopy=False,
+            locus_calls={
+                "dnaN": SimpleNamespace(
+                    call_type="exact", allele_id="5", novel_sequence=None
+                )
+            },
+        )
+
+    collect_novel_typing_results(
+        results=[
+            _result("known_st_sample", st=2),
+            _result("novel_st_sample", st=None),
+        ],
+        allele_writer=DummyAlleleWriter(),
+        profile_writer=DummyProfileWriter(),
+        logger=logger,
+    )
+
+    assert profiled == ["novel_st_sample"]
