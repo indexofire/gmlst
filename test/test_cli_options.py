@@ -1679,6 +1679,42 @@ def test_scheme_search_table_no_matches_message(monkeypatch) -> None:
     assert "No schemes matching 'shigella'." in result.output
 
 
+def test_scheme_search_accepts_local_provider(monkeypatch) -> None:
+    """Regression: search provider choices must match list (include local)."""
+    runner = CliRunner()
+
+    monkeypatch.setattr(DatabaseCache, "load_catalog", lambda self, provider: [])
+    monkeypatch.setattr(DatabaseCache, "is_downloaded", lambda *args, **kwargs: False)
+
+    result = runner.invoke(main, ["scheme", "search", "ecoli", "-p", "local"])
+
+    assert result.exit_code == 0
+    assert "No schemes matching 'ecoli'." in result.output
+
+
+def test_scheme_search_accepts_full_type_choices(monkeypatch) -> None:
+    """Regression: search type choices must match list (rmlst/other included)."""
+    runner = CliRunner()
+
+    monkeypatch.setattr(DatabaseCache, "load_catalog", lambda self, provider: [])
+    monkeypatch.setattr(DatabaseCache, "is_downloaded", lambda *args, **kwargs: False)
+
+    for scheme_type in ("rmlst", "other"):
+        result = runner.invoke(main, ["scheme", "search", "ecoli", "-t", scheme_type])
+        assert result.exit_code == 0, f"scheme search -t {scheme_type} was rejected"
+
+
+def test_scheme_list_accepts_full_type_choices(monkeypatch) -> None:
+    runner = CliRunner()
+
+    monkeypatch.setattr(DatabaseCache, "load_catalog", lambda self, provider: [])
+    monkeypatch.setattr(DatabaseCache, "is_downloaded", lambda *args, **kwargs: False)
+
+    for scheme_type in ("rmlst", "other"):
+        result = runner.invoke(main, ["scheme", "list", "-t", scheme_type])
+        assert result.exit_code == 0, f"scheme list -t {scheme_type} was rejected"
+
+
 def test_scheme_download_json_summary(monkeypatch) -> None:
     runner = CliRunner()
 

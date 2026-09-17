@@ -232,6 +232,65 @@ class TestFinalizeSampleResult:
         loci_in_merged = {m.locus for m in merged_aln.matches}
         assert loci_in_merged == {"abc", "def"}
 
+    def test_merged_alignment_preserves_fragments(self, tmp_path: Path) -> None:
+        """Regression: exact-hash merge must not drop raw HSP fragments.
+
+        Without ``fragments=aln.fragments`` the merged AlignmentResult loses
+        the per-contig fragment list, so downstream fragment joining for
+        split genes sees nothing.
+        """
+        core_mod = _make_core_mod()
+        core_mod.call_all_loci.return_value = {}
+        core_mod._apply_post_alignment_refinements.return_value = {}
+        core_mod.lookup_st.return_value = SimpleNamespace(sample_id="g", st="-")
+
+        exact = {"abc": _make_match("abc", "42")}
+        fragment = AlleleMatch(
+            locus="def",
+            allele_id="7",
+            identity=100.0,
+            coverage=0.5,
+            query_contig="contig1",
+            allele_length=400,
+            allele_start=0,
+            allele_end=200,
+        )
+        base_aln = AlignmentResult(
+            sample_id="g",
+            matches=[_make_match("def", "7")],
+            failed_loci=[],
+            backend="blastn",
+            fragments=[fragment],
+        )
+
+        ctx = TypingContext(
+            core=core_mod,
+            normalized_policy="default",
+            min_identity=95.0,
+            min_coverage=0.95,
+            min_depth=10.0,
+            count_same_copy=False,
+            chew_cds_gate=False,
+        )
+        sample = _make_sample(tmp_path / "g.fna")
+        scheme = _make_scheme(["abc", "def"])
+
+        _finalize_sample_result(
+            ctx,
+            core_mod,
+            sample,
+            scheme,
+            "blastn",
+            sample.path,
+            base_aln,
+            exact,
+            tmp_path / "idx",
+        )
+
+        merged_aln = core_mod.call_all_loci.call_args[0][0]
+        assert merged_aln.fragments == [fragment]
+        assert merged_aln.fragments_for("def") == [fragment]
+
 
 # ---------------------------------------------------------------------------
 # _type_all_samples

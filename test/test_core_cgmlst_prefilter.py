@@ -65,6 +65,7 @@ def test_run_typing_cgmlst_fasta_uses_prefiltered_alleles(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -153,6 +154,7 @@ def test_run_typing_cgmlst_minimap2_uses_prefilter_and_candidate_fasta(
 
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -239,6 +241,7 @@ def test_run_typing_cgmlst_prefilter_forwards_k_and_top_n(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -320,6 +323,7 @@ def test_run_typing_cgmlst_minimap2_prefilter_uses_fast_settings(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -512,6 +516,7 @@ def test_run_typing_cgmlst_prefilter_low_coverage_falls_back_to_full_alleles(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -591,6 +596,7 @@ def test_run_typing_cgmlst_prefilter_can_be_disabled(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -672,6 +678,7 @@ def test_run_typing_cgmlst_prefilter_auto_disables_for_large_scheme(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -1400,6 +1407,7 @@ def test_run_typing_minimap2_hash_refinement_uses_missing_loci_only(
                 matches = []
                 sample_id = "s1"
                 backend = "minimap2"
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -1510,6 +1518,7 @@ def test_run_typing_exact_hash_prefilter_skips_resolved_loci(
                 matches = []
                 sample_id = "s1"
                 backend = "minimap2"
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -1597,6 +1606,7 @@ def test_run_typing_cgmlst_prefilter_fallback_reuses_full_index(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -1676,6 +1686,7 @@ def test_run_typing_cgmlst_kma_skips_prefilter_and_uses_full_index(
         def align(self, _sample_path, _index_path, _loci, _input_type):
             class _Aln:
                 runtime_seconds = 0.1
+                fragments: list = []
 
                 @staticmethod
                 def matches_for(_locus):
@@ -2264,3 +2275,105 @@ def test_align_evidence_fallback_loci_non_blastn_uses_full_index(monkeypatch) ->
     assert captured["force_reindex"] is True
     assert captured["loci"] == ["abc", "def"]
     assert captured["sample_input_type"] == "fasta"
+
+
+def test_merge_calls_from_alignment_forwards_min_join_overlap(monkeypatch) -> None:
+    """Regression: refinement re-calls must honor --min-join-overlap."""
+    captured: dict[str, object] = {}
+
+    def fake_call_all_loci(_aln, _loci, **thresholds):
+        captured.update(thresholds)
+        return {}
+
+    monkeypatch.setattr(core, "call_all_loci", fake_call_all_loci)
+
+    core._merge_calls_from_alignment(
+        base_calls={},
+        alignment=AlignmentResult(sample_id="s1", backend="minimap2"),
+        loci=["abc"],
+        min_identity=95.0,
+        min_coverage=0.95,
+        min_depth=0.0,
+        min_join_overlap=25,
+    )
+
+    assert captured["min_join_overlap"] == 25
+
+
+def test_merge_calls_from_alignment_min_join_overlap_defaults_to_ten(
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_call_all_loci(_aln, _loci, **thresholds):
+        captured.update(thresholds)
+        return {}
+
+    monkeypatch.setattr(core, "call_all_loci", fake_call_all_loci)
+
+    core._merge_calls_from_alignment(
+        base_calls={},
+        alignment=AlignmentResult(sample_id="s1", backend="minimap2"),
+        loci=["abc"],
+        min_identity=95.0,
+        min_coverage=0.95,
+        min_depth=0.0,
+    )
+
+    assert captured["min_join_overlap"] == 10
+
+
+def _fragment_match(locus: str, allele_id: str, start: int, end: int) -> AlleleMatch:
+    return AlleleMatch(
+        locus=locus,
+        allele_id=allele_id,
+        identity=100.0,
+        coverage=0.5,
+        alignment_length=end - start,
+        sequence="A" * (end - start),
+        query_contig="contig1",
+        allele_length=400,
+        allele_start=start,
+        allele_end=end,
+    )
+
+
+def test_recompute_all_loci_forwards_min_join_overlap_and_fragments(
+    monkeypatch,
+) -> None:
+    """Regression: recompute re-calls honor --min-join-overlap and keep fragments."""
+    captured_thresholds: dict[str, object] = {}
+    captured_fragments: list[AlleleMatch] = []
+
+    def fake_call_all_loci(aln, _loci, **thresholds):
+        captured_thresholds.update(thresholds)
+        captured_fragments.extend(aln.fragments)
+        return {}
+
+    monkeypatch.setattr(core, "call_all_loci", fake_call_all_loci)
+
+    base_frag = _fragment_match("abc", "1", 0, 200)
+    extra_frag = _fragment_match("abc", "2", 200, 400)
+
+    core._recompute_all_loci_with_additional_alignment(
+        base_alignment=AlignmentResult(
+            sample_id="s1",
+            backend="minimap2",
+            matches=[],
+            fragments=[base_frag],
+        ),
+        additional_alignment=AlignmentResult(
+            sample_id="s1",
+            backend="minimap2",
+            matches=[],
+            fragments=[extra_frag],
+        ),
+        all_loci=["abc"],
+        min_identity=95.0,
+        min_coverage=0.95,
+        min_depth=0.0,
+        min_join_overlap=15,
+    )
+
+    assert captured_thresholds["min_join_overlap"] == 15
+    assert captured_fragments == [base_frag, extra_frag]

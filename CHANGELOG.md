@@ -20,6 +20,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.3.1] - 2026-09-17
+
+### Fixed
+- Loci split across more than two contigs no longer fall back to "missing":
+  joint fragment evidence now supports the partial call even when every
+  single fragment is below the single-match rescue gate.
+- A fully contained middle fragment no longer breaks three-fragment chain
+  reconstruction; chaining now tests overlap against the running union.
+- Novel-ST collection guards are now identical across all four collection
+  paths (live typing, JSON extraction, TSV re-typing, plain TSV): profiles
+  with a resolved ST, incomplete profiles, or conflicting multicopy loci
+  are skipped everywhere. JSON extraction previously only checked the ST.
+- Plain-TSV novel extraction now normalizes rendered allele values
+  (`23*` multicopy marker, `--detail` position suffixes) instead of
+  writing them into profiles_novel.txt.
+- `scheme search` accepts `-p local` and the full scheme-type list
+  (`rmlst`, `other`), matching `scheme list`.
+- `--min-join-overlap` is honored in refinement re-call paths instead of
+  silently reverting to the default.
+- Fragment evidence is preserved when merging exact-hash matches into the
+  alignment result, and through refinement recompute paths.
+- blastn fragment allele coordinates are defensively normalized.
+
+### Performance
+- Scheme loading is memoized per process (allele sequences, exact-hash
+  index, profile tables): worker-mode batch typing no longer re-parses the
+  profile TSV and allele FASTAs for every sample (measured: profile reload
+  1.14 s -> 0.018 s; ~1.5 s redundant work per sample removed).
+- `load_scheme` uses set membership for loci discovery instead of an
+  O(n^2) list scan; alignment parsers drop dead allocations and defer
+  minimap2 fragment sequence slicing to post-cap.
+- tgmlst JSON output no longer round-trips through a serialize-parse
+  cycle.
+
+### Changed
+- Shared aligner helpers (fragment capping, best-hit selection, result
+  assembly) live in `gmlst/aligners/base.py`; typing CLI option groups are
+  built from shared factories, removing ~90 lines of duplicated option
+  declarations. Behavior is locked by golden parser fixtures and CLI help
+  snapshots.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added
