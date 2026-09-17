@@ -184,7 +184,7 @@ class FastHashStrategy(HashStrategy):
         seq_len = len(clean_seq)
 
         # Compute hash
-        seq_hash = self._hasher(clean_seq).hexdigest()
+        seq_hash = self._hasher(clean_seq.encode()).hexdigest()
 
         # Length index check
         if self.use_length_index and seq_len in self.length_index:
@@ -249,7 +249,7 @@ class UltraHashStrategy(HashStrategy):
         self.total_sequences += 1
         clean_seq = self._normalize_sequence(sequence)
 
-        seq_hash = self._hasher(clean_seq).intdigest()
+        seq_hash = self._hasher(clean_seq.encode()).intdigest()
 
         if seq_hash in self.allele_db:
             self.allele_db[seq_hash]["count"] += 1
