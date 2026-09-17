@@ -130,6 +130,28 @@ class TestOverlapAgree:
         assert joined.synthetic.sequence == allele
 
 
+class TestContainedMiddleChain:
+    def test_contained_middle_fragment_chain_reconstructs(self) -> None:
+        """Regression: a fully-contained middle fragment must not break the chain.
+
+        A=[0,200), B=[50,150), C=[180,250): the consecutive pair (B, C) does
+        not overlap, but C overlaps the running union (which reaches 200) by
+        20 bp, so the group tiles contiguously.
+        """
+        allele = _random_seq(ALLELE_LENGTH, seed=21)
+        joined = _join(
+            [
+                _fragment(allele[:200], 0, contig="cA"),
+                _fragment(allele[50:150], 50, contig="cB"),
+                _fragment(allele[180:250], 180, contig="cC"),
+            ]
+        )
+        assert joined is not None
+        assert joined.kind == "reconstructed"
+        assert joined.synthetic is not None
+        assert joined.synthetic.sequence == allele[:250]
+
+
 class TestOverlapDisagree:
     def test_snp_in_overlap_rejects_join(self) -> None:
         allele = _random_seq(ALLELE_LENGTH, seed=6)

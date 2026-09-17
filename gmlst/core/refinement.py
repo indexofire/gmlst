@@ -89,6 +89,7 @@ def _merge_calls_from_alignment_impl(
     min_depth: float,
     call_all_loci_fn,
     merge_fallback_calls_fn,
+    min_join_overlap: int = 10,
 ) -> None:
     extra_calls = call_all_loci_fn(
         alignment,
@@ -96,6 +97,7 @@ def _merge_calls_from_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
     )
     merge_fallback_calls_fn(base_calls, extra_calls)
 
@@ -109,6 +111,7 @@ def _recompute_all_loci_with_additional_alignment_impl(
     min_coverage: float,
     min_depth: float,
     call_all_loci_fn,
+    min_join_overlap: int = 10,
 ) -> dict[str, LocusCall]:
     merged_aln = AlignmentResult(
         sample_id=base_alignment.sample_id,
@@ -118,6 +121,7 @@ def _recompute_all_loci_with_additional_alignment_impl(
         runtime_seconds=(
             base_alignment.runtime_seconds + additional_alignment.runtime_seconds
         ),
+        fragments=[*base_alignment.fragments, *additional_alignment.fragments],
     )
     return call_all_loci_fn(
         merged_aln,
@@ -125,6 +129,7 @@ def _recompute_all_loci_with_additional_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
     )
 
 
@@ -147,6 +152,7 @@ def _confirm_loci_with_tuned_aligner_impl(
     merge_calls_from_alignment_fn,
     select_candidate_locus_fastas_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     if not candidate_loci:
         return
@@ -182,6 +188,7 @@ def _confirm_loci_with_tuned_aligner_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
     )
 
 
@@ -263,6 +270,7 @@ def _refine_minimap2_hash_prefilter(
     select_candidate_locus_fastas_fn,
     minimap2_hash_refine_max_loci_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> dict[str, LocusCall]:
     if use_minimap2_hash_prefilter and backend == "minimap2":
         unresolved_loci = [
@@ -304,6 +312,7 @@ def _refine_minimap2_hash_prefilter(
                 min_identity=min_identity,
                 min_coverage=min_coverage,
                 min_depth=effective_min_depth,
+                min_join_overlap=min_join_overlap,
             )
     return locus_calls
 
@@ -326,6 +335,7 @@ def _refine_kma_fastq_mem_strict(
     call_rank_fn,
     confirm_loci_with_tuned_aligner_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     if (
         scheme_type == "cgmlst"
@@ -369,6 +379,7 @@ def _refine_kma_fastq_mem_strict(
                     min_identity=min_identity,
                     min_coverage=min_coverage,
                     min_depth=effective_min_depth,
+                    min_join_overlap=min_join_overlap,
                 )
 
 
@@ -393,6 +404,7 @@ def _refine_bsr_minimap2_confirmation(
     call_rank_fn,
     confirm_loci_with_tuned_aligner_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     bsr_confirm_max_loci_env = minimap2_bsr_confirm_max_loci_fn()
     bsr_confirm_max_loci = (
@@ -452,6 +464,7 @@ def _refine_bsr_minimap2_confirmation(
                 min_identity=min_identity,
                 min_coverage=min_coverage,
                 min_depth=effective_min_depth,
+                min_join_overlap=min_join_overlap,
             )
         else:
             logger.info(
@@ -480,6 +493,7 @@ def _refine_ultrafast_second_pass(
     ultrafast_second_pass_rank_fn,
     confirm_loci_with_tuned_aligner_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     if (
         scheme_type == "cgmlst"
@@ -527,6 +541,7 @@ def _refine_ultrafast_second_pass(
                 min_identity=min_identity,
                 min_coverage=min_coverage,
                 min_depth=effective_min_depth,
+                min_join_overlap=min_join_overlap,
             )
 
 
@@ -556,6 +571,7 @@ def _refine_evidence_fallback(
     align_evidence_fallback_loci_fn,
     merge_calls_from_alignment_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     fallback_backend = (
         mode_overrides.evidence_fallback_backend
@@ -612,6 +628,7 @@ def _refine_evidence_fallback(
                         min_identity=min_identity,
                         min_coverage=min_coverage,
                         min_depth=effective_min_depth,
+                        min_join_overlap=min_join_overlap,
                     )
 
 
@@ -631,6 +648,7 @@ def _refine_capped_non_exact_loci(
     merge_calls_from_alignment_fn,
     select_candidate_locus_fastas_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> None:
     """Stage 2: re-align non-exact loci with FULL alleles.
 
@@ -678,6 +696,7 @@ def _refine_capped_non_exact_loci(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=effective_min_depth,
+        min_join_overlap=min_join_overlap,
     )
 
 
@@ -724,6 +743,7 @@ def _apply_post_alignment_refinements_impl(
     cgmlst_evidence_fallback_backend_fn,
     cgmlst_evidence_fallback_max_loci_fn,
     logger: Logger,
+    min_join_overlap: int = 10,
 ) -> dict[str, LocusCall]:
     locus_calls = _refine_minimap2_hash_prefilter(
         locus_calls=locus_calls,
@@ -745,6 +765,7 @@ def _apply_post_alignment_refinements_impl(
         select_candidate_locus_fastas_fn=select_candidate_locus_fastas_fn,
         minimap2_hash_refine_max_loci_fn=minimap2_hash_refine_max_loci_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     _refine_kma_fastq_mem_strict(
@@ -764,6 +785,7 @@ def _apply_post_alignment_refinements_impl(
         call_rank_fn=call_rank_fn,
         confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     _refine_bsr_minimap2_confirmation(
@@ -786,6 +808,7 @@ def _apply_post_alignment_refinements_impl(
         call_rank_fn=call_rank_fn,
         confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     _refine_ultrafast_second_pass(
@@ -808,6 +831,7 @@ def _apply_post_alignment_refinements_impl(
         ultrafast_second_pass_rank_fn=ultrafast_second_pass_rank_fn,
         confirm_loci_with_tuned_aligner_fn=confirm_loci_with_tuned_aligner_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     _refine_evidence_fallback(
@@ -835,6 +859,7 @@ def _apply_post_alignment_refinements_impl(
         align_evidence_fallback_loci_fn=align_evidence_fallback_loci_fn,
         merge_calls_from_alignment_fn=merge_calls_from_alignment_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     _refine_capped_non_exact_loci(
@@ -852,6 +877,7 @@ def _apply_post_alignment_refinements_impl(
         merge_calls_from_alignment_fn=merge_calls_from_alignment_fn,
         select_candidate_locus_fastas_fn=select_candidate_locus_fastas_fn,
         logger=logger,
+        min_join_overlap=min_join_overlap,
     )
 
     return locus_calls

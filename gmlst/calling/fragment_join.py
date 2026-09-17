@@ -185,11 +185,18 @@ def _union_len(sorted_group: list[_Frag]) -> int:
 
 
 def _chains(sorted_group: list[_Frag], min_join_overlap: int) -> bool:
-    """True when consecutive fragments overlap enough to tile contiguously."""
-    return all(
-        min(later.end, earlier.end) - later.start >= max(min_join_overlap, 1)
-        for earlier, later in zip(sorted_group, sorted_group[1:], strict=False)
-    )
+    """True when fragments overlap the running union enough to tile.
+
+    Each later fragment must overlap the union of all earlier ones
+    (``cursor`` = max end so far) by at least ``min_join_overlap`` bases;
+    a fully contained middle fragment still chains.
+    """
+    cursor = sorted_group[0].end
+    for frag in sorted_group[1:]:
+        if min(frag.end, cursor) - frag.start < max(min_join_overlap, 1):
+            return False
+        cursor = max(cursor, frag.end)
+    return True
 
 
 def _tile(sorted_group: list[_Frag]) -> tuple[str, float, int] | None:

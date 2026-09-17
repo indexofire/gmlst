@@ -140,6 +140,25 @@ def call_best_allele(
                 copy_count=copy_count,
                 fragments=fragments_payload,
             )
+        if (
+            joined is not None
+            and joined.kind == "joint"
+            and joined.template is not None
+            and joined.joint_coverage >= min_coverage * 0.5
+        ):
+            # Joint evidence clears the 0.5 gate even when every single
+            # fragment is below it (gene split three ways) — not "missing".
+            joint_match = replace(joined.template, coverage=joined.joint_coverage)
+            return LocusCall(
+                locus=locus,
+                allele_id=joined.allele_id,
+                call_type="partial",
+                confidence=_confidence(joint_match),
+                best_match=joint_match,
+                allele_ids=[joined.allele_id],
+                copy_count=joined.template.copy_count,
+                fragments=joined.fragment_coords,
+            )
         return LocusCall(
             locus=locus,
             allele_id=None,

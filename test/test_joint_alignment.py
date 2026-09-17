@@ -17,7 +17,7 @@ import pytest
 from gmlst.aligners.base import AlleleMatch
 from gmlst.aligners.blastn import BlastnAligner
 from gmlst.aligners.minimap2 import Minimap2Aligner
-from gmlst.calling.allele import LocusCall, call_all_loci
+from gmlst.calling.allele import LocusCall, call_all_loci, call_best_allele
 from gmlst.calling.st_lookup import lookup_st
 
 _COMPLEMENT = str.maketrans("ACGT", "TGCA")
@@ -230,6 +230,57 @@ class TestJointAlignment:
         assert call.allele_id == "1"
         assert call.fragments is not None
         assert len(call.fragments) == 3
+
+
+class TestJointGateBelowSingleFragmentThreshold:
+    """Regression: joint evidence must not be discarded below the 0.5 gate.
+
+    A gene split into three disjoint ~33 % fragments leaves every single
+    match under ``min_coverage * 0.5``; the joint coverage (~1.0) must
+    still yield a partial call with the fragments listed, not "missing".
+    """
+
+    ALLELE_LENGTH = 300
+
+    def _fragment(
+        self, allele: str, start: int, end: int, *, contig: str
+    ) -> AlleleMatch:
+        return AlleleMatch(
+            locus="L1",
+            allele_id="1",
+            identity=100.0,
+            coverage=(end - start) / self.ALLELE_LENGTH,
+            strand="+",
+            score=100.0,
+            alignment_length=end - start,
+            sequence=allele[start:end],
+            query_contig=contig,
+            allele_length=self.ALLELE_LENGTH,
+            allele_start=start,
+            allele_end=end,
+        )
+
+    def test_three_way_split_reports_joint_partial_not_missing(self) -> None:
+        allele = _random_seq(999, self.ALLELE_LENGTH)
+        fragments = [
+            self._fragment(allele, 0, 100, contig="cA"),
+            self._fragment(allele, 100, 200, contig="cB"),
+            self._fragment(allele, 200, 300, contig="cC"),
+        ]
+
+        call = call_best_allele(
+            list(fragments),
+            fragments=fragments,
+            min_identity=95.0,
+            min_coverage=0.95,
+        )
+
+        assert call.call_type == "partial"
+        assert call.allele_id == "1"
+        assert call.best_match is not None
+        assert call.best_match.coverage == pytest.approx(1.0)
+        assert call.fragments is not None
+        assert [frag["contig"] for frag in call.fragments] == ["cA", "cB", "cC"]
 
 
 class _FakeScheme:

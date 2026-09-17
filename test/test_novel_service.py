@@ -7,9 +7,18 @@ from gmlst.novel.service import (
     collect_novel_typing_results,
     create_novel_writers,
     finalize_novel_typing_outputs,
+    is_novel_st_candidate,
     merge_custom_scheme_update_metadata,
     write_novel_outputs,
 )
+
+
+def test_is_novel_st_candidate_truth_table() -> None:
+    assert is_novel_st_candidate(None, True, False) is True
+    assert is_novel_st_candidate(2, True, False) is False
+    assert is_novel_st_candidate(None, False, False) is False
+    assert is_novel_st_candidate(None, True, True) is False
+    assert is_novel_st_candidate(None, False, True) is False
 
 
 def test_build_custom_scheme_metadata_tracks_last_allele_numbers() -> None:
@@ -231,3 +240,56 @@ def test_collect_skips_profiles_with_known_st() -> None:
     )
 
     assert profiled == ["novel_st_sample"]
+
+
+def test_collect_skips_incomplete_or_conflicting_profiles() -> None:
+    profiled: list[str] = []
+    logger = SimpleNamespace(
+        debug=lambda *args, **kwargs: None, info=lambda *args, **kwargs: None
+    )
+
+    class DummyProfileWriter:
+        def add_profile(self, **kwargs):
+            profiled.append(kwargs["sample"])
+            return None
+
+        def write(self):
+            return None
+
+    class DummyAlleleWriter:
+        def add_novel_allele(self, **kwargs):
+            return None
+
+        def write(self):
+            return None
+
+    def _result(
+        sample_id: str,
+        *,
+        is_complete: bool = True,
+        has_conflicting_multicopy: bool = False,
+    ) -> SimpleNamespace:
+        return SimpleNamespace(
+            sample_id=sample_id,
+            st=None,
+            is_complete=is_complete,
+            has_conflicting_multicopy=has_conflicting_multicopy,
+            locus_calls={
+                "dnaN": SimpleNamespace(
+                    call_type="exact", allele_id="5", novel_sequence=None
+                )
+            },
+        )
+
+    collect_novel_typing_results(
+        results=[
+            _result("incomplete_sample", is_complete=False),
+            _result("conflict_sample", has_conflicting_multicopy=True),
+            _result("candidate_sample"),
+        ],
+        allele_writer=DummyAlleleWriter(),
+        profile_writer=DummyProfileWriter(),
+        logger=logger,
+    )
+
+    assert profiled == ["candidate_sample"]

@@ -95,6 +95,21 @@ def merge_custom_scheme_update_metadata(
     return updated
 
 
+def is_novel_st_candidate(
+    st: int | None,
+    is_complete: bool,
+    has_conflicting_multicopy: bool,
+) -> bool:
+    """True when a profile may define a novel ST.
+
+    Only complete, unambiguous profiles without a resolved ST qualify:
+    a resolved ST means the scheme already knows this exact allele
+    combination, an incomplete profile cannot anchor an ST, and
+    conflicting multi-copy loci leave the profile ambiguous.
+    """
+    return st is None and is_complete and not has_conflicting_multicopy
+
+
 def collect_novel_typing_results(
     *,
     results: list,
@@ -128,11 +143,10 @@ def collect_novel_typing_results(
         # Only complete, unambiguous profiles missing from the scheme's
         # profile table are novel ST candidates; a resolved ST means the
         # scheme already knows this exact combination.
-        if (
-            profile_writer
-            and result.st is None
-            and result.is_complete
-            and not result.has_conflicting_multicopy
+        if profile_writer and is_novel_st_candidate(
+            result.st,
+            result.is_complete,
+            result.has_conflicting_multicopy,
         ):
             allele_calls = {
                 locus: (call.allele_id or "-")

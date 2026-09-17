@@ -70,6 +70,7 @@ def merge_calls_from_alignment_impl(
     min_identity: float,
     min_coverage: float,
     min_depth: float,
+    min_join_overlap: int = 10,
 ) -> None:
     """Call *loci* from *alignment* and rank-merge into *base_calls* in place."""
     _refinement._merge_calls_from_alignment_impl(
@@ -79,6 +80,7 @@ def merge_calls_from_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
         call_all_loci_fn=_core.call_all_loci,
         merge_fallback_calls_fn=merge_fallback_calls_impl,
     )
@@ -92,6 +94,7 @@ def recompute_all_loci_with_additional_alignment_impl(
     min_identity: float,
     min_coverage: float,
     min_depth: float,
+    min_join_overlap: int = 10,
 ) -> dict[str, LocusCall]:
     """Re-call all loci from the merged base + additional alignments."""
     return _refinement._recompute_all_loci_with_additional_alignment_impl(
@@ -101,6 +104,7 @@ def recompute_all_loci_with_additional_alignment_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
         call_all_loci_fn=_core.call_all_loci,
     )
 
@@ -119,6 +123,7 @@ def confirm_loci_with_tuned_aligner_impl(
     min_identity: float,
     min_coverage: float,
     min_depth: float,
+    min_join_overlap: int = 10,
 ) -> None:
     """Re-align *candidate_loci* with a tuned aligner; merge better calls.
 
@@ -139,6 +144,7 @@ def confirm_loci_with_tuned_aligner_impl(
         min_identity=min_identity,
         min_coverage=min_coverage,
         min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
         get_aligner_fn=_core.get_aligner,
         align_targeted_loci_fn=_core._align_targeted_loci,
         merge_calls_from_alignment_fn=_core._merge_calls_from_alignment,
@@ -209,6 +215,7 @@ def apply_post_alignment_refinements_impl(
     provider: str,
     allele_fastas: list[Path],
     force_reindex: bool,
+    min_join_overlap: int = 10,
 ) -> dict[str, LocusCall]:
     """Run all post-alignment refinement passes and return updated calls.
 
@@ -241,6 +248,7 @@ def apply_post_alignment_refinements_impl(
         provider=provider,
         allele_fastas=allele_fastas,
         force_reindex=force_reindex,
+        min_join_overlap=min_join_overlap,
         align_targeted_loci_fn=_core._align_targeted_loci,
         recompute_all_loci_with_additional_alignment_fn=(
             recompute_all_loci_with_additional_alignment_impl

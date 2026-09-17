@@ -12,6 +12,23 @@ import click
 from gmlst.commands.common import emit_output_text, err_console
 from gmlst.database.cache import DatabaseCache
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
+from gmlst.novel.service import is_novel_st_candidate
+
+
+def _normalize_rendered_allele(value: str) -> str:
+    """Reduce a rendered TSV allele value to its allele id.
+
+    Strips ``--detail`` suffixes (``19;contig1:3153925-3154481:+``) and the
+    same-allele multicopy marker (``23*``) before screening; values that
+    still carry an unresolved marker (``~2``, ``15?``, ``1,2``, ``-``)
+    map to ``"-"``.
+    """
+    allele = value.split(";", 1)[0]
+    if allele.endswith("*"):
+        allele = allele[:-1]
+    if not allele or "~" in allele or "?" in allele or "," in allele:
+        return "-"
+    return allele
 
 
 def _extract_alleles_from_sample(
@@ -186,7 +203,13 @@ def _extract_novel_from_json(
             else:
                 profile_map[locus] = "-"
 
-        if profile_writer is not None and entry.get("st") is None:
+        # Legacy JSON exports lack is_complete/has_conflicting_multicopy;
+        # default to complete/unconflicted so they keep being collected.
+        if profile_writer is not None and is_novel_st_candidate(
+            entry.get("st"),
+            bool(entry.get("is_complete", True)),
+            bool(entry.get("has_conflicting_multicopy", False)),
+        ):
             profile_writer.add_profile(sample=sample_id, allele_calls=profile_map)
 
     if allele_writer is not None:
@@ -231,20 +254,12 @@ def _extract_novel_profile_from_tsv(*, input_path: Path, data_dir: Path) -> None
             allele_calls: dict[str, str] = {}
             for locus in loci:
                 value = str(row.get(locus, "")).strip()
-                if (
-                    not value
-                    or value == "-"
-                    or "~" in value
-                    or "?" in value
-                    or "," in value
-                ):
-                    allele_calls[locus] = "-"
-                else:
-                    allele_calls[locus] = value
-            # Rows with a resolved ST already exist in the scheme's profile
-            # table; only unmatched combinations are novel ST candidates.
+                allele_calls[locus] = _normalize_rendered_allele(value)
+            # Novel ST candidates: no resolved ST and every locus value
+            # screened to a valid allele id (no ~/?/,/- markers left).
             st_value = str(row.get("ST", "")).strip()
-            if st_value.isdigit():
+            has_unresolved = any(value == "-" for value in allele_calls.values())
+            if st_value.isdigit() or has_unresolved:
                 continue
             writer.add_profile(sample=sample, allele_calls=allele_calls)
         writer.write()
@@ -320,11 +335,10 @@ def _extract_novel_from_tsv_with_retyping(
                 allele_calls[locus] = call.allele_id
             else:
                 allele_calls[locus] = "-"
-        if (
-            profile_writer is not None
-            and result.st is None
-            and result.is_complete
-            and not result.has_conflicting_multicopy
+        if profile_writer is not None and is_novel_st_candidate(
+            result.st,
+            result.is_complete,
+            result.has_conflicting_multicopy,
         ):
             profile_writer.add_profile(
                 sample=result.sample_id, allele_calls=allele_calls

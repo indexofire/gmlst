@@ -67,6 +67,7 @@ def _finalize_sample_result(
             failed_loci=[],
             backend=aln.backend,
             runtime_seconds=aln.runtime_seconds,
+            fragments=aln.fragments,
         )
     effective_min_depth = ctx.min_depth
     locus_calls = core_mod.call_all_loci(

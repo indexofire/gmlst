@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 from gmlst.aligners.base import AlleleMatch
 from gmlst.calling.allele import LocusCall
 from gmlst.calling.st_lookup import STResult
 from gmlst.cli import main
+from gmlst.commands.utils_extract import _normalize_rendered_allele
 from gmlst.database.schema import Scheme
 
 
@@ -367,3 +368,131 @@ def test_utils_concat_writes_output_file(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert result.output == ""
     assert out.read_text() == ">alleles_concat\nAAAATTTT\n"
+
+
+def _novel_json_entry(sample_id: str, **overrides: object) -> dict:
+    entry: dict = {
+        "sample_id": sample_id,
+        "scheme": "ecoli_1",
+        "st": None,
+        "is_complete": True,
+        "has_conflicting_multicopy": False,
+        "allele_calls": {
+            "dnaN": {
+                "allele_id": "5",
+                "call_type": "exact",
+                "novel_sequence": None,
+            },
+            "gyrB": {
+                "allele_id": "7",
+                "call_type": "exact",
+                "novel_sequence": None,
+            },
+        },
+    }
+    entry.update(overrides)
+    return entry
+
+
+def _run_novel_profile_json(tmp_path: Path, entries: list[dict]) -> Result:
+    result_json = tmp_path / "result.json"
+    result_json.write_text(json.dumps(entries))
+
+    out_dir = tmp_path / "novel"
+    runner = CliRunner()
+    return runner.invoke(
+        main,
+        [
+            "utils",
+            "extract",
+            "-i",
+            str(result_json),
+            "--novel-profile",
+            "--data-dir",
+            str(out_dir),
+        ],
+    )
+
+
+def test_utils_extract_novel_json_collects_st_null_complete(tmp_path: Path) -> None:
+    result = _run_novel_profile_json(
+        tmp_path, [_novel_json_entry("sample_A", is_complete=True)]
+    )
+    assert result.exit_code == 0
+    profile_file = tmp_path / "novel" / "profiles_novel.txt"
+    assert profile_file.exists()
+    assert "N1\tsample_A\t5\t7" in profile_file.read_text()
+
+
+def test_utils_extract_novel_json_skips_conflicting_multicopy(
+    tmp_path: Path,
+) -> None:
+    result = _run_novel_profile_json(
+        tmp_path,
+        [_novel_json_entry("sample_A", has_conflicting_multicopy=True)],
+    )
+    assert result.exit_code == 0
+    assert not (tmp_path / "novel" / "profiles_novel.txt").exists()
+
+
+def test_utils_extract_novel_json_skips_incomplete(tmp_path: Path) -> None:
+    result = _run_novel_profile_json(
+        tmp_path,
+        [_novel_json_entry("sample_A", is_complete=False)],
+    )
+    assert result.exit_code == 0
+    assert not (tmp_path / "novel" / "profiles_novel.txt").exists()
+
+
+def test_normalize_rendered_allele_variants() -> None:
+    assert _normalize_rendered_allele("23") == "23"
+    assert _normalize_rendered_allele("23*") == "23"
+    assert _normalize_rendered_allele("19;contig1:3153925-3154481:+") == "19"
+    assert _normalize_rendered_allele("23*;contig1:1-500:+") == "23"
+    assert _normalize_rendered_allele("~2") == "-"
+    assert _normalize_rendered_allele("15?") == "-"
+    assert _normalize_rendered_allele("1,2") == "-"
+    assert _normalize_rendered_allele("-") == "-"
+    assert _normalize_rendered_allele("") == "-"
+
+
+def test_utils_extract_novel_profile_from_tsv_normalizes_rendered_values(
+    tmp_path: Path,
+) -> None:
+    """Plain-TSV novel extraction must not leak render markers into profiles.
+
+    ``23*`` (same-allele multicopy) and ``19;contig…`` (``--detail`` suffix)
+    carry valid allele ids and count as resolved; ``~``/``?``/``,``
+    markers and known STs disqualify the row.
+    """
+    tsv = tmp_path / "results.tsv"
+    tsv.write_text(
+        "sample\tST\tdnaN\tgyrB\n"
+        "s_multicopy\t-\t23*\t19;contig1:3153925-3154481:+\n"
+        "s_novel\t-\t~2\t5\n"
+        "s_known\t3\t1\t2\n"
+        "s_partial\t-\t15?\t1\n"
+        "s_conflict\t-\t1,2\t3\n"
+        "s_missing\t-\t-\t1\n"
+    )
+
+    out_dir = tmp_path / "novel"
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "utils",
+            "extract",
+            "-i",
+            str(tsv),
+            "--novel-profile",
+            "--data-dir",
+            str(out_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    profile_file = out_dir / "profiles_novel.txt"
+    assert profile_file.exists()
+    expected = "ST\tsample\tdnaN\tgyrB\nN1\ts_multicopy\t23\t19\n"
+    assert profile_file.read_text() == expected

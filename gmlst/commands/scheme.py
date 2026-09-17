@@ -59,6 +59,9 @@ from gmlst.fasta_io import count_profile_rows
 from gmlst.schema_versions import SCHEME_LIST_V1, SCHEME_OP_V1, SCHEME_SHOW_V1
 from gmlst.utils import setup_logging
 
+# Scheme type filters shared by `scheme list` and `scheme search`.
+SCHEME_TYPE_CHOICES = ["mlst", "cgmlst", "wgmlst", "rmlst", "other", "all"]
+
 
 @click.group(
     "scheme",
@@ -85,10 +88,7 @@ def scheme_group() -> None:
     "scheme_type",
     default="all",
     show_default=True,
-    type=click.Choice(
-        ["mlst", "cgmlst", "wgmlst", "rmlst", "other", "all"],
-        case_sensitive=False,
-    ),
+    type=click.Choice(SCHEME_TYPE_CHOICES, case_sensitive=False),
     help="Scheme type filter.",
 )
 @click.option(
@@ -256,7 +256,7 @@ def cmd_list(
     "--provider",
     default="all",
     show_default=True,
-    type=click.Choice(list(AVAILABLE_PROVIDERS) + ["all"], case_sensitive=False),
+    type=click.Choice(_provider_choices(), case_sensitive=False),
     help="Filter by provider.",
 )
 @click.option(
@@ -265,7 +265,7 @@ def cmd_list(
     "scheme_type",
     default="all",
     show_default=True,
-    type=click.Choice(["mlst", "cgmlst", "wgmlst", "all"], case_sensitive=False),
+    type=click.Choice(SCHEME_TYPE_CHOICES, case_sensitive=False),
     help="Filter by scheme type.",
 )
 @click.option(
