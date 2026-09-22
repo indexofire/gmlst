@@ -51,6 +51,17 @@ conda install blast, minimap2, mummer4, kma
 ### 1. 浏览并下载方案
 
 ```bash
+# 零配置：完全跳过方案选择 — gmlst 从基因组识别物种，
+# 自动挑选匹配方案、下载并分型
+gmlst typing mlst sample.fna
+
+# 知道物种但记不住方案名？用 -n 解析
+# （唯一命中自动选择；多个命中打印候选表）
+gmlst typing mlst -n bordetella sample.fna
+
+# 物种指纹库为自动检测提供支持；可按需构建
+gmlst scheme update-fingerprints
+
 # 查看缓存中和可用的方案
 gmlst scheme list
 

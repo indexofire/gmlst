@@ -51,6 +51,17 @@ For other installation methods (Pixi, uv, source, Docker), see the [Installation
 ### 1. Browse and download a scheme
 
 ```bash
+# Zero-setup: skip scheme selection entirely — gmlst identifies the species
+# from the genome, picks the matching scheme, downloads it, and types
+gmlst typing mlst sample.fna
+
+# Know the organism but not the scheme name? Resolve it with -n
+# (unique match auto-selects; multiple matches print a candidate table)
+gmlst typing mlst -n bordetella sample.fna
+
+# The species fingerprint database powers auto-detection; build it on demand
+gmlst scheme update-fingerprints
+
 # List cached and available schemes (downloaded schemes shown in bold)
 gmlst scheme list
 

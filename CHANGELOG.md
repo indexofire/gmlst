@@ -20,6 +20,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.3.2] - 2026-09-22
+
+### Added
+- Species auto-detection for `typing mlst` / `typing cgmlst`: omit `-s` and
+  gmlst identifies the organism from the genome via a local k-mer fingerprint
+  database, resolves the matching scheme for the command's scheme type,
+  downloads it, and types — with the selection and confidence reported on
+  stderr. Ambiguous detections or multiple candidate schemes fall back to an
+  interactive numbered selection (non-interactive: candidate list + exit 2).
+- `-n/--organism` on `typing mlst` / `typing cgmlst`: resolve the scheme by
+  organism or scheme-name substring; a unique match auto-selects, multiple
+  matches print the candidate table and exit 2. Mutually exclusive with `-s`.
+- `gmlst scheme update-fingerprints`: builds the species fingerprint database
+  (one small MLST scheme per unique catalog organism, sketched; per-organism
+  `--organisms` filter for partial builds). `typing` offers to build it
+  interactively when missing.
+
+### Changed
+- `-s/--scheme` on `typing mlst` / `typing cgmlst` is now optional (omission
+  triggers species auto-detection; FASTQ-only input instead asks for `-s` or
+  `-n`).
+
 ## [0.3.1] - 2026-09-17
 
 ### Fixed

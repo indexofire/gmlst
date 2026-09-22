@@ -76,6 +76,25 @@ gmlst scheme download -s saureus_1 --force
 
 ---
 
+## update-fingerprints
+
+Builds the local species fingerprint database used by `typing` auto-detection
+(omit `-s`/`-n` to trigger it). Downloads one small MLST scheme per unique
+organism in the catalog and sketches its housekeeping genes.
+
+```bash
+gmlst scheme update-fingerprints [-y] [--organisms a,b,c] [-x N]
+```
+
+| Option | Description | Default |
+| --- | --- | --- |
+| `-y, --yes` | Skip the overwrite confirmation when the database exists. | `False` |
+| `-o, --organisms TEXT` | Comma-separated organisms to build for (default: all). | - |
+| `-x, --connections INTEGER` | Maximum concurrent downloads per scheme download. | `4` |
+
+The database lives at `<cache>/species_fingerprints.json`; `typing` offers to
+build it interactively on first use when missing.
+
 ## update
 
 Refresh one cached scheme or refresh provider catalogs.

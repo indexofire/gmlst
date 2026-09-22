@@ -17,7 +17,8 @@ gmlst typing mlst [OPTIONS] SAMPLES...
 
 | 选项 | 说明 | 默认值 |
 | --- | --- | --- |
-| `-s, --scheme TEXT` | 指定 MLST 方案名称，例如 `saureus_1`、`ecoli_1`。 | 必填 |
+| `-s, --scheme TEXT` | 指定 MLST 方案名称，例如 `saureus_1`、`ecoli_1`。可省略：省略时按物种自动检测，或改用 `-n`。 |
+| `-n, --organism TEXT` | 按物种/方案名子串解析方案（唯一命中自动选择）。 | 必填 |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | 选择比对后端。 | `blastn` |
 | `--min-id FLOAT` | 最小百分比 identity。 | `95.0` |
 | `--min-cov FLOAT` | 最小 allele 覆盖度，范围 0 到 1。 | `0.95` |
@@ -63,7 +64,8 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 
 | 选项 | 说明 | 默认值 |
 | --- | --- | --- |
-| `-s, --scheme TEXT` | 指定 cgMLST 或 wgMLST 方案名称，例如 `vparahaemolyticus_3`。 | 必填 |
+| `-s, --scheme TEXT` | 指定 cgMLST 或 wgMLST 方案名称，例如 `vparahaemolyticus_3`。可省略：省略时按物种自动检测，或改用 `-n`。 |
+| `-n, --organism TEXT` | 按物种/方案名子串解析方案（唯一命中自动选择）。 | 必填 |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | 选择比对后端。 | `minimap2` |
 | `--min-id FLOAT` | 最小百分比 identity。 | `95.0` |
 | `--min-cov FLOAT` | 最小 allele 覆盖度，范围 0 到 1。 | `0.95` |

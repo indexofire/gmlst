@@ -17,7 +17,8 @@ gmlst typing mlst [OPTIONS] SAMPLES...
 
 | Option | Description | Default |
 | --- | --- | --- |
-| `-s, --scheme TEXT` | Scheme name to type against. Required. | - |
+| `-s, --scheme TEXT` | Scheme name to type against. Optional: omit for species auto-detection, or use `-n`. | - |
+| `-n, --organism TEXT` | Resolve the scheme by organism/scheme-name substring (unique match auto-selects). | - |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | Alignment backend. | `blastn` |
 | `--min-id FLOAT` | Minimum percent identity for confident allele calls. | `95.0` |
 | `--min-cov FLOAT` | Minimum coverage fraction for confident allele calls. | `0.95` |
@@ -66,7 +67,8 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 
 | Option | Description | Default |
 | --- | --- | --- |
-| `-s, --scheme TEXT` | Scheme name to type against. Required. | - |
+| `-s, --scheme TEXT` | Scheme name to type against. Optional: omit for species auto-detection, or use `-n`. | - |
+| `-n, --organism TEXT` | Resolve the scheme by organism/scheme-name substring (unique match auto-selects). | - |
 | `-b, --backend [blastn\|kma\|minimap2\|nucmer]` | Alignment backend. | `minimap2` |
 | `--min-id FLOAT` | Minimum percent identity for confident allele calls. | `95.0` |
 | `--min-cov FLOAT` | Minimum coverage fraction for confident allele calls. | `0.95` |
