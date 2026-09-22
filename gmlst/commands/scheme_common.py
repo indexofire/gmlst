@@ -10,6 +10,8 @@ import sys
 from collections.abc import Callable, Iterator
 from typing import NoReturn
 
+from rich.progress import TaskID
+
 from gmlst.commands.common import (
     _load_blocked_schemes,
     emit_output_csv,
@@ -17,7 +19,9 @@ from gmlst.commands.common import (
     emit_output_tsv,
     emit_versioned_json,
     err_console,
+    make_progress,
 )
+from gmlst.core.species_id import build_fingerprints
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.download import DownloadTool
 from gmlst.database.providers import AVAILABLE_PROVIDERS
@@ -255,3 +259,44 @@ def refresh_all_catalogs(
             cache.update_catalog(prov, scheme_type="all", token=token)
         except (OSError, ValueError):
             continue
+
+
+def build_fingerprints_with_progress(
+    cache: DatabaseCache,
+    *,
+    organisms: set[str] | None = None,
+    max_connections: int | None = None,
+) -> tuple[dict, dict[str, int]]:
+    """Build species fingerprints behind a stderr progress bar.
+
+    Shared by ``gmlst scheme update-fingerprints`` and the typing
+    auto-detection flow. Returns ``(payload, counts)`` where counts has
+    ``sketch`` (organisms sketched), ``download`` (schemes downloaded),
+    and ``skip`` (organisms skipped) tallies.
+    """
+    counts = {"sketch": 0, "download": 0, "skip": 0}
+    progress = make_progress()
+    task_id: TaskID | None = None
+
+    def on_event(event: str, detail: str) -> None:
+        nonlocal task_id
+        if event == "total":
+            task_id = progress.add_task("Building fingerprints", total=int(detail))
+            return
+        if event in counts:
+            counts[event] += 1
+        if event == "download":
+            progress.console.print(f"  [dim]downloading {detail}[/dim]")
+        if task_id is not None:
+            progress.update(task_id, description=f"{event}: {detail}")
+        if event in {"sketch", "skip"} and task_id is not None:
+            progress.advance(task_id)
+
+    with progress:
+        payload = build_fingerprints(
+            cache,
+            organisms=organisms,
+            max_connections=max_connections,
+            progress_cb=on_event,
+        )
+    return payload, counts

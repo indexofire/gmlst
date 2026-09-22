@@ -48,6 +48,7 @@ from gmlst.commands.typing_schemefree_exit import (
     count_errors_by_stage,
     schemefree_exit_decision,
 )
+from gmlst.commands.typing_species import resolve_scheme_for_typing
 from gmlst.core import run_typing
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.schema import Scheme
@@ -98,8 +99,14 @@ def cmd_typing() -> None:
 @click.option(
     "--scheme",
     "-s",
-    required=True,
-    help="MLST scheme name, e.g. 'saureus_1', 'ecoli_1'.",
+    default=None,
+    help="MLST scheme name, e.g. 'saureus_1' (omit to auto-detect species).",
+)
+@click.option(
+    "--organism",
+    "-n",
+    default=None,
+    help="Resolve the scheme by organism or scheme-name substring, e.g. 'bordetella'.",
 )
 @backend_option("blastn")
 @typing_threshold_options
@@ -130,7 +137,8 @@ def cmd_typing() -> None:
 @novel_data_options
 def cmd_typing_mlst(
     samples: tuple[Path, ...],
-    scheme: str,
+    scheme: str | None,
+    organism: str | None,
     backend: str,
     min_id: float,
     min_cov: float,
@@ -154,6 +162,13 @@ def cmd_typing_mlst(
     """Type samples against MLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
+    scheme = resolve_scheme_for_typing(
+        mode="mlst",
+        scheme=scheme,
+        organism=organism,
+        samples=samples,
+        cache_dir=cache_dir,
+    )
     _run_mlst_like_typing(
         mode="mlst",
         samples=samples,
@@ -190,8 +205,14 @@ def cmd_typing_mlst(
 @click.option(
     "--scheme",
     "-s",
-    required=True,
-    help="cgMLST/wgMLST scheme name, e.g. 'vparahaemolyticus_3'.",
+    default=None,
+    help="cgMLST/wgMLST scheme name, e.g. 'vparahaemolyticus_3' (omit to auto-detect).",
+)
+@click.option(
+    "--organism",
+    "-n",
+    default=None,
+    help="Resolve the scheme by organism or scheme-name substring, e.g. 'vibrio'.",
 )
 @backend_option("minimap2")
 @click.option(
@@ -274,7 +295,8 @@ def cmd_typing_mlst(
 )
 def cmd_typing_cgmlst(
     samples: tuple[Path, ...],
-    scheme: str,
+    scheme: str | None,
+    organism: str | None,
     backend: str,
     cgmlst_mode: str,
     min_id: float,
@@ -304,6 +326,13 @@ def cmd_typing_cgmlst(
     """Type samples against cgMLST/wgMLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
+    scheme = resolve_scheme_for_typing(
+        mode="cgmlst",
+        scheme=scheme,
+        organism=organism,
+        samples=samples,
+        cache_dir=cache_dir,
+    )
     _run_mlst_like_typing(
         mode="cgmlst",
         samples=samples,
