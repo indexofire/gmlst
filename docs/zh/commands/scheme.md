@@ -244,3 +244,52 @@ export GMLST_PRIVATE_BIGSDB_NAME="labdb"
 export GMLST_PRIVATE_BIGSDB_LABEL="Lab BIGSdb"
 gmlst scheme list -p labdb
 ```
+
+## update-fingerprints
+
+构建本地物种指纹数据库，用于 `typing` 自动检测物种。
+仅下载 **MLST 方案**（7 个看家基因），不使用 cgMLST。
+
+> **仅 MLST**：指纹仅从 MLST 方案构建。cgMLST 方案（2000+ locus）被有意排除 —
+> 下载耗时数分钟 vs MLST 的数秒，且对物种级区分度无提升。
+> 详见[指纹数据库文档](../fingerprint_database.md)。
+
+### 用法
+```bash
+# 全量构建（下载缺失方案）
+gmlst scheme update-fingerprints [-y] [-x N]
+
+# 只构建指定物种
+gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
+```
+
+### 选项
+
+| 选项 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-y, --yes` | 跳过覆盖确认 | `False` |
+| `-o, --organisms TEXT` | 逗号分隔的物种名（子串匹配） | 全部 |
+| `-x, --connections INTEGER` | 每个方案的并发下载数 | `4` |
+| `--cache-dir PATH` | 覆盖缓存目录 | 自动 |
+
+### 工作原理
+
+1. 按物种名分组所有目录方案
+2. 每物种选最小 MLST 方案（无 MLST 则用 cgMLST）
+3. 未缓存的方案自动下载（限流容错）
+4. 素描看家基因序列（k=21, 每 7 个 k-mer 采样, 每物种上限 5000）
+5. 保存为 zlib 压缩 JSON（170+ 物种约 1 MB）
+
+### 检测查找顺序
+
+`typing` 省略 `-s`/`-n` 时的指纹库查找优先级：
+
+1. `<缓存>/species_fingerprints.json.gz`（用户构建，最新）
+2. `gmlst/data/species_fingerprints.json.gz`（随包分发）
+3. 交互式提示是否立即构建（仅 TTY）
+
+### 注意事项
+
+- PubMLST 需要 API key 才能获取 2024 年后数据：`gmlst config set GMLST_PUBMLST_API_KEY <key>`
+- 限流服务器可能导致部分下载失败；重跑即可（已缓存方案秒过）
+- 完整物种覆盖清单见[指纹数据库文档](../fingerprint_database.md)

@@ -78,22 +78,54 @@ gmlst scheme download -s saureus_1 --force
 
 ## update-fingerprints
 
-Builds the local species fingerprint database used by `typing` auto-detection
-(omit `-s`/`-n` to trigger it). Downloads one small MLST scheme per unique
-organism in the catalog and sketches its housekeeping genes.
+Builds the local species fingerprint database used by `typing` auto-detection.
+Downloads one **MLST scheme** (7 housekeeping genes) per unique organism and
+sketches them into compact k-mer fingerprints (~1 MB total).
 
+> **MLST-only**: Fingerprints use MLST schemes exclusively. cgMLST schemes
+> (2000+ loci) are deliberately excluded — they take minutes to download vs
+> seconds for MLST, with no improvement in species-level discrimination.
+> See [fingerprint database docs](../fingerprint_database.md) for rationale.
+
+### Usage
 ```bash
-gmlst scheme update-fingerprints [-y] [--organisms a,b,c] [-x N]
+# Build all fingerprints (downloads missing schemes)
+gmlst scheme update-fingerprints [-y] [-x N]
+
+# Build for specific organisms only
+gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
 ```
+
+### Options
 
 | Option | Description | Default |
 | --- | --- | --- |
-| `-y, --yes` | Skip the overwrite confirmation when the database exists. | `False` |
-| `-o, --organisms TEXT` | Comma-separated organisms to build for (default: all). | - |
-| `-x, --connections INTEGER` | Maximum concurrent downloads per scheme download. | `4` |
+| `-y, --yes` | Skip confirmation when overwriting existing database. | `False` |
+| `-o, --organisms TEXT` | Comma-separated organisms (substring match). | all |
+| `-x, --connections INTEGER` | Concurrent downloads per scheme. Lower = gentler. | `4` |
+| `--cache-dir PATH` | Override cache directory. | auto |
 
-The database lives at `<cache>/species_fingerprints.json`; `typing` offers to
-build it interactively on first use when missing.
+### How it works
+
+1. Groups all catalog schemes by organism name
+2. For each organism, selects the smallest MLST scheme (skips if none available)
+3. Downloads the scheme if not cached (rate-limit tolerant)
+4. Sketches housekeeping gene sequences (k=21, sample every 7th k-mer, cap 5000/species)
+5. Saves as zlib-compressed JSON (~1 MB for 170+ species)
+
+### Detection lookup order
+
+When `typing` omits `-s`/`-n`, the fingerprint database is resolved in this order:
+
+1. `<cache>/species_fingerprints.json.gz` (user-built, freshest)
+2. `gmlst/data/species_fingerprints.json.gz` (bundled with package)
+3. Interactive prompt to build now (TTY only)
+
+### Notes
+
+- PubMLST requires an API key for post-2024 data: `gmlst config set GMLST_PUBMLST_API_KEY <key>`
+- Rate-limited servers may cause some downloads to fail; re-run to retry (cached schemes skip instantly)
+- See [fingerprint database coverage](../fingerprint_database.md) for the full species list
 
 ## update
 
