@@ -139,8 +139,13 @@ def _resolve_by_detection(
 ) -> str:
     """Detect the species from *fasta* and resolve a scheme for it."""
     fingerprints_file = species_id.fingerprints_path(cache)
-    if not fingerprints_file.exists():
-        if _stdin_is_interactive() and click.confirm(
+    if fingerprints_file.exists():
+        payload = species_id.load_fingerprints(fingerprints_file)
+    else:
+        bundled = species_id.bundled_fingerprints_path()
+        if bundled is not None:
+            payload = species_id.load_fingerprints(bundled)
+        elif _stdin_is_interactive() and click.confirm(
             "Species fingerprint database not found. "
             "Download and build it now? (downloads ~one small MLST scheme per organism)"
         ):
@@ -151,8 +156,6 @@ def _resolve_by_detection(
                 "Species fingerprint database not found. "
                 "Run: gmlst scheme update-fingerprints"
             )
-    else:
-        payload = species_id.load_fingerprints(fingerprints_file)
 
     try:
         query_hashes = species_id.sketch_fasta_sample(fasta)

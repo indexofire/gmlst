@@ -265,17 +265,19 @@ def test_save_and_load_fingerprints_roundtrip(tmp_path: Path) -> None:
         "sample_rate": FINGERPRINT_SAMPLE_RATE,
         "fingerprints": [_fingerprint("Org", [3, 1, 2])],
     }
-    path = tmp_path / "species_fingerprints.json"
+    path = tmp_path / "species_fingerprints.json.gz"
     save_fingerprints(payload, path)
+    assert path.exists()
     assert load_fingerprints(path) == payload
-    assert path.read_text()  # compact JSON, single document
 
 
 def test_fingerprints_path_lives_in_cache_root(tmp_path: Path) -> None:
     from gmlst.database.cache import DatabaseCache
 
     cache = DatabaseCache(tmp_path / "cache")
-    assert fingerprints_path(cache) == tmp_path / "cache" / "species_fingerprints.json"
+    assert (
+        fingerprints_path(cache) == tmp_path / "cache" / "species_fingerprints.json.gz"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -344,7 +346,8 @@ def test_build_fingerprints_picks_smallest_mlst_scheme(tmp_path: Path) -> None:
     assert set(fingerprint["hashes"]) == expected
 
 
-def test_build_fingerprints_falls_back_to_cgmlst_only_species(tmp_path: Path) -> None:
+def test_build_fingerprints_skips_cgmlst_only_species(tmp_path: Path) -> None:
+    """cgMLST-only organisms are skipped: species ID uses MLST sources only."""
     cache = _FakeDownloadCache(
         {
             "enterobase": [
@@ -360,7 +363,7 @@ def test_build_fingerprints_falls_back_to_cgmlst_only_species(tmp_path: Path) ->
         tmp_path,
     )
     payload = build_fingerprints(cache)
-    assert payload["fingerprints"][0]["source_scheme"] == "ecoli_cg"
+    assert payload["fingerprints"] == []
 
 
 def test_build_fingerprints_skips_organisms_without_mlst_or_cgmlst(

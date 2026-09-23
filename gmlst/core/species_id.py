@@ -18,7 +18,6 @@ from gmlst.core.sequences import (
     load_scheme_allele_sequences_impl,
     split_allele_header_impl,
 )
-from gmlst.database.atomic import atomic_write_text
 from gmlst.database.cache import DatabaseCache
 from gmlst.fasta_io import iter_fasta_records
 from gmlst.kmer_prefilter import _iter_canonical_kmer_codes
@@ -26,6 +25,11 @@ from gmlst.kmer_prefilter import _iter_canonical_kmer_codes
 FINGERPRINT_K = 21
 FINGERPRINT_SAMPLE_RATE = 7
 FINGERPRINTS_FILENAME = "species_fingerprints.json"
+FINGERPRINTS_GZ_FILENAME = "species_fingerprints.json.gz"
+MAX_HASHES_PER_SPECIES = 5000
+BUNDLED_FINGERPRINTS_PATH = (
+    Path(__file__).parent.parent / "data" / FINGERPRINTS_GZ_FILENAME
+)
 
 # Cap on allele sequences sketched per scheme: one allele per locus, at
 # most this many loci.
@@ -80,6 +84,13 @@ def sketch_fasta_sample(
         if total_bp >= cap_bp:
             break
     return hashes
+
+
+def bundled_fingerprints_path() -> Path | None:
+    """Return the pre-built fingerprint database bundled with the package."""
+    if BUNDLED_FINGERPRINTS_PATH.exists():
+        return BUNDLED_FINGERPRINTS_PATH
+    return None
 
 
 def detect_species(
@@ -161,15 +172,28 @@ def schemes_for_organism(
 
 def fingerprints_path(cache: DatabaseCache) -> Path:
     """Return the fingerprints file location inside the cache root."""
-    return cache.root / FINGERPRINTS_FILENAME
+    return cache.root / FINGERPRINTS_GZ_FILENAME
 
 
 def save_fingerprints(payload: dict[str, Any], path: Path) -> None:
+    """Write fingerprints as zlib-compressed JSON."""
+    import zlib
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(path, json.dumps(payload, separators=(",", ":")))
+    path.write_bytes(
+        zlib.compress(json.dumps(payload, separators=(",", ":")).encode(), 9)
+    )
 
 
 def load_fingerprints(path: Path) -> dict[str, Any]:
+    """Load fingerprints from compressed (.json.gz) or plain (.json)."""
+    import zlib
+
+    if path.name.endswith(".gz"):
+        return json.loads(zlib.decompress(path.read_bytes()))
+    plain_gz = path.with_suffix(".json.gz")
+    if plain_gz.exists():
+        return json.loads(zlib.decompress(plain_gz.read_bytes()))
     return json.loads(path.read_text())
 
 
@@ -278,23 +302,20 @@ def _catalog_schemes_by_organism(
 
 
 def _select_source_scheme(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """Pick the smallest MLST scheme, else the smallest cgMLST scheme.
+    """Pick the smallest MLST scheme for species fingerprinting.
 
-    Smallest = ``min(n_loci, scheme_name)``; organisms with neither an
-    MLST nor a cgMLST scheme are skipped by the caller.
+    MLST schemes (7 housekeeping genes) provide sufficient species-level
+    signal and download in seconds. cgMLST schemes (2000+ loci) are NOT
+    used: they take minutes to download, consume hundreds of MB, and offer
+    no better species discrimination for identification purposes.
     """
 
     def sort_key(row: dict[str, Any]) -> tuple[int, str]:
         return (int(row.get("n_loci") or 0), str(row.get("scheme_name", "")))
 
-    for scheme_type in ("mlst", "cgmlst"):
-        typed = [
-            row
-            for row in rows
-            if str(row.get("scheme_type", "")).lower() == scheme_type
-        ]
-        if typed:
-            return min(typed, key=sort_key)
+    typed = [row for row in rows if str(row.get("scheme_type", "")).lower() == "mlst"]
+    if typed:
+        return min(typed, key=sort_key)
     return None
 
 

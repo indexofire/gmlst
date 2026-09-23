@@ -102,6 +102,11 @@ def _fingerprint_payload(organism: str, sequence: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _mock_no_bundled(monkeypatch):
+    """Disable the bundled fingerprint database for missing-file tests."""
+    monkeypatch.setattr("gmlst.core.species_id.bundled_fingerprints_path", lambda: None)
+
+
 def test_typing_mlst_scheme_and_organism_are_mutually_exclusive(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -257,6 +262,7 @@ def test_typing_mlst_fastq_without_scheme_or_organism_exits_2(
 def test_auto_flow_missing_fingerprints_noninteractive_exits_2(
     monkeypatch, tmp_path: Path
 ) -> None:
+    _mock_no_bundled(monkeypatch)
     sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
     monkeypatch.setattr(DatabaseCache, "load_catalog", _fake_catalog())
 
@@ -272,6 +278,7 @@ def test_auto_flow_missing_fingerprints_noninteractive_exits_2(
 def test_auto_flow_missing_fingerprints_declined_exits_2(
     monkeypatch, tmp_path: Path
 ) -> None:
+    _mock_no_bundled(monkeypatch)
     sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
     monkeypatch.setattr(DatabaseCache, "load_catalog", _fake_catalog())
     monkeypatch.setattr(
@@ -292,6 +299,7 @@ def test_auto_flow_missing_fingerprints_declined_exits_2(
 def test_auto_flow_missing_fingerprints_confirmed_builds_and_selects(
     monkeypatch, tmp_path: Path
 ) -> None:
+    _mock_no_bundled(monkeypatch)
     sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
     captured = _run_typing_recorder(monkeypatch)
     monkeypatch.setattr(DatabaseCache, "load_catalog", _fake_catalog())
@@ -317,7 +325,11 @@ def test_auto_flow_missing_fingerprints_confirmed_builds_and_selects(
     assert "[auto-selected] bpertussis_1" in result.output
     assert "confidence 1.00" in result.output
     assert captured["scheme"] == "bpertussis_1"
-    saved = json.loads((cache_dir / "species_fingerprints.json").read_text())
+    import zlib as _zlib
+
+    saved = json.loads(
+        _zlib.decompress((cache_dir / "species_fingerprints.json.gz").read_bytes())
+    )
     assert saved["fingerprints"][0]["organism"] == "Bordetella pertussis"
 
 
@@ -331,7 +343,7 @@ def test_auto_flow_with_fingerprints_unique_detection_auto_selects(
     cache_dir = tmp_path / "cache"
     save_fingerprints(
         _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
-        cache_dir / "species_fingerprints.json",
+        cache_dir / "species_fingerprints.json.gz",
     )
 
     result = CliRunner().invoke(
@@ -355,7 +367,7 @@ def test_auto_flow_species_detected_but_no_scheme_of_type_exits_2(
     cache_dir = tmp_path / "cache"
     save_fingerprints(
         _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
-        cache_dir / "species_fingerprints.json",
+        cache_dir / "species_fingerprints.json.gz",
     )
 
     result = CliRunner().invoke(
@@ -374,7 +386,7 @@ def test_auto_flow_unidentified_species_exits_2(monkeypatch, tmp_path: Path) -> 
     cache_dir = tmp_path / "cache"
     save_fingerprints(
         _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
-        cache_dir / "species_fingerprints.json",
+        cache_dir / "species_fingerprints.json.gz",
     )
 
     result = CliRunner().invoke(
@@ -415,7 +427,7 @@ def test_auto_flow_multiple_schemes_noninteractive_lists_and_exits_2(
     cache_dir = tmp_path / "cache"
     save_fingerprints(
         _fingerprint_payload("Escherichia coli", _SPECIES_SEQ),
-        cache_dir / "species_fingerprints.json",
+        cache_dir / "species_fingerprints.json.gz",
     )
 
     result = CliRunner().invoke(
@@ -462,7 +474,7 @@ def test_auto_flow_multiple_schemes_interactive_selection(
     cache_dir = tmp_path / "cache"
     save_fingerprints(
         _fingerprint_payload("Escherichia coli", _SPECIES_SEQ),
-        cache_dir / "species_fingerprints.json",
+        cache_dir / "species_fingerprints.json.gz",
     )
 
     result = CliRunner().invoke(
@@ -523,7 +535,7 @@ def test_auto_flow_ambiguous_species_lists_scored_candidates(
             },
         ],
     }
-    save_fingerprints(payload, cache_dir / "species_fingerprints.json")
+    save_fingerprints(payload, cache_dir / "species_fingerprints.json.gz")
 
     result = CliRunner().invoke(
         main,
@@ -581,7 +593,11 @@ def test_scheme_update_fingerprints_builds_database(
     assert result.exit_code == 0
     assert "Organisms sketched: 1" in result.output
     assert "schemes downloaded: 1" in result.output
-    payload = json.loads((tmp_path / "species_fingerprints.json").read_text())
+    import zlib as _z
+
+    payload = json.loads(
+        _z.decompress((tmp_path / "species_fingerprints.json.gz").read_bytes())
+    )
     assert payload["fingerprints"][0]["organism"] == "Testus testus"
     assert payload["fingerprints"][0]["source_scheme"] == "tst_1"
 
@@ -589,8 +605,10 @@ def test_scheme_update_fingerprints_builds_database(
 def test_scheme_update_fingerprints_confirm_declined(
     monkeypatch, tmp_path: Path
 ) -> None:
-    fingerprints = tmp_path / "species_fingerprints.json"
-    fingerprints.write_text('{"version": 1, "fingerprints": []}')
+    import zlib as _z
+
+    fingerprints = tmp_path / "species_fingerprints.json.gz"
+    fingerprints.write_bytes(_z.compress(b'{"version": 1, "fingerprints": []}'))
 
     result = CliRunner().invoke(
         main,
@@ -600,7 +618,12 @@ def test_scheme_update_fingerprints_confirm_declined(
 
     assert result.exit_code == 0
     assert "Aborted." in result.output
-    assert fingerprints.read_text() == '{"version": 1, "fingerprints": []}'
+    import zlib as _z2
+
+    assert (
+        _z2.decompress(fingerprints.read_bytes())
+        == b'{"version": 1, "fingerprints": []}'
+    )
 
 
 def test_scheme_update_fingerprints_help_lists_options() -> None:
