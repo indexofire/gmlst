@@ -20,6 +20,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.3.3] - 2026-09-23
+
+### Changed
+- Species fingerprints now use MLST schemes exclusively (7 housekeeping genes
+  per species). cgMLST sources are excluded: they take minutes to download vs
+  seconds for MLST and offer no better species-level discrimination. Build
+  time drops from 30+ minutes to ~2 minutes.
+- Fingerprint database stored as zlib-compressed JSON (~415 KB for 144
+  species vs 80 MB uncompressed). A pre-built copy ships with the package
+  at  with fallback lookup:
+  user-built cache, then bundled copy, then interactive build prompt.
+- Per-species fingerprint hash cap of 5,000 for uniform database size.
+
+### Added
+- : design rationale, coverage list,
+  technical parameters, and regeneration instructions.
+
 ## [0.3.2] - 2026-09-22
 
 ### Added
