@@ -20,6 +20,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.4.0] - 2026-09-24
+
+### Added
+- Pipeline integration docs and examples: Docker usage (persistent scheme
+  cache, batch parallelism), a minimal Nextflow process, and a Snakemake
+  rule set under `examples/pipelines/`; see the new
+  `docs/en/pipelines.md` / `docs/zh/pipelines.md`.
+- ONT (nanopore) guidance in the backend docs, based on measured validation
+  against matched hybrid assemblies: classic 7-gene MLST calls 5-6/7 loci
+  exactly from Q20+ reads, single-locus flips are methylation-motif basecall
+  errors, KMA `-bcNano` was evaluated and changed nothing on Q20+ pairs
+  (so it is not enabled), and assembly-first typing is recommended for
+  definitive ST calls.
+
+### Fixed
+- Docker image: alignment backends were missing from the runtime `PATH`
+  (`blastn`, `minimap2`, `nucmer`, `kma` not found by gmlst inside the
+  published image); `/opt/conda/bin` is now on `PATH`, `kmc` is included,
+  the `GMLST_VERSION` build argument is actually honored (it was silently
+  ignored), and the build smoke-tests `gmlst`, `blastn`, `minimap2`, and
+  `kma` before pushing. Verified end-to-end: typing inside the container
+  matches host output.
+
 ## [0.3.5] - 2026-09-24
 
 ### Added

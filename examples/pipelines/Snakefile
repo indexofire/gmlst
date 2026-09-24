@@ -1,0 +1,52 @@
+# Minimal Snakemake wrapper: batch MLST typing with gmlst.
+#
+# Usage:
+#   snakemake -j 16 --use-singularity          # or --use-docker
+#
+# Place assemblies in data/assemblies/ (or adjust SAMPLE_DIR) and pick
+# the scheme with --config scheme=saureus_1.
+
+import glob
+
+SCHEME = config.get("scheme", "saureus_1")
+SAMPLE_DIR = config.get("sample_dir", "data/assemblies")
+ARGS = config.get("args", "")
+SAMPLES = sorted(
+    glob.glob(f"{SAMPLE_DIR}/*.fna")
+    + glob.glob(f"{SAMPLE_DIR}/*.fasta")
+    + glob.glob(f"{SAMPLE_DIR}/*.gbk")
+)
+
+if not SAMPLES:
+    raise ValueError(f"No assemblies found under {SAMPLE_DIR}/")
+
+
+rule all:
+    input:
+        "results/mlst.tsv",
+
+
+rule gmlst_mlst:
+    input:
+        sample=SAMPLES,
+    output:
+        tsv="results/per_sample/{wildcard.sample}.tsv",
+    params:
+        scheme=SCHEME,
+        args=ARGS,
+    shell:
+        r"""
+        gmlst typing mlst -s {params.scheme} {params.args} \
+            --output {output.tsv} {input.sample}
+        """
+
+
+rule merge_mlst:
+    input:
+        tsv=expand("results/per_sample/{sample}.tsv", sample=[s.split("/")[-1].rsplit(".", 1)[0] for s in SAMPLES]),
+    output:
+        "results/mlst.tsv",
+    shell:
+        r"""
+        awk 'FNR==1 && NR!=1 {{ while (/^FILE/) getline; }} {{print}}' {input.tsv} > {output}
+        """

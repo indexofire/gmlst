@@ -269,6 +269,20 @@ gmlst typing mlst -s saureus_1 -b kma reads/sample_R1.fastq.gz reads/sample_R2.f
 
 minimap2 FASTQ mode is not just a single mapping pass. It builds candidate alleles, scores them, then remaps uncertain loci in a targeted validation stage. That makes it a good choice when you want speed without giving up all post-filter confirmation.
 
+### Oxford Nanopore (ONT) reads
+
+ONT reads go through the KMA FASTQ path like any other FASTQ input. What to expect, based on validation against matched hybrid assemblies (V. cholerae and V. parahaemolyticus, R10.4/Q20+ data):
+
+- **Classic 7-gene MLST mostly works directly from reads**: 5-6 of 7 loci called exactly, with the remainder reported as closest (`~n`) calls rather than wrong exact calls.
+- **Single-locus flips happen**: methylation-motif basecall errors (a known ONT artifact, especially on native-DNA libraries) can change one allele number between runs or against the assembly truth. Treat any single-locus discrepancy between ONT reads and an assembly with suspicion before treating it as biology.
+- **We tested KMA's `-bcNano` mode and did not enable it**: on Q20+ validation pairs it changed nothing (output identical to the default mode), because it targets deletion-type errors while methylation errors are substitutions.
+
+Recommendations:
+
+- For definitive ST calls, assemble first (e.g., Flye + Medaka) and type the resulting FASTA — assemblies get the normal, well-tested FASTA path.
+- Use read-based typing for rapid screening, and confirm novel or low-confidence calls with `--format json` scores or a targeted second pass.
+- cgMLST from ONT reads without assembly is discouraged; the error profile compounds across thousands of loci.
+
 ## Related call types
 
 Backend choice changes how evidence is collected, but per-locus calls still end up in the same five categories:

@@ -11,6 +11,7 @@ This directory collects user guides, developer notes, internal references, and p
 - [en/configuration.md](en/configuration.md) - Environment variables and configuration reference
 - [en/providers.md](en/providers.md) - Data provider documentation (PubMLST, Pasteur, Enterobase, etc.)
 - [en/novel_workflow.md](en/novel_workflow.md) - Novel allele detection and custom scheme workflow
+- [en/pipelines.md](en/pipelines.md) - Docker, Nextflow, and Snakemake pipeline integration
 - [en/cgmlst_guide.md](en/cgmlst_guide.md) - cgMLST/wgMLST typing modes and optimization
 - [en/visual_guide.md](en/visual_guide.md) - Local MST visualization guide
 - [en/faq.md](en/faq.md) - FAQ and troubleshooting
@@ -25,6 +26,7 @@ This directory collects user guides, developer notes, internal references, and p
 - [zh/configuration.md](zh/configuration.md) - 配置参考
 - [zh/providers.md](zh/providers.md) - 数据源文档
 - [zh/novel_workflow.md](zh/novel_workflow.md) - Novel 工作流
+- [zh/pipelines.md](zh/pipelines.md) - 流水线集成（Docker/Nextflow/Snakemake）
 - [zh/cgmlst_guide.md](zh/cgmlst_guide.md) - cgMLST 指南
 - [zh/visual_guide.md](zh/visual_guide.md) - 可视化指南
 - [zh/architecture.md](zh/architecture.md) - 架构文档

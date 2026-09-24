@@ -21,6 +21,7 @@ English | [简体中文](README_ZH.md)
 - 📦 **Rich outputs**: export `tsv`, `json`, `pretty`, and GrapeTree-compatible tables.
 - 📊 **Quality scoring**: every sample gets a 0-100 score and a status code (PERFECT/NOVEL/MIXED/MISSING/BAD) in JSON output, with `--minscore` filtering for batch QC.
 - 🌐 **Local visualization**: launch a Flask + Vue web app with `gmlst visual web` to inspect MST results locally.
+- 🐳 **Pipeline ready**: a Docker image with all backends plus Nextflow/Snakemake examples drops gmlst straight into surveillance pipelines.
 - 💾 **Cache-first operation**: downloaded schemes and built indexes are reused for offline or repeated runs.
 - 🧵 **Batch processing**: use sample-level workers and backend threads for high-throughput workflows.
 - 🧬 **CDS-aware calling**: cgMLST workflows can use Pyrodigal for CDS prediction and chewBBACA-compatible classification paths.
@@ -430,6 +431,7 @@ See [docs/en/contributing.md](docs/en/contributing.md) for contributor workflow 
 - [docs/en/quickstart.md](docs/en/quickstart.md) for a guided first run
 - [docs/en/commands.md](docs/en/commands.md) for the CLI reference
 - [docs/en/configuration.md](docs/en/configuration.md) for configuration reference
+- [docs/en/pipelines.md](docs/en/pipelines.md) for Docker, Nextflow, and Snakemake integration
 - [README_ZH.md](README_ZH.md) for the Chinese root guide
 
 ## License

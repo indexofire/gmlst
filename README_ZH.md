@@ -21,6 +21,7 @@
 - 📦 **丰富输出格式**：支持 `tsv`、`json`、`pretty`，也支持 GrapeTree 兼容导出。
 - 📊 **质量评分**：每个样本获得 0-100 分与状态码（PERFECT/NOVEL/MIXED/MISSING/BAD），随 JSON 输出；`--minscore` 支持批量质控过滤。
 - 🌐 **本地可视化**：使用 `gmlst visual web` 启动 Flask + Vue 本地网页界面，查看 MST 结果。
+- 🐳 **流水线就绪**：内置全部后端的 Docker 镜像与 Nextflow/Snakemake 示例，可直接接入监测流水线。
 - 💾 **缓存优先**：已下载的方案和已构建索引会复用，便于离线运行和重复分析。
 - 🧵 **批量处理**：支持样本级并行 worker 和后端线程配置。
 - 🧬 **CDS 感知调用**：cgMLST 工作流可结合 Pyrodigal 进行 CDS 预测，并支持 chewBBACA 风格分类路径。
@@ -452,6 +453,7 @@ pixi run ruff format .
 - [docs/zh/quickstart.md](docs/zh/quickstart.md) 查看快速上手指南
 - [docs/zh/commands.md](docs/zh/commands.md) 查看 CLI 命令参考
 - [docs/zh/configuration.md](docs/zh/configuration.md) 查看配置参考
+- [docs/zh/pipelines.md](docs/zh/pipelines.md) 查看流水线集成（Docker/Nextflow/Snakemake）
 - [README.md](README.md) 返回英文根文档
 
 ## 许可证
