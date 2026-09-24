@@ -60,7 +60,7 @@ Changelog = "https://github.com/indexofire/gmlst/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["gmlst"]
-package-data = { "gmlst" = ["data/catalogs/*.json", "data/*.json.gz", "web/templates/**/*.html", "web/static/**/*"] }
+package-data = { "gmlst" = ["data/catalogs/*.json", "data/*.json", "data/*.json.gz", "web/templates/**/*.html", "web/static/**/*"] }
 
 [tool.hatch.build.targets.sdist]
 include = [
