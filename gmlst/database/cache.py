@@ -528,6 +528,114 @@ class DatabaseCache:
         """Check if a cached catalog exists."""
         return self._catalog_path(provider).exists()
 
+    def _get_existing_scheme_owners(
+        self, exclude_provider: str | None = None
+    ) -> dict[str, str]:
+        """Map scheme names from all cached catalogs to their owning provider.
+
+        When several stale catalogs hold the same name, the
+        highest-priority provider (earliest in ``AVAILABLE_PROVIDERS``)
+        is recorded as the owner, because yielding is only correct while
+        every other owner has lower priority.
+        """
+        from gmlst.database.providers import AVAILABLE_PROVIDERS
+
+        priority = {p: i for i, p in enumerate(AVAILABLE_PROVIDERS)}
+
+        def rank(provider: str) -> int:
+            return priority.get(provider, len(priority))
+
+        owners: dict[str, str] = {}
+        for catalog_file in self._catalog_dir().glob("*.json"):
+            file_provider = catalog_file.stem
+            if exclude_provider and file_provider == exclude_provider:
+                continue
+            try:
+                data = json.loads(catalog_file.read_text())
+                for scheme in data.get("schemes", []):
+                    name = scheme.get("scheme_name", "")
+                    current = owners.get(name)
+                    if current is None or rank(file_provider) < rank(current):
+                        owners[name] = file_provider
+            except (OSError, json.JSONDecodeError):
+                continue
+        return owners
+
+    def _resolve_cross_provider_conflicts(
+        self,
+        provider: str,
+        schemes: list[dict[str, Any]],
+        owners: dict[str, str],
+    ) -> list[dict[str, Any]]:
+        """Rename schemes whose names collide with higher-priority providers.
+
+        Names owned by lower-priority providers are kept as-is — the stale
+        owner is repaired by its own load-time heal. Names not present in
+        any other catalog never change.
+        """
+        from gmlst.database.providers import AVAILABLE_PROVIDERS
+
+        priority = {p: i for i, p in enumerate(AVAILABLE_PROVIDERS)}
+        my_priority = priority.get(provider, len(priority))
+
+        existing_max_suffix: dict[str, int] = {}
+        for name in owners:
+            base, _, suffix_str = name.rpartition("_")
+            if base and suffix_str.isdigit():
+                existing_max_suffix[base] = max(
+                    existing_max_suffix.get(base, 0), int(suffix_str)
+                )
+
+        taken = set(owners)
+        for scheme in schemes:
+            name = scheme["scheme_name"]
+            if name not in taken:
+                taken.add(name)
+                continue
+            owner = owners.get(name)
+            if owner is not None and priority.get(owner, len(priority)) >= my_priority:
+                continue
+            base, _, suffix_str = name.rpartition("_")
+            if not suffix_str.isdigit():
+                base, suffix_str = name, "0"
+            new_suffix = max(existing_max_suffix.get(base, 0), int(suffix_str)) + 1
+            while f"{base}_{new_suffix}" in taken:
+                new_suffix += 1
+            new_name = f"{base}_{new_suffix}"
+            logger.info(
+                "Renamed scheme '%s' -> '%s' to ensure global uniqueness",
+                name,
+                new_name,
+            )
+            scheme["scheme_name"] = new_name
+            taken.add(new_name)
+        return schemes
+
+    def _heal_cross_provider_collisions(
+        self, provider: str, schemes: list[dict[str, Any]]
+    ) -> None:
+        """Repair catalogs written before cross-provider uniqueness existed.
+
+        When entries of *provider* collide with a higher-priority
+        provider's cached names (e.g. the historical abaumannii_1 mlst vs
+        cgMLST collision), the catalog is re-saved through
+        :meth:`save_catalog`, renaming only the conflicting entries.
+        """
+        owners = self._get_existing_scheme_owners(exclude_provider=provider)
+        if not owners:
+            return
+        from gmlst.database.providers import AVAILABLE_PROVIDERS
+
+        priority = {p: i for i, p in enumerate(AVAILABLE_PROVIDERS)}
+        my_priority = priority.get(provider, len(priority))
+        collides = any(
+            scheme.get("scheme_name") in owners
+            and priority.get(owners[scheme["scheme_name"]], len(priority)) < my_priority
+            for scheme in schemes
+        )
+        if collides:
+            self.save_catalog(provider, schemes)
+
     def load_catalog(self, provider: str) -> list[dict[str, Any]] | None:
         """Load cached catalog; return None if missing or corrupt.
 
@@ -544,10 +652,12 @@ class DatabaseCache:
 
         try:
             data = json.loads(path.read_text())
-            return data.get("schemes", [])
         except (OSError, json.JSONDecodeError) as exc:
             logger.warning("Failed to load catalog %s: %s", path, exc)
             return None
+        schemes = data.get("schemes", [])
+        self._heal_cross_provider_collisions(provider, schemes)
+        return schemes
 
     def _normalize_scheme_names(
         self, schemes: list[dict[str, Any]]
@@ -572,38 +682,6 @@ class DatabaseCache:
                 scheme["scheme_name"] = f"{base_name}_{name_counters[base_name]}"
 
         return schemes
-
-    def _get_all_existing_scheme_names(
-        self, exclude_provider: str | None = None
-    ) -> set[str]:
-        """Get all scheme names from all cached catalogs.
-
-        Args:
-            exclude_provider: If specified, skip this provider's catalogs
-
-        Returns:
-            Set of all existing scheme names
-        """
-        existing_names: set[str] = set()
-
-        catalog_dir = self._catalog_dir()
-        if not catalog_dir.exists():
-            return existing_names
-
-        for catalog_file in catalog_dir.glob("*.json"):
-            # Filename format: {provider}.json
-            file_provider = catalog_file.stem
-            if exclude_provider and file_provider == exclude_provider:
-                continue
-
-            try:
-                data = json.loads(catalog_file.read_text())
-                for scheme in data.get("schemes", []):
-                    existing_names.add(scheme.get("scheme_name", ""))
-            except (OSError, json.JSONDecodeError):
-                continue
-
-        return existing_names
 
     def _copy_default_catalog(self, provider: str) -> bool:
         """Copy default catalog from package data to cache.
@@ -658,51 +736,11 @@ class DatabaseCache:
         # First, normalize names within this provider's schemes
         schemes = self._normalize_scheme_names(schemes)
 
-        # Get all existing scheme names from other providers
-        existing_names = self._get_all_existing_scheme_names(exclude_provider=provider)
-
-        # Check for conflicts and reassign names if needed
-        # Group by base name to handle suffix allocation
-        base_name_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for scheme in schemes:
-            scheme_name = scheme["scheme_name"]
-            # Extract base name (e.g., "abaumannii_1" -> "abaumannii")
-            if "_" in scheme_name:
-                base_name = scheme_name.rsplit("_", 1)[0]
-            else:
-                base_name = scheme_name
-            base_name_groups[base_name].append(scheme)
-
-        # Reassign names ensuring global uniqueness
-        # Preprocess existing_names into {base_name: max_suffix} mapping for O(1) lookup
-        existing_max_suffix: dict[str, int] = {}
-        for existing_name in existing_names:
-            if "_" in existing_name:
-                try:
-                    base, suffix_str = existing_name.rsplit("_", 1)
-                    suffix = int(suffix_str)
-                    existing_max_suffix[base] = max(
-                        existing_max_suffix.get(base, 0), suffix
-                    )
-                except ValueError:
-                    pass  # Not a numbered suffix, skip
-
-        for base_name, group_schemes in base_name_groups.items():
-            # Start from the highest existing suffix for this base_name
-            max_suffix = existing_max_suffix.get(base_name, 0)
-
-            # Assign new suffixes starting from max_suffix + 1
-            for i, scheme in enumerate(group_schemes, start=1):
-                new_suffix = max_suffix + i
-                old_name = scheme["scheme_name"]
-                new_name = f"{base_name}_{new_suffix}"
-                scheme["scheme_name"] = new_name
-                if old_name != new_name:
-                    logger.info(
-                        "Renamed scheme '%s' -> '%s' to ensure global uniqueness",
-                        old_name,
-                        new_name,
-                    )
+        # Rename only genuine cross-provider conflicts; every other name
+        # keeps its identity (stability first).
+        owners = self._get_existing_scheme_owners(exclude_provider=provider)
+        if owners:
+            schemes = self._resolve_cross_provider_conflicts(provider, schemes, owners)
 
         path = self._catalog_path(provider)
         # Determine scheme_type from schemes (use first one or 'mixed')
