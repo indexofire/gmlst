@@ -13,6 +13,7 @@ English | [简体中文](README_ZH.md)
 - 🧬 **Broad typing support**: run `gmlst typing mlst`, `gmlst typing cgmlst`, and `gmlst typing tgmlst` from the same CLI.
 - ⚡ **Multiple backends**: use BLAST+, KMA, minimap2, MUMmer4, with built-in exact-hash pre-resolution for cgMLST workflows.
 - 🧫 **FASTA and FASTQ input**: type assembled genomes and paired-end raw reads with backend-aware handling.
+- 🗂️ **GenBank/EMBL input**: accept `.gbk`, `.gb`, `.gbff`, and `.embl` (optionally gzipped) directly — records are converted on the fly, no pre-processing.
 - 🗂️ **Multiple providers**: work with PubMLST, Pasteur BIGSdb, Enterobase, cgmlst.org, and local custom schemes.
 - 🧠 **Smart cgMLST modes**: choose `fast`, `ultrafast`, or `balanced` depending on speed and evidence needs.
 - 🆕 **Novel allele workflow**: detect novel alleles, extract novel profiles, and build custom laboratory databases.

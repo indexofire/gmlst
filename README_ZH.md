@@ -13,6 +13,7 @@
 - 🧬 **统一分型入口**：通过同一套 CLI 运行 `gmlst typing mlst`、`gmlst typing cgmlst` 和 `gmlst typing tgmlst`。
 - ⚡ **多后端支持**：支持 BLAST+、KMA、minimap2、MUMmer4，内置 exact-hash 预解析用于 cgMLST 工作流。
 - 🧫 **支持 FASTA 与 FASTQ**：既能处理组装完成的基因组，也能处理双端原始 reads。
+- 🗂️ **支持 GenBank/EMBL 输入**：`.gbk`、`.gb`、`.gbff`、`.embl`（可 gzip 压缩）直接输入，记录即时转换，无需预处理。
 - 🗂️ **多数据提供方**：支持 PubMLST、Pasteur BIGSdb、Enterobase、cgmlst.org 和本地自定义方案。
 - 🧠 **灵活的 cgMLST 模式**：可选 `fast`、`ultrafast`、`balanced`，适配不同速度与证据需求。
 - 🆕 **新等位基因工作流**：支持发现 novel allele、提取 novel profile，并构建实验室自定义 MLST 数据库。

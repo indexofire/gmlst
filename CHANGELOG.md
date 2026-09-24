@@ -13,12 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep backend typing behavior unchanged while adding compression support
   (indexing/typing should continue to use materialized local files).
 - Design provider-specific incremental update strategy to avoid full re-downloads:
-  - PubMLST/Pasteur (BigsDB): compare remote metadata and fetch only changed
+  - PubMLST/Pasteur (BigsDb): compare remote metadata and fetch only changed
     loci/profile assets when possible.
   - Enterobase/cgMLST: evaluate available metadata/headers and implement
     best-effort incremental sync.
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
+
+## [0.3.4] - 2026-09-24
+
+### Added
+- GenBank/EMBL flat-file input for all typing commands (`typing mlst`,
+  `typing cgmlst`, `typing tgmlst`) and the `utils extract` TSV fallback:
+  `.gbk`, `.gb`, `.gbff`, and `.embl` files (optionally gzipped) are converted
+  to FASTA automatically in a temporary directory. Pure-Python parser, no new
+  dependencies; validated allele-identical against equivalent FASTA input on
+  real genomes.
+
+### Fixed
+- `open_text` (the shared text I/O helper) raised `AttributeError` when called
+  with a `str` path instead of `pathlib.Path`; it now accepts both.
 
 ## [0.3.3] - 2026-09-23
 

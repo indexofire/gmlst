@@ -170,8 +170,9 @@ def get_temp_root() -> Path | None:
 
 
 @contextmanager
-def open_text(path: Path) -> Iterator[TextIO]:
+def open_text(path: str | Path) -> Iterator[TextIO]:
     """Open a text file for reading, transparently handling .gz compression."""
+    path = Path(path)
     if path.suffix.lower() == ".gz":
         with gzip.open(path, "rt") as fh:
             yield fh

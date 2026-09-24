@@ -302,16 +302,18 @@ def _extract_novel_from_tsv_with_retyping(
     try:
         scheme_obj = cache.ensure_scheme(scheme_name, provider=chosen_provider)
         from gmlst.core import run_typing
+        from gmlst.genbank_io import ensure_fasta_samples
         from gmlst.readers.sample import SampleInput
 
-        typing_paths: list[Path | SampleInput] = list(sample_paths)
-        results = run_typing(
-            sample_paths=typing_paths,
-            scheme_name=scheme_name,
-            backend=backend,
-            provider=chosen_provider,
-            cache_root=cache_dir,
-        )
+        with ensure_fasta_samples(sample_paths) as fasta_paths:
+            typing_paths: list[Path | SampleInput] = list(fasta_paths)
+            results = run_typing(
+                sample_paths=typing_paths,
+                scheme_name=scheme_name,
+                backend=backend,
+                provider=chosen_provider,
+                cache_root=cache_dir,
+            )
     except Exception as exc:
         err_console.print(f"[red]Error:[/red] {exc}")
         sys.exit(1)
@@ -364,6 +366,12 @@ def _resolve_sample_paths(sample_ids: list[str], samples_dir: Path) -> list[Path
         ".fna.gz",
         ".fastq.gz",
         ".fq.gz",
+        ".gbk",
+        ".gb",
+        ".gbff",
+        ".embl",
+        ".gbk.gz",
+        ".embl.gz",
     ]
     paths: list[Path] = []
     missing: list[str] = []

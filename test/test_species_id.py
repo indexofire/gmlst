@@ -104,6 +104,18 @@ def test_sketch_fasta_sample_caps_total_bases(tmp_path: Path) -> None:
     assert capped < full
 
 
+def test_sketch_fasta_sample_accepts_str_path(tmp_path: Path) -> None:
+    fasta = tmp_path / "genome.fna"
+    seq = "TTAAGGCCTTAGGCAATCGGTCAAGGTTAC" * 7  # varied k-mer content
+    fasta.write_text(">c1\n" + seq + "\n")
+
+    from_path = sketch_fasta_sample(fasta)
+    from_str = sketch_fasta_sample(str(fasta))
+
+    assert from_path  # sanity: fixture yields sampled hashes
+    assert from_str == from_path
+
+
 # ---------------------------------------------------------------------------
 # detect_species / is_unique_detection
 # ---------------------------------------------------------------------------

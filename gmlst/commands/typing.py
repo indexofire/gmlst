@@ -52,6 +52,7 @@ from gmlst.commands.typing_species import resolve_scheme_for_typing
 from gmlst.core import run_typing
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.schema import Scheme
+from gmlst.genbank_io import ensure_fasta_samples
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
 from gmlst.novel.service import create_novel_writers, finalize_novel_typing_outputs
 from gmlst.schema_versions import (
@@ -162,37 +163,38 @@ def cmd_typing_mlst(
     """Type samples against MLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
-    scheme = resolve_scheme_for_typing(
-        mode="mlst",
-        scheme=scheme,
-        organism=organism,
-        samples=samples,
-        cache_dir=cache_dir,
-    )
-    _run_mlst_like_typing(
-        mode="mlst",
-        samples=samples,
-        scheme=scheme,
-        backend=backend,
-        min_id=min_id,
-        min_cov=min_cov,
-        min_depth=min_depth,
-        min_join_overlap=min_join_overlap,
-        fmt=fmt,
-        output=output,
-        cache_dir=cache_dir,
-        force_reindex=force_reindex,
-        no_header=no_header,
-        threads=threads,
-        max_workers=max_workers,
-        count_same_copy=count_same_copy,
-        provider=None,
-        novel_allele=novel_allele,
-        novel_profile=novel_profile,
-        output_dir=output_dir,
-        quiet=quiet,
-        detail=detail,
-    )
+    with ensure_fasta_samples(samples) as samples_fasta:
+        scheme = resolve_scheme_for_typing(
+            mode="mlst",
+            scheme=scheme,
+            organism=organism,
+            samples=samples_fasta,
+            cache_dir=cache_dir,
+        )
+        _run_mlst_like_typing(
+            mode="mlst",
+            samples=samples_fasta,
+            scheme=scheme,
+            backend=backend,
+            min_id=min_id,
+            min_cov=min_cov,
+            min_depth=min_depth,
+            min_join_overlap=min_join_overlap,
+            fmt=fmt,
+            output=output,
+            cache_dir=cache_dir,
+            force_reindex=force_reindex,
+            no_header=no_header,
+            threads=threads,
+            max_workers=max_workers,
+            count_same_copy=count_same_copy,
+            provider=None,
+            novel_allele=novel_allele,
+            novel_profile=novel_profile,
+            output_dir=output_dir,
+            quiet=quiet,
+            detail=detail,
+        )
 
 
 @cmd_typing.command("cgmlst", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -326,43 +328,44 @@ def cmd_typing_cgmlst(
     """Type samples against cgMLST/wgMLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
-    scheme = resolve_scheme_for_typing(
-        mode="cgmlst",
-        scheme=scheme,
-        organism=organism,
-        samples=samples,
-        cache_dir=cache_dir,
-    )
-    _run_mlst_like_typing(
-        mode="cgmlst",
-        samples=samples,
-        scheme=scheme,
-        backend=backend,
-        cgmlst_mode=cgmlst_mode,
-        min_id=min_id,
-        min_cov=min_cov,
-        min_depth=min_depth,
-        min_join_overlap=min_join_overlap,
-        fmt=fmt,
-        output=output,
-        cache_dir=cache_dir,
-        force_reindex=force_reindex,
-        no_header=no_header,
-        threads=threads,
-        max_workers=max_workers,
-        count_same_copy=count_same_copy,
-        provider=None,
-        prefilter_enabled=not no_prefilter,
-        prefilter_k=prefilter_k,
-        prefilter_top_n=prefilter_top_n,
-        prefilter_min_loci_fraction=prefilter_min_loci_fraction,
-        novel_allele=novel_allele,
-        novel_profile=novel_profile,
-        output_dir=output_dir,
-        cds_coordinates_out=cds_coordinates_out,
-        call_policy=call_policy,
-        chew_cds_gate=chew_cds_gate,
-    )
+    with ensure_fasta_samples(samples) as samples_fasta:
+        scheme = resolve_scheme_for_typing(
+            mode="cgmlst",
+            scheme=scheme,
+            organism=organism,
+            samples=samples_fasta,
+            cache_dir=cache_dir,
+        )
+        _run_mlst_like_typing(
+            mode="cgmlst",
+            samples=samples_fasta,
+            scheme=scheme,
+            backend=backend,
+            cgmlst_mode=cgmlst_mode,
+            min_id=min_id,
+            min_cov=min_cov,
+            min_depth=min_depth,
+            min_join_overlap=min_join_overlap,
+            fmt=fmt,
+            output=output,
+            cache_dir=cache_dir,
+            force_reindex=force_reindex,
+            no_header=no_header,
+            threads=threads,
+            max_workers=max_workers,
+            count_same_copy=count_same_copy,
+            provider=None,
+            prefilter_enabled=not no_prefilter,
+            prefilter_k=prefilter_k,
+            prefilter_top_n=prefilter_top_n,
+            prefilter_min_loci_fraction=prefilter_min_loci_fraction,
+            novel_allele=novel_allele,
+            novel_profile=novel_profile,
+            output_dir=output_dir,
+            cds_coordinates_out=cds_coordinates_out,
+            call_policy=call_policy,
+            chew_cds_gate=chew_cds_gate,
+        )
 
 
 @cmd_typing.command("tgmlst", context_settings=HELP_SETTINGS, no_args_is_help=True)
@@ -503,22 +506,23 @@ def cmd_typing_tgmlst(
     if quiet:
         setup_logging(verbose=False, quiet=True)
 
-    exit_code = _run_schemefree_typing(
-        samples=list(samples),
-        hash_strategy=hash_strategy,
-        fmt=fmt,
-        output=output,
-        no_header=no_header,
-        save_scheme_path=save_scheme,
-        load_scheme_path=load_scheme,
-        show_stats=show_stats,
-        max_workers=max_workers,
-        threads=threads,
-        assemble_timeout=assemble_timeout,
-        error_report_path=error_report,
-        fail_on_error=fail_on_error,
-        summary_report_path=summary_report,
-    )
+    with ensure_fasta_samples(samples) as samples_fasta:
+        exit_code = _run_schemefree_typing(
+            samples=list(samples_fasta),
+            hash_strategy=hash_strategy,
+            fmt=fmt,
+            output=output,
+            no_header=no_header,
+            save_scheme_path=save_scheme,
+            load_scheme_path=load_scheme,
+            show_stats=show_stats,
+            max_workers=max_workers,
+            threads=threads,
+            assemble_timeout=assemble_timeout,
+            error_report_path=error_report,
+            fail_on_error=fail_on_error,
+            summary_report_path=summary_report,
+        )
     if exit_code != 0:
         sys.exit(exit_code)
 
