@@ -177,6 +177,17 @@ def cache_dir_option(f):
 def typing_threshold_options(f):
     """Click decorator factory adding the shared typing threshold options."""
     f = click.option(
+        "--minscore",
+        "minscore",
+        default=0.0,
+        show_default=True,
+        type=float,
+        help=(
+            "Minimum sample quality score (0-100) to report; samples below "
+            "are dropped from TSV/JSON output. Scores appear in JSON output."
+        ),
+    )(f)
+    f = click.option(
         "--min-join-overlap",
         default=10,
         show_default=True,

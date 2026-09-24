@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.3.5] - 2026-09-24
+
+### Added
+- Per-sample quality scoring for `typing mlst` / `typing cgmlst`: every JSON
+  result now carries `score` (0-100, mean of per-locus scores — exact calls
+  are 100, novel/partial calls scale with the caller's existing confidence,
+  missing and conflicting multi-copy loci are 0) and `status` (PERFECT /
+  NOVEL / MIXED / MISSING / BAD / NONE, tseemann/mlst-style semantics).
+- `--minscore <float>`: drop samples below a quality threshold from TSV and
+  JSON output alike (default 0 keeps everything; scores are additive fields,
+  the JSON envelope stays `gmlst-typing-v1`).
+
 ## [0.3.4] - 2026-09-24
 
 ### Added

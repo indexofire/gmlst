@@ -208,10 +208,15 @@ class STResult:
                 is_complete = False
             if call.multiple_hits:
                 has_conflicting_multicopy = True
+        from gmlst.calling.scoring import score_result
+
+        scored = score_result(self)
         return {
             "sample_id": self.sample_id,
             "scheme": self.scheme,
             "st": self.st,
+            "score": scored.score,
+            "status": scored.status,
             "allele_calls": {
                 locus: _locus_call_to_dict(call)
                 for locus, call in self.locus_calls.items()

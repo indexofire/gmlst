@@ -19,6 +19,7 @@
 - 🆕 **新等位基因工作流**：支持发现 novel allele、提取 novel profile，并构建实验室自定义 MLST 数据库。
 - 🔍 **无方案分型**：通过 `tgmlst` 进行 de novo 等位基因发现，不依赖预先选择的公共方案。
 - 📦 **丰富输出格式**：支持 `tsv`、`json`、`pretty`，也支持 GrapeTree 兼容导出。
+- 📊 **质量评分**：每个样本获得 0-100 分与状态码（PERFECT/NOVEL/MIXED/MISSING/BAD），随 JSON 输出；`--minscore` 支持批量质控过滤。
 - 🌐 **本地可视化**：使用 `gmlst visual web` 启动 Flask + Vue 本地网页界面，查看 MST 结果。
 - 💾 **缓存优先**：已下载的方案和已构建索引会复用，便于离线运行和重复分析。
 - 🧵 **批量处理**：支持样本级并行 worker 和后端线程配置。
@@ -362,6 +363,13 @@ gmlst scheme list -p labdb
 触发拼接所需的最小等位基因坐标重叠默认 10 bp，可用 `--min-join-overlap` 调整（`0` = 最宽松；重叠区序列仍须完全一致）。
 
 如果要保留结构化字段，例如每个位点的调用元数据和 `novel_sequence` 信息，建议使用 JSON 输出。
+
+分型结果中的每个样本还携带 `score`（0-100：exact 调用计 100 分，novel/partial 按调用置信度缩放，缺失或冲突位点计 0 分，取所有基因座平均）与 `status` 状态码——`PERFECT`、`NOVEL`、`MIXED`、`MISSING`、`BAD`、`NONE`。使用 `--minscore <float>` 可将低于质量阈值的样本从 TSV 和 JSON 输出中一并剔除（批量质控）：
+
+```bash
+# 只报告得分不低于 50 的样本
+gmlst typing mlst -s saureus_1 --minscore 50 --format json *.fasta -o qc_passed.json
+```
 
 ### JSON 输出信封（0.2.0 起）
 

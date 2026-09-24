@@ -19,6 +19,7 @@ English | [简体中文](README_ZH.md)
 - 🆕 **Novel allele workflow**: detect novel alleles, extract novel profiles, and build custom laboratory databases.
 - 🔍 **Scheme-free typing**: run `tgmlst` for de novo allele discovery without a preselected public scheme.
 - 📦 **Rich outputs**: export `tsv`, `json`, `pretty`, and GrapeTree-compatible tables.
+- 📊 **Quality scoring**: every sample gets a 0-100 score and a status code (PERFECT/NOVEL/MIXED/MISSING/BAD) in JSON output, with `--minscore` filtering for batch QC.
 - 🌐 **Local visualization**: launch a Flask + Vue web app with `gmlst visual web` to inspect MST results locally.
 - 💾 **Cache-first operation**: downloaded schemes and built indexes are reused for offline or repeated runs.
 - 🧵 **Batch processing**: use sample-level workers and backend threads for high-throughput workflows.
@@ -351,6 +352,13 @@ Fragmented assemblies often break a housekeeping gene across two contigs. For th
 The minimum allele-coordinate overlap required to join fragments defaults to 10 bp and is tunable with `--min-join-overlap` (`0` = most permissive; overlap sequence must still agree exactly).
 
 JSON output is the best choice when you want structured fields such as per-locus call metadata and `novel_sequence` extraction data. Every JSON document the CLI writes is wrapped in a versioned envelope, `{"schema_version": "<constant>", "data": <payload>}`, so scripts can version-check before parsing:
+
+Each sample in the typing payload also carries a `score` (0-100, the mean of per-locus scores where exact calls are 100, novel/partial calls scale with the caller's confidence, and missing or conflicting loci are 0) and a `status` code — `PERFECT`, `NOVEL`, `MIXED`, `MISSING`, `BAD`, or `NONE`. Use `--minscore <float>` to drop samples below a quality threshold from TSV and JSON output alike (batch QC):
+
+```bash
+# Only report samples scoring at least 50
+gmlst typing mlst -s saureus_1 --minscore 50 --format json *.fasta -o qc_passed.json
+```
 
 ```json
 {"schema_version": "gmlst-typing-v1", "data": [{"file": "sample.fasta", "scheme": "saureus_1", "...": "..."}]}

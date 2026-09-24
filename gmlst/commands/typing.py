@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import click
 
+from gmlst.calling.scoring import passes_minscore
 from gmlst.commands.common import (
     HELP_SETTINGS,
     backend_option,
@@ -145,6 +146,7 @@ def cmd_typing_mlst(
     min_cov: float,
     min_depth: float,
     min_join_overlap: int,
+    minscore: float,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -180,6 +182,7 @@ def cmd_typing_mlst(
             min_cov=min_cov,
             min_depth=min_depth,
             min_join_overlap=min_join_overlap,
+            minscore=minscore,
             fmt=fmt,
             output=output,
             cache_dir=cache_dir,
@@ -305,6 +308,7 @@ def cmd_typing_cgmlst(
     min_cov: float,
     min_depth: float,
     min_join_overlap: int,
+    minscore: float,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -346,6 +350,7 @@ def cmd_typing_cgmlst(
             min_cov=min_cov,
             min_depth=min_depth,
             min_join_overlap=min_join_overlap,
+            minscore=minscore,
             fmt=fmt,
             output=output,
             cache_dir=cache_dir,
@@ -600,6 +605,7 @@ def _run_mlst_like_typing(
     min_cov: float,
     min_depth: float,
     min_join_overlap: int = 10,
+    minscore: float = 0.0,
     fmt: str,
     output: Path | None,
     cache_dir: Path | None,
@@ -712,6 +718,8 @@ def _run_mlst_like_typing(
     def _on_result(result: STResult) -> None:
         if not streamed_output:
             return
+        if minscore > 0 and not passes_minscore(result, minscore):
+            return
         emit_streamed_result(
             result=result,
             fmt=fmt,
@@ -771,6 +779,9 @@ def _run_mlst_like_typing(
         except Exception as exc:
             err_console.print(f"[red]Error during typing:[/red] {exc}")
             sys.exit(1)
+
+        if minscore > 0:
+            results = [r for r in results if passes_minscore(r, minscore)]
 
         finalize_novel_typing_outputs(
             results=results,
