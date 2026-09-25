@@ -69,6 +69,21 @@ For an assembled genome in FASTA format, the most direct command is:
 gmlst typing mlst -s saureus_1 sample.fasta
 ```
 
+You can also skip the scheme entirely — gmlst detects the species from the
+genome and resolves the scheme for you (see the
+[auto-detection notes](commands.md#typing)):
+
+```bash
+gmlst typing mlst sample.fasta
+```
+
+And for a directory of mixed-species assemblies, `--guess` types every
+genome against its own species' scheme with zero interaction:
+
+```bash
+gmlst typing mlst --guess -b minimap2 assemblies/*.fna -o mixed.tsv
+```
+
 This runs MLST typing against the downloaded scheme using the default `blastn` backend.
 
 Typical TSV output looks like this:

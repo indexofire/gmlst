@@ -47,6 +47,8 @@ Examples:
 
 ```bash
 gmlst typing mlst -s saureus_1 sample.fna
+gmlst typing mlst sample.fna                     # species auto-detection
+gmlst typing mlst --guess assemblies/*.fna       # unattended mixed-species batch
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
 gmlst typing cgmlst -s vparahaemolyticus_3 --prefilter-k 31 --prefilter-top-n 20 sample.fna
 gmlst typing tgmlst sample.fna

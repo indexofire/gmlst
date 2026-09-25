@@ -48,6 +48,8 @@ gmlst typing [OPTIONS] COMMAND [ARGS]...
 
 ```bash
 gmlst typing mlst -s saureus_1 sample.fna
+gmlst typing mlst sample.fna                     # 物种自动检测
+gmlst typing mlst --guess assemblies/*.fna       # 无人值守混合物种批处理
 gmlst typing cgmlst -s vparahaemolyticus_3 sample.fna
 gmlst typing tgmlst sample.fna
 ```

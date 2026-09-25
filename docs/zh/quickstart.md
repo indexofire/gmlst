@@ -69,6 +69,20 @@ gmlst scheme remove saureus_1
 gmlst typing mlst -s saureus_1 sample.fasta
 ```
 
+也可以完全跳过方案选择——gmlst 会从基因组自动检测物种并解析方案
+（详见[命令参考](commands.md#typing)）：
+
+```bash
+gmlst typing mlst sample.fasta
+```
+
+对混合物种的组装目录，`--guess` 全程零交互，每个基因组各自按其
+物种的方案分型：
+
+```bash
+gmlst typing mlst --guess -b minimap2 assemblies/*.fna -o mixed.tsv
+```
+
 这会使用默认的 `blastn` 后端，对该样本执行 MLST 分型。
 
 常见 TSV 输出如下：
