@@ -185,6 +185,16 @@ def _resolve_by_detection(
                 f"Detected species '{organism}' (confidence {score:.2f}) but no "
                 f"{type_label} scheme is available for it. Specify -s or -n."
             )
+        downloaded = [
+            row for row in rows if cache.is_downloaded(row.scheme_name, row.provider)
+        ]
+        if len(downloaded) == 1:
+            status_console.print(
+                f"\\[auto-selected] {downloaded[0].scheme_name} "
+                f"(species {organism}, confidence {score:.2f}; "
+                "only cached candidate)"
+            )
+            return downloaded[0].scheme_name
         return _prompt_scheme_choice(
             cache, rows, {organism: score}, type_label, via="species detection"
         )
@@ -228,8 +238,10 @@ def _prompt_scheme_choice(
     for index, row in enumerate(rows, 1):
         score = score_by_organism.get(row.organism)
         confidence = f" (species confidence {score:.2f})" if score is not None else ""
+        is_cached = cache.is_downloaded(row.scheme_name, row.provider)
+        cached = " (cached)" if is_cached else ""
         click.echo(
-            f"{index}. {row.scheme_name} — {row.organism} "
+            f"{index}. {row.scheme_name}{cached} — {row.organism} "
             f"[{row.scheme_type}, {row.n_loci or '?'} loci]{confidence}"
         )
     if not _stdin_is_interactive():

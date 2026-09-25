@@ -50,7 +50,7 @@ from gmlst.commands.typing_schemefree_exit import (
     schemefree_exit_decision,
 )
 from gmlst.commands.typing_species import resolve_scheme_for_typing
-from gmlst.core import run_typing
+from gmlst.core import run_typing, species_id
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.schema import Scheme
 from gmlst.genbank_io import ensure_fasta_samples
@@ -91,6 +91,21 @@ def cmd_typing() -> None:
     """Typing command group: mlst, cgmlst, and tgmlst modes."""
 
 
+def _validate_guess_flags(
+    guess: bool,
+    scheme: str | None,
+    organism: str | None,
+    novel_allele: bool,
+    novel_profile: bool,
+) -> None:
+    if not guess:
+        return
+    if scheme is not None or organism is not None:
+        raise click.UsageError("--guess cannot be combined with -s or -n.")
+    if novel_allele or novel_profile:
+        raise click.UsageError("--guess cannot be combined with novel flags.")
+
+
 @cmd_typing.command("mlst", context_settings=HELP_SETTINGS, no_args_is_help=True)
 @click.argument(
     "samples",
@@ -109,6 +124,16 @@ def cmd_typing() -> None:
     "-n",
     default=None,
     help="Resolve the scheme by organism or scheme-name substring, e.g. 'bordetella'.",
+)
+@click.option(
+    "--guess",
+    "-g",
+    is_flag=True,
+    help=(
+        "Unattended mixed-species typing: detect each assembly's species, "
+        "pick the scheme automatically (downloading if needed), and never "
+        "prompt. Incompatible with -s/-n and the novel flags."
+    ),
 )
 @backend_option("blastn")
 @typing_threshold_options
@@ -141,6 +166,7 @@ def cmd_typing_mlst(
     samples: tuple[Path, ...],
     scheme: str | None,
     organism: str | None,
+    guess: bool,
     backend: str,
     min_id: float,
     min_cov: float,
@@ -165,6 +191,32 @@ def cmd_typing_mlst(
     """Type samples against MLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
+    _validate_guess_flags(guess, scheme, organism, novel_allele, novel_profile)
+    if guess:
+        exit_code = _run_guess_typing(
+            mode="mlst",
+            samples=samples,
+            backend=backend,
+            cgmlst_mode="fast",
+            min_id=min_id,
+            min_cov=min_cov,
+            min_depth=min_depth,
+            min_join_overlap=min_join_overlap,
+            minscore=minscore,
+            fmt=fmt,
+            output=output,
+            cache_dir=cache_dir,
+            force_reindex=force_reindex,
+            no_header=no_header,
+            threads=threads,
+            max_workers=max_workers,
+            count_same_copy=count_same_copy,
+            quiet=quiet,
+            detail=detail,
+        )
+        if exit_code != 0:
+            sys.exit(exit_code)
+        return
     with ensure_fasta_samples(samples) as samples_fasta:
         scheme = resolve_scheme_for_typing(
             mode="mlst",
@@ -218,6 +270,16 @@ def cmd_typing_mlst(
     "-n",
     default=None,
     help="Resolve the scheme by organism or scheme-name substring, e.g. 'vibrio'.",
+)
+@click.option(
+    "--guess",
+    "-g",
+    is_flag=True,
+    help=(
+        "Unattended mixed-species typing: detect each assembly's species, "
+        "pick the scheme automatically (downloading if needed), and never "
+        "prompt. Incompatible with -s/-n and the novel flags."
+    ),
 )
 @backend_option("minimap2")
 @click.option(
@@ -302,6 +364,7 @@ def cmd_typing_cgmlst(
     samples: tuple[Path, ...],
     scheme: str | None,
     organism: str | None,
+    guess: bool,
     backend: str,
     cgmlst_mode: str,
     min_id: float,
@@ -332,6 +395,32 @@ def cmd_typing_cgmlst(
     """Type samples against cgMLST/wgMLST schemes only."""
     if quiet:
         setup_logging(verbose=False, quiet=True)
+    _validate_guess_flags(guess, scheme, organism, novel_allele, novel_profile)
+    if guess:
+        exit_code = _run_guess_typing(
+            mode="cgmlst",
+            samples=samples,
+            backend=backend,
+            cgmlst_mode=cgmlst_mode,
+            min_id=min_id,
+            min_cov=min_cov,
+            min_depth=min_depth,
+            min_join_overlap=min_join_overlap,
+            minscore=minscore,
+            fmt=fmt,
+            output=output,
+            cache_dir=cache_dir,
+            force_reindex=force_reindex,
+            no_header=no_header,
+            threads=threads,
+            max_workers=max_workers,
+            count_same_copy=count_same_copy,
+            quiet=quiet,
+            detail=False,
+        )
+        if exit_code != 0:
+            sys.exit(exit_code)
+        return
     with ensure_fasta_samples(samples) as samples_fasta:
         scheme = resolve_scheme_for_typing(
             mode="cgmlst",
@@ -554,7 +643,9 @@ def _resolve_scheme_with_fallback(
             )
             sys.exit(1)
 
-        detected_provider = cache.detect_provider(scheme)
+        detected_provider = cache.detect_provider(
+            scheme, prefer_type="cgmlst" if mode == "cgmlst" else "mlst"
+        )
         if not detected_provider:
             err_console.print(
                 f"[red]Error:[/red] Scheme '[cyan]{scheme}[/cyan]' not found."
@@ -628,12 +719,19 @@ def _run_mlst_like_typing(
     max_fastq_depth: float = 100,
     quiet: bool = False,
     detail: bool = False,
+    suppress_output: bool = False,
+    result_sink: list | None = None,
 ) -> None:
     cache = DatabaseCache(cache_dir)
 
     provider_specified = provider is not None
     if provider is None:
-        provider = cache.detect_provider(scheme) or "pubmlst"
+        provider = (
+            cache.detect_provider(
+                scheme, prefer_type="cgmlst" if mode == "cgmlst" else "mlst"
+            )
+            or "pubmlst"
+        )
 
     scheme_type = resolve_scheme_type(cache, scheme, provider)
     validate_scheme_mode(
@@ -705,7 +803,7 @@ def _run_mlst_like_typing(
         profile_writer_cls=NovelProfileWriter,
     )
 
-    streamed_output = fmt in {"tsv", "pretty"}
+    streamed_output = fmt in {"tsv", "pretty"} and not suppress_output
     stream_file = open_stream_output(fmt=fmt, output=output)
     if streamed_output:
         stream_header_if_needed(
@@ -783,6 +881,11 @@ def _run_mlst_like_typing(
         if minscore > 0:
             results = [r for r in results if passes_minscore(r, minscore)]
 
+        if suppress_output:
+            if result_sink is not None:
+                result_sink.extend(results)
+            return
+
         finalize_novel_typing_outputs(
             results=results,
             allele_writer=allele_writer,
@@ -805,6 +908,170 @@ def _run_mlst_like_typing(
 
     finally:
         close_stream_output(stream_file)
+
+
+def _run_guess_typing(
+    *,
+    mode: str,
+    samples: tuple[Path, ...],
+    backend: str,
+    cgmlst_mode: str,
+    min_id: float,
+    min_cov: float,
+    min_depth: float,
+    min_join_overlap: int,
+    minscore: float,
+    fmt: str,
+    output: Path | None,
+    cache_dir: Path | None,
+    force_reindex: bool,
+    no_header: bool,
+    threads: int,
+    max_workers: int,
+    count_same_copy: bool,
+    quiet: bool,
+    detail: bool,
+) -> int:
+    """Type a mixed-species batch unattended (--guess).
+
+    Detects each assembly's species, picks one scheme per organism
+    (preference list → lone cached candidate → natural order), downloads
+    missing schemes without asking, and runs the typing engine once per
+    scheme group. Skipped samples are reported on stderr; the exit code
+    is 0 when at least one sample typed, 1 otherwise.
+    """
+    from gmlst.commands.scheme_common import build_fingerprints_with_progress
+    from gmlst.commands.typing_guess import resolve_guess_routes
+    from gmlst.commands.typing_output import (
+        announce_stream_output_written,
+        close_stream_output,
+        open_stream_output,
+        stream_header_if_needed,
+        stream_write,
+    )
+    from gmlst.commands.typing_species import _scheme_types_for_mode
+    from gmlst.database.scheme_prefs import load_scheme_preferences
+
+    cache = DatabaseCache(cache_dir)
+    fingerprints_file = species_id.fingerprints_path(cache)
+    if fingerprints_file.exists():
+        payload = species_id.load_fingerprints(fingerprints_file)
+    else:
+        bundled = species_id.bundled_fingerprints_path()
+        if bundled is not None:
+            payload = species_id.load_fingerprints(bundled)
+        else:
+            status_console.print(
+                "[yellow]guess:[/yellow] building fingerprint database…"
+            )
+            payload, _counts = build_fingerprints_with_progress(cache)
+            species_id.save_fingerprints(payload, fingerprints_file)
+
+    type_set, _type_label = _scheme_types_for_mode(mode)
+    plan = resolve_guess_routes(
+        samples,
+        type_set=type_set,
+        cache=cache,
+        fingerprints=payload,
+        preferences=load_scheme_preferences(),
+    )
+
+    for sample, reason in plan.skipped:
+        err_console.print(f"[yellow]skip:[/yellow] {sample.name}: {reason}")
+
+    if not plan.routes:
+        err_console.print("[red]Error:[/red] no samples resolved to a scheme.")
+        return 1
+
+    engine_kwargs: dict[str, object] = dict(
+        mode=mode,
+        backend=backend,
+        cgmlst_mode=cgmlst_mode,
+        min_id=min_id,
+        min_cov=min_cov,
+        min_depth=min_depth,
+        min_join_overlap=min_join_overlap,
+        minscore=minscore,
+        fmt=fmt,
+        output=None,
+        cache_dir=cache_dir,
+        force_reindex=force_reindex,
+        no_header=no_header,
+        threads=threads,
+        max_workers=max_workers,
+        count_same_copy=count_same_copy,
+        novel_allele=False,
+        novel_profile=False,
+        output_dir=None,
+        quiet=quiet,
+        detail=detail,
+        suppress_output=True,
+    )
+
+    results_by_scheme: dict[str, list] = {}
+    route_order: list[str] = []
+    for route in plan.routes:
+        status_console.print(f"[guess] {route.scheme}: {len(route.samples)} sample(s)")
+        sink: list = []
+        _run_mlst_like_typing(
+            samples=tuple(route.samples),
+            scheme=route.scheme,
+            provider=route.provider,
+            result_sink=sink,
+            **engine_kwargs,
+        )
+        results_by_scheme[route.scheme] = sink
+        route_order.append(route.scheme)
+
+    typed = sum(len(rows) for rows in results_by_scheme.values())
+    stream_file = open_stream_output(fmt=fmt, output=output)
+    try:
+        if fmt == "json":
+            emit_final_typing_output(
+                results=[
+                    r for route in plan.routes for r in results_by_scheme[route.scheme]
+                ],
+                fmt=fmt,
+                output=output,
+                emit_output_json_fn=_emit_typing_results_json,
+            )
+        elif fmt in {"tsv", "pretty"}:
+            for route in plan.routes:
+                scheme_obj = cache.ensure_scheme(route.scheme, provider=route.provider)
+                scheme = route.scheme
+                if fmt == "tsv":
+                    stream_header_if_needed(
+                        fmt=fmt,
+                        no_header=no_header,
+                        loci=scheme_obj.loci,
+                        stream_file=stream_file,
+                    )
+                for result in results_by_scheme[scheme]:
+                    if fmt == "pretty":
+                        stream_write(
+                            f"{result.sample_id}: ST={_format_st_for_tsv(result)}",
+                            stream_file=stream_file,
+                        )
+                    else:
+                        stream_write(
+                            _format_tsv_row(
+                                result,
+                                scheme_obj.loci,
+                                count_same_copy,
+                                call_policy="default",
+                                detail=detail,
+                            ),
+                            stream_file=stream_file,
+                        )
+            announce_stream_output_written(output=output)
+    finally:
+        close_stream_output(stream_file)
+
+    status_console.print(
+        f"[guess] typed {typed} sample(s) across {len(route_order)} scheme(s); "
+        f"skipped {len(plan.skipped)}"
+    )
+    return 0 if typed > 0 else 1
 
 
 def _normalize_allele_call(locus: str, call: object) -> str:

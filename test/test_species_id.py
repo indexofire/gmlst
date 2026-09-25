@@ -483,3 +483,107 @@ def test_build_fingerprints_organism_filter_is_case_insensitive(
     )
     payload = build_fingerprints(cache, organisms={"alpha ALPHA"})
     assert [fp["organism"] for fp in payload["fingerprints"]] == ["Alpha alpha"]
+
+
+# ---------------------------------------------------------------------------
+# organism aliasing / dedup (scheme_preferences integration)
+# ---------------------------------------------------------------------------
+
+
+def _mlst_row(name: str, organism: str, loci: int = 7) -> dict[str, Any]:
+    return {
+        "scheme_name": name,
+        "organism": organism,
+        "scheme_type": "mlst",
+        "n_loci": loci,
+        "provider": "pubmlst",
+    }
+
+
+def test_build_fingerprints_merges_aliased_organisms(tmp_path: Path) -> None:
+    cache = _FakeDownloadCache(
+        {
+            "pubmlst": [_mlst_row("escherichia_1", "Escherichia spp.")],
+            "enterobase": [
+                {
+                    "scheme_name": "ecoli_1",
+                    "organism": "Escherichia coli",
+                    "scheme_type": "mlst",
+                    "n_loci": 7,
+                    "provider": "enterobase",
+                }
+            ],
+        },
+        tmp_path,
+    )
+
+    payload = build_fingerprints(cache)
+
+    organisms = [f["organism"] for f in payload["fingerprints"]]
+    assert organisms == ["Escherichia spp."]
+    # Preference order (escherichia_1 first) decides the source scheme.
+    assert payload["fingerprints"][0]["source_scheme"] == "escherichia_1"
+
+
+def test_build_fingerprints_organisms_filter_matches_any_alias(
+    tmp_path: Path,
+) -> None:
+    cache = _FakeDownloadCache(
+        {
+            "pubmlst": [
+                _mlst_row("escherichia_1", "Escherichia spp."),
+                _mlst_row("vcholerae_1", "Vibrio cholerae"),
+            ]
+        },
+        tmp_path,
+    )
+
+    payload = build_fingerprints(cache, organisms={"Escherichia coli"})
+
+    organisms = [f["organism"] for f in payload["fingerprints"]]
+    assert organisms == ["Escherichia spp."]
+
+
+def test_select_source_scheme_prefers_curated_order() -> None:
+    from gmlst.core.species_id import _select_source_scheme
+
+    rows = [
+        _mlst_row("big_2", "Org one", loci=7),
+        _mlst_row("big_1", "Org one", loci=7),
+    ]
+
+    picked = _select_source_scheme(rows, order=["big_2", "big_1"])
+    assert picked is not None
+    assert picked["scheme_name"] == "big_2"
+
+    fallback = _select_source_scheme(rows, order=["absent_9"])
+    assert fallback is not None
+    assert fallback["scheme_name"] == "big_1"
+
+
+def test_select_source_scheme_deprioritizes_tiny_schemes() -> None:
+    from gmlst.core.species_id import _select_source_scheme
+
+    rows = [
+        _mlst_row("bpertussis_7", "Bordetella pertussis", loci=2),
+        _mlst_row("bpertussis_1", "Bordetella pertussis", loci=7),
+        _mlst_row("bpertussis_2", "Bordetella pertussis", loci=5),
+    ]
+
+    picked = _select_source_scheme(rows)
+    assert picked is not None
+    assert picked["scheme_name"] == "bpertussis_1"
+
+
+def test_select_source_scheme_prefers_seven_loci_classic() -> None:
+    from gmlst.core.species_id import _select_source_scheme
+
+    rows = [
+        _mlst_row("bpertussis_6", "Bordetella pertussis", loci=6),
+        _mlst_row("bpertussis_1", "Bordetella pertussis", loci=7),
+        _mlst_row("bpertussis_3", "Bordetella pertussis", loci=9),
+    ]
+
+    picked = _select_source_scheme(rows)
+    assert picked is not None
+    assert picked["scheme_name"] == "bpertussis_1"

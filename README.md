@@ -26,6 +26,7 @@ English | [简体中文](README_ZH.md)
 - 🧵 **Batch processing**: use sample-level workers and backend threads for high-throughput workflows.
 - 🧬 **CDS-aware calling**: cgMLST workflows can use Pyrodigal for CDS prediction and chewBBACA-compatible classification paths.
 - 🤖 **AI-agent friendly**: versioned JSON envelopes, data-only stdout, and stable exit codes make the CLI safe to drive from scripts and agents.
+- 🎲 **Unattended mixed-species typing**: `--guess` detects each assembly's species, picks and downloads schemes automatically (curated preferences → cached → natural order), and never prompts.
 
 ## Installation
 
@@ -58,9 +59,18 @@ For other installation methods (Pixi, uv, source, Docker), see the [Installation
 # from the genome, picks the matching scheme, downloads it, and types
 gmlst typing mlst sample.fna
 
+# Mixed-species batch, fully unattended: detect every assembly's species,
+# auto-pick (and download) each scheme, never prompt
+gmlst typing mlst --guess -b minimap2 assemblies/*.fna -o mixed.tsv
+
 # Know the organism but not the scheme name? Resolve it with -n
 # (unique match auto-selects; multiple matches print a candidate table)
 gmlst typing mlst -n bordetella sample.fna
+
+# Mixed-species directories: --guess types every assembly against its own
+# species' scheme with zero interaction (schemes download as needed;
+# TSV output gets one section per scheme; JSON is a single envelope)
+gmlst typing mlst --guess assemblies/*.fna -o results.tsv
 
 # The species fingerprint database powers auto-detection; build it on demand
 gmlst scheme update-fingerprints

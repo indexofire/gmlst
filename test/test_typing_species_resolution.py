@@ -633,3 +633,174 @@ def test_scheme_update_fingerprints_help_lists_options() -> None:
     assert "--yes" in result.output
     assert "--organisms" in result.output
     assert "--connections" in result.output
+
+
+# ---------------------------------------------------------------------------
+# unique detection + multi-scheme: cached-candidate auto-selection
+# ---------------------------------------------------------------------------
+
+
+def _two_scheme_catalog() -> list[dict[str, Any]]:
+    return [
+        {
+            "scheme_name": "bpertussis_1",
+            "organism": "Bordetella pertussis",
+            "scheme_type": "mlst",
+            "n_loci": 7,
+            "provider": "pubmlst",
+        },
+        {
+            "scheme_name": "bpertussis_2",
+            "organism": "Bordetella pertussis",
+            "scheme_type": "mlst",
+            "n_loci": 7,
+            "provider": "pubmlst",
+        },
+    ]
+
+
+def _mark_downloaded(cache_dir: Path, name: str, provider: str = "pubmlst") -> None:
+    scheme_dir = cache_dir / provider / name
+    scheme_dir.mkdir(parents=True, exist_ok=True)
+    (scheme_dir / ".meta.json").write_text("{}")
+
+
+def test_unique_detection_two_schemes_one_cached_auto_selects(
+    monkeypatch, tmp_path: Path
+) -> None:
+    sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
+    captured = _run_typing_recorder(monkeypatch)
+    monkeypatch.setattr(
+        DatabaseCache, "load_catalog", _fake_catalog(_two_scheme_catalog())
+    )
+
+    cache_dir = tmp_path / "cache"
+    save_fingerprints(
+        _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
+        cache_dir / "species_fingerprints.json.gz",
+    )
+    _mark_downloaded(cache_dir, "bpertussis_1")
+
+    result = CliRunner().invoke(
+        main, ["typing", "mlst", str(sample), "--cache-dir", str(cache_dir)]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "[auto-selected] bpertussis_1" in result.output
+    assert "only cached candidate" in result.output
+    assert "Select scheme" not in result.output
+    assert captured["scheme"] == "bpertussis_1"
+
+
+def test_unique_detection_two_schemes_both_cached_prompts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
+    captured = _run_typing_recorder(monkeypatch)
+    monkeypatch.setattr(
+        DatabaseCache, "load_catalog", _fake_catalog(_two_scheme_catalog())
+    )
+    monkeypatch.setattr(
+        "gmlst.commands.typing_species._stdin_is_interactive", lambda: True
+    )
+
+    cache_dir = tmp_path / "cache"
+    save_fingerprints(
+        _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
+        cache_dir / "species_fingerprints.json.gz",
+    )
+    _mark_downloaded(cache_dir, "bpertussis_1")
+    _mark_downloaded(cache_dir, "bpertussis_2")
+
+    result = CliRunner().invoke(
+        main,
+        ["typing", "mlst", str(sample), "--cache-dir", str(cache_dir)],
+        input="2\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Select scheme" in result.output
+    assert "(cached)" in result.output
+    assert captured["scheme"] == "bpertussis_2"
+
+
+def test_unique_detection_two_schemes_none_cached_prompts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
+    captured = _run_typing_recorder(monkeypatch)
+    monkeypatch.setattr(
+        DatabaseCache, "load_catalog", _fake_catalog(_two_scheme_catalog())
+    )
+    monkeypatch.setattr(
+        "gmlst.commands.typing_species._stdin_is_interactive", lambda: True
+    )
+
+    cache_dir = tmp_path / "cache"
+    save_fingerprints(
+        _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ),
+        cache_dir / "species_fingerprints.json.gz",
+    )
+
+    result = CliRunner().invoke(
+        main,
+        ["typing", "mlst", str(sample), "--cache-dir", str(cache_dir)],
+        input="1\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Select scheme" in result.output
+    assert captured["scheme"] == "bpertussis_1"
+
+
+def test_ambiguous_detection_one_cached_still_prompts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    sample = _write_fasta(tmp_path / "sample.fna", _SPECIES_SEQ)
+    _run_typing_recorder(monkeypatch)
+
+    def _two_organisms(catalog: list[dict[str, Any]] | None = None):
+        def _load(self, provider: str) -> list[dict[str, Any]]:
+            if provider == "pubmlst":
+                return catalog if catalog is not None else _default_catalog()
+            return []
+
+        return _load
+
+    catalog = _two_scheme_catalog() + [
+        {
+            "scheme_name": "vpara_1",
+            "organism": "Vibrio parahaemolyticus",
+            "scheme_type": "mlst",
+            "n_loci": 7,
+            "provider": "pubmlst",
+        }
+    ]
+    monkeypatch.setattr(DatabaseCache, "load_catalog", _two_organisms(catalog))
+    monkeypatch.setattr(
+        "gmlst.commands.typing_species._stdin_is_interactive", lambda: True
+    )
+
+    cache_dir = tmp_path / "cache"
+    payload = _fingerprint_payload("Bordetella pertussis", _SPECIES_SEQ)
+    payload["fingerprints"].append(
+        {
+            "organism": "Vibrio parahaemolyticus",
+            "k": FINGERPRINT_K,
+            "sample_rate": FINGERPRINT_SAMPLE_RATE,
+            "hashes": sorted(sketch_sequence(_RUNNER_UP_SEQ)),
+            "source_scheme": "vpara_1",
+        }
+    )
+    save_fingerprints(payload, cache_dir / "species_fingerprints.json.gz")
+    _mark_downloaded(cache_dir, "bpertussis_1")
+
+    result = CliRunner().invoke(
+        main,
+        ["typing", "mlst", str(sample), "--cache-dir", str(cache_dir)],
+        input="1\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    # Ambiguous species window keeps the human decision even with a cached scheme.
+    assert "Select scheme" in result.output

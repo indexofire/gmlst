@@ -32,7 +32,7 @@ class _DummyCache:
     def ensure_scheme(self, _name, provider, scheme_type="mlst"):
         return _DummyScheme()
 
-    def detect_provider(self, _name):
+    def detect_provider(self, _name, prefer_type=None):
         return "pubmlst"
 
     def load_catalog(self, _provider):

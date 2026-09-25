@@ -26,6 +26,7 @@
 - 🧵 **批量处理**：支持样本级并行 worker 和后端线程配置。
 - 🧬 **CDS 感知调用**：cgMLST 工作流可结合 Pyrodigal 进行 CDS 预测，并支持 chewBBACA 风格分类路径。
 - 🤖 **AI 智能体友好**：stdout 只输出数据、JSON 带版本信封、退出码语义稳定，方便脚本和 AI 智能体程序化解析。
+- 🎲 **无人值守混合物种分型**：`--guess` 自动检测每个组装的物种、挑选并下载方案（次序列表 → 缓存 → 自然排序），全程零交互。
 
 ## 安装
 
@@ -57,6 +58,10 @@ conda install blast, minimap2, mummer4, kma
 # 零配置：完全跳过方案选择 — gmlst 从基因组识别物种，
 # 自动挑选匹配方案、下载并分型
 gmlst typing mlst sample.fna
+
+# 混合物种批量、全程无人值守：检测每个组装的物种，
+# 自动挑选（并下载）各自方案，绝不弹出提示
+gmlst typing mlst --guess -b minimap2 assemblies/*.fna -o mixed.tsv
 
 # 知道物种但记不住方案名？用 -n 解析
 # （唯一命中自动选择；多个命中打印候选表）

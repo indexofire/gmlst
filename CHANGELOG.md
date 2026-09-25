@@ -20,6 +20,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.5.0] - 2026-09-25
+
+### Added
+- `--guess/-g` on `typing mlst` / `typing cgmlst`: unattended mixed-species
+  typing. Every assembly is detected against the fingerprint database, one
+  scheme is chosen per organism (curated preference order, then a lone cached
+  candidate, then natural order), missing schemes download automatically, and
+  the run never prompts. TSV output carries one section per scheme; JSON is a
+  single envelope. Samples that cannot be resolved (unidentified species, no
+  scheme of the requested type, FASTQ input, failed download) are skipped
+  with per-sample reasons; the exit code is 1 only when nothing typed.
+- Bare auto-detection now auto-selects the lone cached candidate after a
+  unique species detection instead of re-prompting for every genome of the
+  same species; interactive candidate lists mark cached schemes.
+- Bundled `scheme_preferences.json`: curated scheme order per
+  (organism, type) with organism aliases. E. coli MLST ships curated
+  (Achtman 7-gene via pubmlst first, the enterobase mirror as fallback,
+  Pasteur 8-locus last) and unifies the three historical E. coli organism
+  keys. Fingerprint building and `--guess` both consume it.
+
+### Changed
+- Fingerprint building merges alias groups (one E. coli entry instead of
+  three near-duplicates that deadlocked detection in ambiguity) and prefers
+  classic (≥6-locus) MLST sources over the 2-5 locus partial schemes the
+  rebuilt Pasteur catalog types as `mlst`. The bundled database was rebuilt
+  from the canonical catalogs (140 organisms; the dead `escherichia_20`
+  source reference is gone).
+- `-s` provider resolution is mode-aware: `typing cgmlst -s <name>` resolves
+  to the cgMLST-typed catalog entry when a differently-typed same-name
+  scheme exists or is downloaded (the abaumannii_1 case).
+- Detection-quality gate remains the existing margin rule; calibration on
+  real collections showed absolute scores are species-dependent
+  (B. pertussis ≈0.99 vs V. cholerae ≈0.06-0.38 for correct matches), so no
+  additional absolute-score threshold was added.
+
 ## [0.4.0] - 2026-09-24
 
 ### Added

@@ -22,7 +22,7 @@ def test_cgmlst_mode_forwards_scheme_type(monkeypatch, tmp_path: Path) -> None:
         def ensure_scheme(self, _name, provider, scheme_type="mlst"):
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -75,7 +75,7 @@ def test_mlst_mode_rejects_cgmlst_before_ensure(monkeypatch, tmp_path: Path) -> 
             calls["ensure"] += 1
             return object()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -130,7 +130,7 @@ def test_cgmlst_mode_ensure_scheme_uses_resolved_type(
             captured["ensure_scheme_type"] = scheme_type
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -182,7 +182,7 @@ def test_cgmlst_mode_preserves_resolved_wgmlst_for_runtime(
             captured["ensure_scheme_type"] = scheme_type
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -236,7 +236,7 @@ def test_cgmlst_fastq_auto_switches_minimap2_to_kma(
         def ensure_scheme(self, _name, provider, scheme_type="mlst"):
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -311,7 +311,7 @@ def test_cgmlst_mode_falls_back_to_redetected_provider(
                 raise RuntimeError("missing from pubmlst")
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return next(self._detect_seq)
 
         def load_catalog(self, provider):
@@ -368,7 +368,7 @@ def test_cgmlst_rejects_unsupported_call_policy(monkeypatch, tmp_path: Path) -> 
         def __init__(self, _root):
             pass
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -416,7 +416,7 @@ def test_cgmlst_fastq_kma_forces_fast_mode_without_bumping_explicit_threads(
         def ensure_scheme(self, _name, provider, scheme_type="mlst"):
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):
@@ -474,7 +474,7 @@ def test_cgmlst_fastq_kma_with_max_workers_does_not_auto_bump_threads(
         def ensure_scheme(self, _name, provider, scheme_type="mlst"):
             return DummyScheme()
 
-        def detect_provider(self, _name):
+        def detect_provider(self, _name, prefer_type=None):
             return "pubmlst"
 
         def load_catalog(self, _provider):

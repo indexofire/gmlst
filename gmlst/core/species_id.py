@@ -221,9 +221,17 @@ def build_fingerprints(
     groups = _catalog_schemes_by_organism(cache, organisms)
     emit("total", str(len(groups)))
 
+    from gmlst.database.scheme_prefs import load_scheme_preferences
+
+    preferences = load_scheme_preferences()
     fingerprints: list[dict[str, Any]] = []
     for organism in sorted(groups):
-        source = _select_source_scheme(groups[organism])
+        order = None
+        for pref in preferences:
+            if pref.matches_organism(organism) and pref.type == "mlst":
+                order = pref.order_names
+                break
+        source = _select_source_scheme(groups[organism], order=order)
         if source is None:
             emit("skip", f"{organism}: no mlst/cgmlst scheme in catalog")
             continue
@@ -269,16 +277,29 @@ def _catalog_schemes_by_organism(
     cache: DatabaseCache,
     organisms: set[str] | None,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Group catalog rows from every provider by exact organism field.
+    """Group catalog rows from every provider by organism field.
 
-    Blocked schemes (hidden from ``scheme list``) are excluded so
-    fingerprint sources stay downloadable through the regular commands.
+    Organisms merged by a curated alias group (scheme_preferences.json)
+    collapse onto the group's canonical name, so aliased keys like
+    ``Escherichia`` / ``Escherichia coli`` / ``Escherichia spp.``
+    produce one fingerprint instead of near-duplicate ones that deadlock
+    detection in ambiguity. Blocked schemes (hidden from ``scheme list``)
+    are excluded so fingerprint sources stay downloadable through the
+    regular commands.
     """
     from gmlst.database.cache import _load_blocked_schemes
     from gmlst.database.providers import AVAILABLE_PROVIDERS
+    from gmlst.database.scheme_prefs import load_scheme_preferences
 
+    preferences = load_scheme_preferences()
     blocked = _load_blocked_schemes()
-    wanted = {o.strip().lower() for o in organisms} if organisms else None
+    wanted = None
+    if organisms is not None:
+        wanted = {o.strip().lower() for o in organisms}
+        for pref in preferences:
+            names = {pref.organism.lower()} | {a.lower() for a in pref.aliases}
+            if names & wanted:
+                wanted |= names
     groups: dict[str, list[dict[str, Any]]] = {}
     for provider in AVAILABLE_PROVIDERS:
         catalog = cache.load_catalog(provider)
@@ -289,7 +310,10 @@ def _catalog_schemes_by_organism(
             organism = str(item.get("organism", "")).strip()
             if not organism:
                 continue
-            if wanted is not None and organism.lower() not in wanted:
+            canonical = _canonical_organism(organism, preferences)
+            if wanted is not None and not (
+                organism.lower() in wanted or canonical.lower() in wanted
+            ):
                 continue
             row = dict(item)
             row.setdefault("provider", provider)
@@ -297,23 +321,47 @@ def _catalog_schemes_by_organism(
                 continue
             if row.get("extra", {}).get("directory", "") in provider_blocked:
                 continue
-            groups.setdefault(organism, []).append(row)
+            groups.setdefault(canonical, []).append(row)
     return groups
 
 
-def _select_source_scheme(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """Pick the smallest MLST scheme for species fingerprinting.
+def _canonical_organism(organism: str, preferences: list[Any]) -> str:
+    """Return the curated canonical name for *organism*, or itself."""
+    for pref in preferences:
+        if pref.matches_organism(organism):
+            return pref.organism
+    return organism
 
-    MLST schemes (7 housekeeping genes) provide sufficient species-level
-    signal and download in seconds. cgMLST schemes (2000+ loci) are NOT
-    used: they take minutes to download, consume hundreds of MB, and offer
-    no better species discrimination for identification purposes.
+
+def _select_source_scheme(
+    rows: list[dict[str, Any]], order: list[str] | None = None
+) -> dict[str, Any] | None:
+    """Pick the classic-MLST source scheme for species fingerprinting.
+
+    Schemes with at least 6 loci (classic housekeeping-gene range) are
+    preferred; smaller partial schemes (Pasteur exposes 2-5 locus schemes
+    typed as ``mlst``) are deprioritized because a handful of loci gives
+    a weak species signal. cgMLST schemes (2000+ loci) are NOT used: they
+    take minutes to download and offer no better species discrimination.
+    When *order* is given (a curated preference list), the first listed
+    scheme present among the rows wins over the size heuristic.
     """
-
-    def sort_key(row: dict[str, Any]) -> tuple[int, str]:
-        return (int(row.get("n_loci") or 0), str(row.get("scheme_name", "")))
-
     typed = [row for row in rows if str(row.get("scheme_type", "")).lower() == "mlst"]
+    if order:
+        wanted = [name for name in order if name != "*"]
+        for name in wanted:
+            for row in typed:
+                if str(row.get("scheme_name")) == name:
+                    return row
+
+    def sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
+        loci = int(row.get("n_loci") or 0)
+        return (
+            1 if loci < 6 else 0,
+            abs(loci - 7),
+            str(row.get("scheme_name", "")),
+        )
+
     if typed:
         return min(typed, key=sort_key)
     return None

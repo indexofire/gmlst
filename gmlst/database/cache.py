@@ -146,14 +146,28 @@ class DatabaseCache:
         """Return True when the scheme has a ``.meta.json`` in the cache."""
         return (self.scheme_dir(name, provider) / ".meta.json").exists()
 
-    def detect_provider(self, name: str) -> str | None:
-        """Guess which provider owns *name*: downloaded cache first, then catalogs.
+    def detect_provider(self, name: str, prefer_type: str | None = None) -> str | None:
+        """Guess which provider owns *name*: type match, downloads, then catalogs.
 
-        Scans available providers for a downloaded copy, then falls back to
-        cached catalogs listing the scheme name. Returns ``None`` when no
-        provider claims it.
+        With *prefer_type* (e.g. ``"mlst"`` / ``"cgmlst"``), providers whose
+        catalog entry for *name* has that scheme type win over downloaded
+        copies of a differently-typed same-name scheme — so
+        ``typing cgmlst -s abaumannii_1`` resolves to the cgMLST entry even
+        when the MLST provider scans first or the other copy is downloaded.
+        Returns ``None`` when no provider claims the name.
         """
         from gmlst.database.providers import AVAILABLE_PROVIDERS
+
+        if prefer_type is not None:
+            wanted = prefer_type.strip().lower()
+            for provider in AVAILABLE_PROVIDERS:
+                catalog = self.load_catalog(provider)
+                if catalog and any(
+                    item.get("scheme_name") == name
+                    and str(item.get("scheme_type", "")).lower() == wanted
+                    for item in catalog
+                ):
+                    return provider
 
         for provider in AVAILABLE_PROVIDERS:
             if self.is_downloaded(name, provider):
