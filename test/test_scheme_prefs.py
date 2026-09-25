@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from gmlst.database.scheme_prefs import (
@@ -20,11 +21,25 @@ def test_load_reads_bundled_file() -> None:
     assert ecoli[0].order == ["escherichia_1", "ecoli_1", "escherichia_2"]
 
 
-def test_load_ignores_pending_entries() -> None:
-    prefs = load_scheme_preferences()
+def test_load_ignores_pending_entries(tmp_path: Path) -> None:
+    # The bundled file is fully curated now; verify the skip semantics
+    # with a synthetic file that still carries an order_suggested entry.
+    payload = {
+        "entries": [
+            {
+                "organism": "Pending spp.",
+                "type": "mlst",
+                "order_suggested": ["pending_1"],
+            },
+            {"organism": "Done spp.", "type": "mlst", "order": ["done_1"]},
+        ]
+    }
+    path = tmp_path / "scheme_preferences.json"
+    path.write_text(json.dumps(payload))
 
-    curated_organisms = {p.organism for p in prefs}
-    assert "Acinetobacter baumannii" not in curated_organisms  # order_suggested only
+    prefs = load_scheme_preferences(path)
+
+    assert [p.organism for p in prefs] == ["Done spp."]
 
 
 def test_alias_matching_is_case_insensitive() -> None:

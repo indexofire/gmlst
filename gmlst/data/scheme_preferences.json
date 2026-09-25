@@ -4,34 +4,38 @@
     {
       "organism": "Acinetobacter baumannii",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "abaumannii_3",
         "abaumannii_4"
-      ]
+      ],
+      "note": "cgMLST v1 (pubmlst) first"
     },
     {
       "organism": "Acinetobacter baumannii",
       "type": "mlst",
-      "order_suggested": [
-        "abaumannii_1",
-        "abaumannii_2"
-      ]
+      "order": [
+        "abaumannii_2",
+        "abaumannii_1"
+      ],
+      "note": "Pasteur scheme is the community standard; Oxford second"
     },
     {
       "organism": "Avibacterium paragallinarum",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "aparagallinarum_1",
         "aparagallinarum_2"
-      ]
+      ],
+      "note": "Ghanem AP scheme first"
     },
     {
       "organism": "Bacillus cereus",
       "type": "cgmlst",
-      "order_suggested": [
-        "bcereus_2",
-        "bcereus_3"
-      ]
+      "order": [
+        "bcereus_3",
+        "bcereus_2"
+      ],
+      "note": "B. cereus scheme first; bcereus_2 is the B. anthracis scheme"
     },
     {
       "organism": "Blastocystis spp.",
@@ -45,11 +49,12 @@
     {
       "organism": "Bordetella pertussis",
       "type": "cgmlst",
-      "order_suggested": [
-        "bpertussis_4",
+      "order": [
         "bpertussis_5",
-        "bpertussis_11"
-      ]
+        "bpertussis_11",
+        "bpertussis_4"
+      ],
+      "note": "species-specific cgMLST_pertussis first; genus scheme last"
     },
     {
       "organism": "Bordetella pertussis",
@@ -81,52 +86,58 @@
     {
       "organism": "Brucella spp.",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "brucella_3",
         "brucella_4"
-      ]
+      ],
+      "note": "same 1764-loci mirror; pubmlst source preferred"
     },
     {
       "organism": "Brucella spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "brucella_1",
         "brucella_2"
-      ]
+      ],
+      "note": "classic 9-locus (Whatmore) first"
     },
     {
       "organism": "Burkholderia mallei",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "bmallei_1",
         "bmallei_2",
         "bmallei_3"
-      ]
+      ],
+      "note": "pubmlst scheme first"
     },
     {
       "organism": "Burkholderia pseudomallei",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "bpseudomallei_2",
         "bpseudomallei_3"
-      ]
+      ],
+      "note": "pubmlst scheme first"
     },
     {
       "organism": "Campylobacter jejuni/coli",
       "type": "cgmlst",
-      "order_suggested": [
-        "campylobacter_11",
+      "order": [
         "campylobacter_12",
+        "campylobacter_11",
         "campylobacter_14"
-      ]
+      ],
+      "note": "cgMLST v2 first"
     },
     {
       "organism": "Campylobacter jejuni/coli",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "campylobacter_10",
         "campylobacter_13"
-      ]
+      ],
+      "note": "classic 7-locus first; eMLST second"
     },
     {
       "organism": "Campylobacter non-jejuni/coli",
@@ -147,74 +158,82 @@
     {
       "organism": "Chlamydiales spp.",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "chlamydiales_1",
         "chlamydiales_2"
-      ]
+      ],
+      "note": "species-specific pair; natural order locked"
     },
     {
       "organism": "Chlamydiales spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "chlamydiales_3",
         "chlamydiales_4",
         "chlamydiales_5",
         "chlamydiales_6"
-      ]
+      ],
+      "note": "generic Chlamydiales scheme first"
     },
     {
       "organism": "Clostridium botulinum",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "cbotulinum_1",
-        "cbotulinum_2",
-        "cbotulinum_3"
-      ]
+        "cbotulinum_3",
+        "cbotulinum_2"
+      ],
+      "note": "classic 7-locus first; Griffiths second; extended last"
     },
     {
       "organism": "Clostridium perfringens",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "cperfringens_2",
         "cperfringens_3"
-      ]
+      ],
+      "note": "same 1431-loci mirror; pubmlst source preferred"
     },
     {
       "organism": "Corynebacterium diphtheriae",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "cdiphtheriae_2",
-        "cdiphtheriae_3",
-        "cdiphtheriae_7"
-      ]
+        "cdiphtheriae_7",
+        "cdiphtheriae_3"
+      ],
+      "note": "species scheme first; ulcerans scheme last"
     },
     {
       "organism": "Corynebacterium diphtheriae",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "cdiphtheriae_1",
         "cdiphtheriae_4",
         "cdiphtheriae_5",
         "cdiphtheriae_6"
-      ]
+      ],
+      "note": "classic MLST first; topic schemes last"
     },
     {
       "organism": "Cronobacter spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "cronobacter_1",
         "cronobacter_2",
         "cronobacter_3",
         "cronobacter_4"
-      ]
+      ],
+      "note": "classic 7-locus first"
     },
     {
       "organism": "Enterococcus faecium",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "efaecium_1",
         "efaecium_2"
-      ]
+      ],
+      "note": "standard 7-locus first"
     },
     {
       "organism": "Escherichia spp.",
@@ -246,10 +265,11 @@
     {
       "organism": "Haemophilus influenzae",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "hinfluenzae_2",
         "hinfluenzae_3"
-      ]
+      ],
+      "note": "H. influenzae scheme first; hinfluenzae_3 is H. parainfluenzae"
     },
     {
       "organism": "Klebsiella pneumoniae",
@@ -293,10 +313,11 @@
     {
       "organism": "Leptospira interrogans",
       "type": "cgmlst",
-      "order_suggested": [
-        "linterrogans_2",
-        "linterrogans_3"
-      ]
+      "order": [
+        "linterrogans_3",
+        "linterrogans_2"
+      ],
+      "note": "standard cgMLST over capture scheme"
     },
     {
       "organism": "Leptospira interrogans",
@@ -314,20 +335,22 @@
     {
       "organism": "Leptospira spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "leptospira_1",
         "leptospira_2",
         "leptospira_3"
-      ]
+      ],
+      "note": "scheme 1 first"
     },
     {
       "organism": "Listeria monocytogenes",
       "type": "cgmlst",
-      "order_suggested": [
-        "lmonocytogenes_2",
+      "order": [
         "lmonocytogenes_13",
+        "lmonocytogenes_2",
         "lmonocytogenes_15"
-      ]
+      ],
+      "note": "cgMLST1748_v2 first"
     },
     {
       "organism": "Listeria monocytogenes",
@@ -351,26 +374,29 @@
     {
       "organism": "Mycobacteria spp.",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "mycobacteria_1",
         "mycobacteria_3"
-      ]
+      ],
+      "note": "core-genome scheme for generic detection; MTBC second"
     },
     {
       "organism": "Mycoplasma bovis",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "mbovis_1",
         "mbovis_2"
-      ]
+      ],
+      "note": "current scheme first; legacy last"
     },
     {
       "organism": "Mycoplasma gallisepticum",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "mgallisepticum_1",
         "mgallisepticum_2"
-      ]
+      ],
+      "note": "Ghanem scheme first"
     },
     {
       "organism": "Mycoplasma hominis",
@@ -413,19 +439,21 @@
     {
       "organism": "Oral Streptococcus spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "oral_1",
         "oral_2",
         "oral_3"
-      ]
+      ],
+      "note": "S. mutans (Do) first"
     },
     {
       "organism": "Pasteurella multocida",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "pmultocida_1",
         "pmultocida_2"
-      ]
+      ],
+      "note": "multiple-host scheme first"
     },
     {
       "organism": "Providencia spp.",
@@ -448,34 +476,38 @@
     {
       "organism": "Staphylococcus aureus",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "saureus_2",
         "saureus_3"
-      ]
+      ],
+      "note": "pubmlst scheme first"
     },
     {
       "organism": "Streptococcus pneumoniae",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "spneumoniae_2",
         "spneumoniae_3"
-      ]
+      ],
+      "note": "species scheme first; generic enterobase scheme last"
     },
     {
       "organism": "Streptococcus pyogenes",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "spyogenes_2",
         "spyogenes_3"
-      ]
+      ],
+      "note": "pubmlst scheme first"
     },
     {
       "organism": "Streptococcus uberis",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "suberis_1",
         "suberis_3"
-      ]
+      ],
+      "note": "MLST first; vMLST second"
     },
     {
       "organism": "Treponema pallidum",
