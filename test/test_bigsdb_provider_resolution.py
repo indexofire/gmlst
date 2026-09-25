@@ -414,3 +414,92 @@ def test_update_scheme_cleans_locus_tmp_files_on_verification_failure(
 
     assert not (tmp_path / "abc.tfa.tmp").exists()
     assert (tmp_path / "abc.tfa").exists()
+
+
+def test_resolve_seqdef_url_db_alias_beats_org_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Aliases pin exact seqdef DBs where org-level ordering would mispick.
+
+    PubMLST groups several species under one REST org whose database list
+    order is arbitrary (e.g. cutibacterium lists cavidum before pacnes),
+    so scheme bases carry explicit DB aliases.
+    """
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+
+    def fake_get_json(url: str, headers=None):
+        return [
+            {
+                "name": "cutibacterium",
+                "description": "Cutibacterium spp.",
+                "databases": [
+                    {
+                        "name": "pubmlst_cavidum_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_cavidum_seqdef",
+                    },
+                    {
+                        "name": "pubmlst_pacnes_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_pacnes_seqdef",
+                    },
+                ],
+            },
+            {
+                "name": "burkholderia",
+                "description": "Burkholderia spp.",
+                "databases": [
+                    {
+                        "name": "pubmlst_bcc_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
+                    },
+                    {
+                        "name": "pubmlst_bmallei_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef",
+                    },
+                ],
+            },
+        ]
+
+    monkeypatch.setattr("gmlst.database.providers.bigsdb._get_json", fake_get_json)
+
+    url, db = provider._resolve_seqdef_url("cacnes_1")
+    assert db == "pubmlst_pacnes_seqdef"  # not cavidum despite list order
+
+    url, db = provider._resolve_seqdef_url("bcepacia_1")
+    assert db == "pubmlst_bcc_seqdef"
+
+
+def test_resolve_seqdef_url_unrelated_scheme_unaffected_by_aliases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+
+    def fake_get_json(url: str, headers=None):
+        return [
+            {
+                "name": "burkholderia",
+                "description": "Burkholderia spp.",
+                "databases": [
+                    {
+                        "name": "pubmlst_bcc_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
+                    },
+                    {
+                        "name": "pubmlst_bmallei_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef",
+                    },
+                ],
+            }
+        ]
+
+    monkeypatch.setattr("gmlst.database.providers.bigsdb._get_json", fake_get_json)
+
+    url, db = provider._resolve_seqdef_url("bmallei_1")
+    assert db == "pubmlst_bmallei_seqdef"

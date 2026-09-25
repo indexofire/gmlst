@@ -73,6 +73,18 @@ _ORGANISM_MAPPINGS: dict[str, dict[str, str]] = _load_mapping_json(
 )
 _ORGANISM_MAPPING: dict[str, str] = _load_mapping_json("pasteur_organism_mapping.json")
 
+# Exact seqdef database pins for scheme bases whose PubMLST REST org hosts
+# several species-specific databases in arbitrary list order (org-level
+# organism mapping alone could resolve to a sibling database).
+_SEQDEF_DB_ALIASES: dict[str, str] = {
+    "bcepacia": "pubmlst_bcc_seqdef",
+    "cacnes": "pubmlst_pacnes_seqdef",
+    "cliberibacter": "pubmlst_liberibacter_seqdef",
+    "ganatis": "pubmlst_gallibacterium_seqdef",
+    "gparasuis": "pubmlst_hparasuis_seqdef",
+    "hpylori": "pubmlst_helicobacter_seqdef",
+}
+
 
 class BigSdbProvider:
     """Database provider for BIGSdb-powered REST APIs (PubMLST, Pasteur)."""
@@ -549,6 +561,7 @@ class BigSdbProvider:
 
         lower = base_scheme_name.lower()
         provider_mappings = _ORGANISM_MAPPINGS.get(self._name, {})
+        alias_db = _SEQDEF_DB_ALIASES.get(lower)
         candidates: list[tuple[int, str, str]] = []
 
         for org in orgs:
@@ -567,7 +580,11 @@ class BigSdbProvider:
                 href: str = db.get("href", "")
                 if "seqdef" not in db_name:
                     continue
-                if db_name == f"pubmlst_{lower}_seqdef" or db_name == base_scheme_name:
+                if alias_db is not None and db_name == alias_db:
+                    candidates.append((0, href, db_name))
+                elif (
+                    db_name == f"pubmlst_{lower}_seqdef" or db_name == base_scheme_name
+                ):
                     candidates.append((1, href, db_name))
                 elif mapped_base_name and lower == mapped_base_name:
                     candidates.append((2, href, db_name))
