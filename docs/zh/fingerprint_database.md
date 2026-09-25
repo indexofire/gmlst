@@ -19,11 +19,11 @@
 
 ### 物种名称匹配
 
-目录按 organism 字符串精确分组。部分物种在不同 provider 下用了不同名称，可能导致某个物种在目录中显示"无 MLST 方案"，但实际上其他变体名称下存在。改进模糊名称匹配是后续优化方向。
+目录按 organism 字符串精确分组，部分物种在不同 provider 下使用不同名称（如 "Escherichia coli"、"Escherichia spp."、"Escherichia" 三键并存）。包内 `scheme_preferences.json` 为每个编排组携带 `aliases` 别名表：指纹构建时将别名键合并到规范物种（E. coli 由三个近似指纹合一，避免检测恒歧义），`--organisms` 过滤也接受任一别名。`scheme update-fingerprints` 同时优先选择经典（约 7 座）MLST 源——Pasteur 目录将若干 2-5 座的局部方案标为 `mlst`，此类方案因座数过少信号弱而被降权。
 
 ## 覆盖范围
 
-约 140-145 物种（PubMLST + Pasteur + Enterobase 联合目录中的 MLST 方案持有者）。
+145 物种（PubMLST + Pasteur + Enterobase + cgmlst.org 联合目录中的 MLST 方案持有者）。
 
 完整物种列表包含在打包的数据库文件中：`gmlst/data/species_fingerprints.json.gz`（随包分发）。
 
@@ -32,7 +32,8 @@
 目录中无 MLST 方案的物种，包括：
 
 - 仅有 cgMLST/wgMLST 方案的物种（如 Enterobacter hormaechei、Morganella morganii）
-- 跨 provider 名称不匹配的物种
+- *Vibrio spp.*（其首选 Enterobase 方案需要访问令牌）
+- *Plasmid MLST* —— 有意排除：质粒 k-mer 跨物种共享，其指纹会造成假物种命中
 - 服务器端数据需要认证或已下线的物种
 
 ## 技术参数

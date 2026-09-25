@@ -61,17 +61,35 @@ gmlst typing -s schemefree sample.fna
 
 `mlst` and `cgmlst` common options:
 
-- `-s, --scheme TEXT` (required)
+- `-s, --scheme TEXT` — scheme name, e.g. `saureus_1`. Optional: omit it and gmlst detects the species from the genome, picks the matching scheme, downloads it, and types. Ambiguous cases fall back to an interactive selection.
+- `-n, --organism TEXT` — resolve the scheme by organism or scheme-name substring (e.g. `bordetella`); a unique match auto-selects, multiple matches print a candidate table.
+- `-g, --guess` — unattended mixed-species typing: detect each assembly's species, pick one scheme per organism (curated preference order, then a lone cached candidate, then natural order), download missing schemes, never prompt. Incompatible with `-s`/`-n` and the novel flags. TSV output carries one section per scheme; JSON is a single envelope; unresolvable samples are skipped with reasons.
 - `-b, --backend [blastn|kma|minimap2|nucmer]`
+- `--minscore FLOAT` — drop samples whose quality score (0-100, JSON `score` field) is below this threshold; `0` keeps everything.
+- `--min-id FLOAT` — minimum percent identity (default 95.0)
+- `--min-cov FLOAT` — minimum allele coverage 0-1 (default 0.95)
+- `--min-depth FLOAT` — minimum read depth, FASTQ only (default 10.0)
+- `--min-join-overlap INTEGER` — minimum allele-coordinate overlap (bp) to join contig fragments of a split gene (default 10; `0` most permissive)
 - `--format [tsv|json|pretty]`
 - `-o, --output PATH`
+- `--no-header` — suppress the TSV header line
+- `--cache-dir PATH` — override cache directory
+- `--force-reindex` — rebuild the aligner index
 - `-t, --threads INTEGER`
 - `--max-workers INTEGER` (sample-level parallel workers)
+- `--max-depth FLOAT` — subsample FASTQ to this depth (default 100, `0` disables)
+- `--count-same-copy` — expand same-allele multicopy (`23*`) into comma notation
+- `--detail` — show contig position info in TSV output (FASTA only)
 - `-q, --quiet`
 - `--data-dir, --output-dir PATH` (preferred: `--data-dir`)
 - `--novel-allele`
 - `--novel-profile` (requires `--novel-allele`)
 - `-h, --help`
+
+Scheme auto-detection notes:
+
+- With a unique detection and several same-type schemes, the lone cached candidate is auto-selected; otherwise gmlst lists candidates (cached ones marked) for interactive choice.
+- Curated per-organism preference orders ship in `gmlst/data/scheme_preferences.json` and drive both `--guess` and auto-detection.
 
 `cgmlst` prefilter options:
 

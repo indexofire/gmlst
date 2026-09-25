@@ -54,20 +54,35 @@ gmlst typing tgmlst sample.fna
 
 `mlst` 和 `cgmlst` 通用选项：
 
-- `SCHEME`（位置参数，必填）— 方案名称，如 `saureus_1`
-- `-s, --scheme TEXT`（已废弃，使用位置参数）
+- `-s, --scheme TEXT` — 方案名称，如 `saureus_1`。可省略：gmlst 会从基因组自动检测物种、挑选匹配方案、下载并分型；歧义情况回退到交互式选择
+- `-n, --organism TEXT` — 按物种或方案名子串解析方案（如 `bordetella`）；唯一匹配自动选择，多匹配打印候选表
+- `-g, --guess` — 无人值守混合物种分型：检测每个组装的物种，按"次序列表 → 唯一缓存候选 → 自然排序"为每个物种选一个方案，缺失自动下载，全程零提示。与 `-s`/`-n` 及 novel 参数互斥。TSV 输出按方案分节；JSON 为单一信封；无法解析的样本跳过并给出原因
 - `-b, --backend [blastn|kma|minimap2|nucmer]`
+- `--minscore FLOAT` — 丢弃质量分（0-100，见 JSON `score` 字段）低于阈值的样本；`0` 表示全部保留
+- `--min-id FLOAT` — 最小比对一致性百分比（默认 95.0）
+- `--min-cov FLOAT` — 最小等位基因覆盖度 0-1（默认 0.95）
+- `--min-depth FLOAT` — 最小读深度，仅 FASTQ（默认 10.0）
+- `--min-join-overlap INTEGER`（拼接断裂基因所需的最小等位基因重叠碱基数，默认 10；0 = 最激进）
 - `--format [tsv|json|pretty]`
 - `-o, --output PATH`
+- `--no-header` — 省略 TSV 表头
+- `--cache-dir PATH` — 覆盖缓存目录
+- `--force-reindex` — 重建比对器索引
 - `-t, --threads INTEGER`
 - `--max-workers INTEGER`（样本级并行数）
-- `--min-join-overlap INTEGER`（拼接断裂基因所需的最小等位基因重叠碱基数，默认 10；0 = 最激进）
 - `--max-depth INTEGER`（FASTQ 最大深度，默认 100，0=禁用）
+- `--count-same-copy` — 将同等位基因多拷贝（`23*`）展开为逗号记法
 - `--detail` — 在 TSV 输出中显示 contig 位置信息（仅 FASTA）
 - `-q, --quiet`
+- `--data-dir, --output-dir PATH`（推荐使用 `--data-dir`）
 - `--novel-allele` — 保存新等位基因序列
 - `--novel-profile` — 保存新 ST profile（需要 `--novel-allele`）
 - `-h, --help`
+
+物种自动检测说明：
+
+- 唯一检测且同类型方案有多个时，唯一已缓存候选自动选择；否则列出候选（标注已缓存项）供交互选择
+- 每物种的偏好顺序随包内置（`gmlst/data/scheme_preferences.json`），同时驱动 `--guess` 与自动检测
 
 `cgmlst` 预过滤选项：
 
@@ -254,7 +269,6 @@ gmlst scheme remove SCHEME [OPTIONS]
 
 选项：
 
-- `-s, --scheme TEXT`（已废弃，使用位置参数）
 - `-p, --provider TEXT`（默认从缓存自动检测）
 - `-y, --yes`（跳过确认提示）
 - `-f, --format [text|json]`（默认 `text`）

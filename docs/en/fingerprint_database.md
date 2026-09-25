@@ -19,11 +19,11 @@ Fingerprints are built exclusively from **MLST schemes** (7 housekeeping genes p
 
 ### Organism Name Matching
 
-The catalog groups schemes by exact `organism` string. Some organisms appear under different names across providers (e.g., "Escherichia coli" vs "Escherichia spp."), which may cause an organism to appear as "no MLST available" when a matching scheme exists under a variant name. Improving fuzzy organism matching is a future enhancement.
+The catalog groups schemes by exact `organism` string, and some organisms appear under different names across providers (e.g. "Escherichia coli" vs "Escherichia spp." vs "Escherichia"). The bundled `scheme_preferences.json` carries an `aliases` list per curated group: fingerprint building merges aliased keys onto one canonical organism (one E. coli fingerprint instead of three near-duplicates that deadlocked detection in ambiguity), and the `--organisms` filter accepts any alias. `scheme update-fingerprints` also prefers classic (~7-locus) MLST sources: Pasteur catalogs type several 2-5 locus partial schemes as `mlst`, and those are deprioritized because a handful of loci gives a weak species signal.
 
 ## Coverage
 
-~140-145 species (MLST scheme holders in the combined PubMLST + Pasteur + Enterobase catalog).
+145 species (MLST scheme holders in the combined PubMLST + Pasteur + Enterobase + cgmlst.org catalog).
 
 The full species list is included in the bundled database file. See `gmlst/data/species_fingerprints.json.gz` (included in the package).
 
@@ -32,7 +32,8 @@ The full species list is included in the bundled database file. See `gmlst/data/
 Organisms without any MLST scheme in the catalog, including:
 
 - cgMLST/wgMLST-only species (e.g., *Enterobacter hormaechei*, *Morganella morganii*)
-- Organisms with naming mismatches across providers
+- *Vibrio spp.* (its preferred Enterobase scheme requires an access token)
+- *Plasmid MLST* — deliberately excluded: plasmid k-mers are shared across species and its fingerprint would create false species hits
 - Organisms whose data requires PubMLST authentication or has been removed server-side
 
 ## Technical Parameters
