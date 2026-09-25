@@ -5,7 +5,7 @@ from __future__ import annotations
 import click
 
 from gmlst import __version__
-from gmlst.commands.config import config_group
+from gmlst.commands.config import config_group, load_env_file_into_environ
 from gmlst.commands.scheme import scheme_group
 from gmlst.commands.typing import cmd_typing
 from gmlst.commands.utils import utils_group
@@ -30,6 +30,7 @@ def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
     """gmlst — fast MLST cgMLST/wgMLST typing via multiple alignment backends."""
     if verbose and quiet:
         raise click.UsageError("--verbose and --quiet cannot be used together")
+    load_env_file_into_environ()
     setup_logging(verbose=verbose, quiet=quiet)
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())

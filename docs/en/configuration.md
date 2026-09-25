@@ -40,7 +40,8 @@ gmlst config get GMLST_TMPDIR        # get a single variable
 gmlst config get GMLST_TMPDIR --format json  # {name, value, source, is_default}
 gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # write to ~/.config/gmlst/env.sh
 gmlst config init                    # add source line to shell rc (run once)
-source ~/.config/gmlst/env.sh        # apply now in current shell
+source ~/.config/gmlst/env.sh        # optional: gmlst also reads this file
+#                                      # itself when the shell hasn't
 ```
 
 Two display behaviors are worth knowing:

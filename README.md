@@ -305,7 +305,8 @@ after 31 December 2024. Obtain an API key and configure it:
 # PubMLST: register at pubmlst.org → Preferences → API keys → create key
 gmlst config set GMLST_PUBMLST_API_KEY your-key-here
 gmlst config init     # auto-load in every new shell (run once)
-source ~/.config/gmlst/env.sh   # apply now in current shell
+source ~/.config/gmlst/env.sh   # optional: gmlst also reads this file itself
+#                               # when the current shell hasn't sourced it
 ```
 
 Use `gmlst config show` to view all 29 configuration variables with current values and defaults. Secret values such as API keys are masked in this view (`first4****last4`) so they stay out of terminal logs:

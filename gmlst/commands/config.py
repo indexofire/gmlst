@@ -199,6 +199,29 @@ _SHELL_RC_MAP: dict[str, str] = {
 }
 
 
+def load_env_file_into_environ() -> dict[str, str]:
+    """Apply env.sh values into ``os.environ`` for keys not already set.
+
+    ``gmlst config set`` writes env.sh expecting the shell to source it;
+    when the current shell hasn't (new machine, subshell, CI), the CLI
+    applies the file itself as a fallback layer so ``config show``/``get``
+    and authenticated provider downloads see the configured values.
+    Explicit environment variables always win. Returns the injected
+    mapping.
+    """
+    if _find_env_file() is None:
+        return {}
+    injected: dict[str, str] = {}
+    for entry in _CONFIG_REGISTRY:
+        if os.environ.get(entry.name):
+            continue
+        value = _env_file_export_value(entry.name)
+        if value:
+            os.environ[entry.name] = value
+            injected[entry.name] = value
+    return injected
+
+
 def _current_value(name: str) -> str:
     return os.environ.get(name, "")
 

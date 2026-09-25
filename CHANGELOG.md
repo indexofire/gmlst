@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `gmlst config set` wrote env.sh but nothing read it back unless the current
+  shell had sourced the file: `config show`/`get` displayed empty values (and
+  the `file` provenance in `config get --format json` could never appear),
+  while authenticated PubMLST/Pasteur downloads silently ran without the
+  configured API keys. The CLI now applies env.sh values into the
+  environment at startup for keys not already set — explicit environment
+  variables keep winning, and `X-API-Key` headers pick up file-configured
+  credentials in unsourced shells.
 - FASTQ depth subsampling returned paths into a temporary directory that was
   deleted before the typing run read them — deep Illumina runs (estimated
   depth above `--max-depth`, default 100x) failed with file-not-found.

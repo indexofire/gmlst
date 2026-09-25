@@ -289,7 +289,8 @@ gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst
 # PubMLST：在 pubmlst.org → Preferences → API keys 注册
 gmlst config set GMLST_PUBMLST_API_KEY your-key-here
 gmlst config init     # 每个新 shell 自动加载（只需运行一次）
-source ~/.config/gmlst/env.sh   # 当前 shell 立即生效
+source ~/.config/gmlst/env.sh   # 可选：即使当前 shell 未 source，
+#                               # gmlst 也会自动读取该文件
 ```
 
 使用 `gmlst config show` 查看所有配置变量及当前值：

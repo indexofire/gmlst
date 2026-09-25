@@ -38,7 +38,8 @@ gmlst config show                    # 查看所有变量及当前值
 gmlst config env                     # 输出 shell 可 source 的格式
 gmlst config set GMLST_TMPDIR /scratch/gmlst-tmp  # 写入 ~/.config/gmlst/env.sh
 gmlst config init                    # 在 shell rc 文件中添加 source 行（只需运行一次）
-source ~/.config/gmlst/env.sh        # 在当前 shell 中立即生效
+source ~/.config/gmlst/env.sh        # 可选：即使当前 shell 未 source，
+#                                      # gmlst 也会自动读取该文件
 ```
 
 `config show` 会对敏感值做掩码处理：名称形如凭据的变量（`*_API_KEY`、token、secret、密码）只显示前 4 位和后 4 位（如 `abcd****ef01`），较短的值整体显示为 `********`。这可以避免 API key 意外出现在终端日志或截图里。未设置的变量不会被假掩码填充，因此可以直观区分"已设置"和"未设置"。掩码只影响 `config show` 的显示；`config get` 仍输出真实值，因为它面向脚本使用。
