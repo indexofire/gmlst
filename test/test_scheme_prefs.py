@@ -30,7 +30,9 @@ def test_load_ignores_pending_entries() -> None:
 def test_alias_matching_is_case_insensitive() -> None:
     prefs = load_scheme_preferences()
 
-    matched = [p for p in prefs if p.matches_organism("ESCHERICHIA COLI")]
+    matched = [
+        p for p in prefs if p.matches_organism("ESCHERICHIA COLI") and p.type == "mlst"
+    ]
     assert len(matched) == 1
 
 

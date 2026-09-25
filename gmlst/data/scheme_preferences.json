@@ -36,10 +36,11 @@
     {
       "organism": "Blastocystis spp.",
       "type": "mlst",
-      "order_suggested": [
-        "blastocystis_1",
-        "blastocystis_2"
-      ]
+      "order": [
+        "blastocystis_2",
+        "blastocystis_1"
+      ],
+      "note": "6-locus over 5-locus"
     },
     {
       "organism": "Bordetella pertussis",
@@ -53,27 +54,29 @@
     {
       "organism": "Bordetella pertussis",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "bpertussis_1",
-        "bpertussis_2",
-        "bpertussis_3",
-        "bpertussis_6",
-        "bpertussis_7",
-        "bpertussis_8",
         "bpertussis_9",
-        "bpertussis_10"
-      ]
+        "bpertussis_2",
+        "bpertussis_10",
+        "bpertussis_6",
+        "bpertussis_3",
+        "bpertussis_7",
+        "bpertussis_8"
+      ],
+      "note": "classic 7-locus first; vaccine-antigen mini schemes last"
     },
     {
       "organism": "Brachyspira spp.",
       "type": "mlst",
-      "order_suggested": [
-        "brachyspira_1",
+      "order": [
+        "brachyspira_5",
         "brachyspira_2",
+        "brachyspira_1",
         "brachyspira_3",
-        "brachyspira_4",
-        "brachyspira_5"
-      ]
+        "brachyspira_4"
+      ],
+      "note": "generic scheme first, then B. hyodysenteriae (main pathogen); species-specific set"
     },
     {
       "organism": "Brucella spp.",
@@ -128,7 +131,7 @@
     {
       "organism": "Campylobacter non-jejuni/coli",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "campylobacter_1",
         "campylobacter_2",
         "campylobacter_3",
@@ -138,7 +141,8 @@
         "campylobacter_7",
         "campylobacter_8",
         "campylobacter_9"
-      ]
+      ],
+      "note": "nine species-specific schemes; natural order locked"
     },
     {
       "organism": "Chlamydiales spp.",
@@ -213,11 +217,16 @@
       ]
     },
     {
-      "organism": "Escherichia coli",
+      "organism": "Escherichia spp.",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "ecoli_2",
         "ecoli_4"
+      ],
+      "note": "EnteroBase cgMLST first; cgmlst.org mirror second",
+      "aliases": [
+        "Escherichia",
+        "Escherichia coli"
       ]
     },
     {
@@ -245,21 +254,23 @@
     {
       "organism": "Klebsiella pneumoniae",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "kpneumoniae_7",
+        "kpneumoniae_24",
+        "kpneumoniae_25",
         "kpneumoniae_14",
         "kpneumoniae_15",
-        "kpneumoniae_16",
-        "kpneumoniae_24",
-        "kpneumoniae_25"
-      ]
+        "kpneumoniae_16"
+      ],
+      "note": "Pasteur Kpn cgMLST (2752 loci) reference first"
     },
     {
       "organism": "Klebsiella pneumoniae",
       "type": "mlst",
-      "order_suggested": [
-        "kpneumoniae_1",
+      "order": [
         "kpneumoniae_2",
+        "kpneumoniae_23",
+        "kpneumoniae_1",
         "kpneumoniae_3",
         "kpneumoniae_4",
         "kpneumoniae_5",
@@ -275,9 +286,9 @@
         "kpneumoniae_19",
         "kpneumoniae_20",
         "kpneumoniae_21",
-        "kpneumoniae_22",
-        "kpneumoniae_23"
-      ]
+        "kpneumoniae_22"
+      ],
+      "note": "Pasteur 7-gene classic first; enterobase mirror second; topic schemes last"
     },
     {
       "organism": "Leptospira interrogans",
@@ -290,14 +301,15 @@
     {
       "organism": "Leptospira interrogans",
       "type": "mlst",
-      "order_suggested": [
-        "linterrogans_1",
-        "linterrogans_4",
-        "linterrogans_5",
+      "order": [
         "linterrogans_6",
         "linterrogans_7",
-        "linterrogans_8"
-      ]
+        "linterrogans_8",
+        "linterrogans_1",
+        "linterrogans_4",
+        "linterrogans_5"
+      ],
+      "note": "7/6-locus MLST variants first; 68-locus VNTR-like linterrogans_1 avoided"
     },
     {
       "organism": "Leptospira spp.",
@@ -320,7 +332,7 @@
     {
       "organism": "Listeria monocytogenes",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "lmonocytogenes_1",
         "lmonocytogenes_3",
         "lmonocytogenes_4",
@@ -333,7 +345,8 @@
         "lmonocytogenes_11",
         "lmonocytogenes_12",
         "lmonocytogenes_14"
-      ]
+      ],
+      "note": "classic L. monocytogenes MLST"
     },
     {
       "organism": "Mycobacteria spp.",
@@ -362,15 +375,16 @@
     {
       "organism": "Mycoplasma hominis",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "mhominis_1",
         "mhominis_2"
-      ]
+      ],
+      "note": "conservative default; no clear community standard"
     },
     {
       "organism": "Neisseria spp.",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "neisseria_4",
         "neisseria_5",
         "neisseria_6",
@@ -380,19 +394,21 @@
         "neisseria_13",
         "neisseria_14",
         "neisseria_15"
-      ]
+      ],
+      "note": "sub-species cgMLST versions; generic v1.0 default"
     },
     {
       "organism": "Neisseria spp.",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "neisseria_1",
         "neisseria_2",
         "neisseria_3",
         "neisseria_7",
         "neisseria_8",
         "neisseria_11"
-      ]
+      ],
+      "note": "classic 7-gene Neisseria MLST"
     },
     {
       "organism": "Oral Streptococcus spp.",
@@ -412,31 +428,22 @@
       ]
     },
     {
-      "organism": "Plasmid MLST",
-      "type": "mlst",
-      "order_suggested": [
-        "pmlst_1",
-        "pmlst_2",
-        "pmlst_3",
-        "pmlst_4",
-        "pmlst_5"
-      ]
-    },
-    {
       "organism": "Providencia spp.",
       "type": "mlst",
-      "order_suggested": [
-        "providencia_1",
-        "providencia_2"
-      ]
+      "order": [
+        "providencia_2",
+        "providencia_1"
+      ],
+      "note": "7-locus classic"
     },
     {
       "organism": "Salmonella enterica",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "senterica_2",
         "senterica_5"
-      ]
+      ],
+      "note": "EnteroBase cgMLST first"
     },
     {
       "organism": "Staphylococcus aureus",
@@ -473,62 +480,69 @@
     {
       "organism": "Treponema pallidum",
       "type": "mlst",
-      "order_suggested": [
-        "tpallidum_1",
-        "tpallidum_2"
-      ]
+      "order": [
+        "tpallidum_2",
+        "tpallidum_1"
+      ],
+      "note": "7-locus classic (tpallidum_1 has 3 loci)"
     },
     {
       "organism": "Ureaplasma spp.",
       "type": "mlst",
-      "order_suggested": [
-        "ureaplasma_1",
-        "ureaplasma_2"
-      ]
+      "order": [
+        "ureaplasma_2",
+        "ureaplasma_1"
+      ],
+      "note": "6-locus over 4-locus"
     },
     {
       "organism": "Vibrio cholerae",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "vcholerae_1",
         "vcholerae_2"
-      ]
+      ],
+      "note": "7-locus classic (O1/O139 variant second)"
     },
     {
       "organism": "Vibrio parahaemolyticus",
       "type": "mlst",
-      "order_suggested": [
+      "order": [
         "vparahaemolyticus_1",
         "vparahaemolyticus_2"
-      ]
+      ],
+      "note": "classic 7-locus"
     },
     {
       "organism": "Vibrio spp.",
       "type": "mlst",
-      "order_suggested": [
-        "vibrio_1",
-        "vibrio_2"
-      ]
+      "order": [
+        "vibrio_2",
+        "vibrio_1"
+      ],
+      "note": "enterobase 7-locus over legacy 4-locus pubmlst"
     },
     {
       "organism": "Yersinia enterocolitica",
       "type": "cgmlst",
-      "order_suggested": [
+      "order": [
         "yenterocolitica_2",
-        "yenterocolitica_3",
-        "yenterocolitica_4",
+        "yenterocolitica_9",
         "yenterocolitica_7",
-        "yenterocolitica_9"
-      ]
+        "yenterocolitica_4",
+        "yenterocolitica_3"
+      ],
+      "note": "species-specific Pasteur cgMLST first"
     },
     {
       "organism": "Yersinia enterocolitica",
       "type": "mlst",
-      "order_suggested": [
-        "yenterocolitica_1",
+      "order": [
         "yenterocolitica_5",
-        "yenterocolitica_6"
-      ]
+        "yenterocolitica_6",
+        "yenterocolitica_1"
+      ],
+      "note": "enterobase 7-locus classic first"
     }
   ]
 }
