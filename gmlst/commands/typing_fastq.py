@@ -129,26 +129,29 @@ def maybe_subsample_fastq(
             f"(target {target_reads} reads)"
         )
 
-        from gmlst.utils import temp_dir
+        from gmlst.utils import new_temp_dir
 
-        with temp_dir("gmlst_sub_") as tmp:
-            new_paths: list[Path] = []
-            for i, p in enumerate(paths):
-                out = tmp / f"sub_{i}.fastq.gz"
-                _subsample_fastq_file(p, out, target_reads)
-                new_paths.append(out)
+        # The subsampled files are consumed by the typing run after this
+        # function returns, so the directory must outlive this scope
+        # (cleanup happens at process exit).
+        tmp = new_temp_dir("gmlst_sub_")
+        new_paths: list[Path] = []
+        for i, p in enumerate(paths):
+            out = tmp / f"sub_{i}.fastq.gz"
+            _subsample_fastq_file(p, out, target_reads)
+            new_paths.append(out)
 
-            if isinstance(sample, SampleInput):
-                result.append(
-                    SampleInput(
-                        path=new_paths[0],
-                        mate_path=new_paths[1] if len(new_paths) > 1 else None,
-                        sample_id=sample.sample_id,
-                        input_type=sample.input_type,
-                    )
+        if isinstance(sample, SampleInput):
+            result.append(
+                SampleInput(
+                    path=new_paths[0],
+                    mate_path=new_paths[1] if len(new_paths) > 1 else None,
+                    sample_id=sample.sample_id,
+                    input_type=sample.input_type,
                 )
-            else:
-                result.append(new_paths[0])
+            )
+        else:
+            result.append(new_paths[0])
 
     return result
 

@@ -83,6 +83,7 @@ _SEQDEF_DB_ALIASES: dict[str, str] = {
     "ganatis": "pubmlst_gallibacterium_seqdef",
     "gparasuis": "pubmlst_hparasuis_seqdef",
     "hpylori": "pubmlst_helicobacter_seqdef",
+    "pmlst": "pubmlst_plasmid_seqdef",
 }
 
 

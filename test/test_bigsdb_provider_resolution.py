@@ -503,3 +503,30 @@ def test_resolve_seqdef_url_unrelated_scheme_unaffected_by_aliases(
 
     url, db = provider._resolve_seqdef_url("bmallei_1")
     assert db == "pubmlst_bmallei_seqdef"
+
+
+def test_resolve_seqdef_url_pmlst_family(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = BigSdbProvider(
+        name="pubmlst",
+        base_url="https://rest.pubmlst.org/db",
+        label="PubMLST",
+    )
+
+    def fake_get_json(url: str, headers=None):
+        return [
+            {
+                "name": "plasmid",
+                "description": "Plasmid MLST",
+                "databases": [
+                    {
+                        "name": "pubmlst_plasmid_seqdef",
+                        "href": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
+                    }
+                ],
+            }
+        ]
+
+    monkeypatch.setattr("gmlst.database.providers.bigsdb._get_json", fake_get_json)
+
+    url, db = provider._resolve_seqdef_url("pmlst_1")
+    assert db == "pubmlst_plasmid_seqdef"

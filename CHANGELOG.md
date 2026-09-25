@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- FASTQ depth subsampling returned paths into a temporary directory that was
+  deleted before the typing run read them — deep Illumina runs (estimated
+  depth above `--max-depth`, default 100x) failed with file-not-found.
+  Subsampled files now live for the whole process (cleaned up at exit).
+- Plasmid MLST schemes (`pmlst_1`..`pmlst_5`) were undownloadable: the
+  scheme base "pmlst" is not a substring of any PubMLST database name.
+  A seqdef alias resolves them to `pubmlst_plasmid_seqdef` — the audit
+  across all 295 PubMLST/Pasteur catalog schemes now resolves 100%.
+
 ### Planned
 - Cache storage optimization: support compressed scheme artifacts for downloaded
   allele/profile data to reduce disk usage.

@@ -139,6 +139,23 @@ def temp_dir(prefix: str = "gmlst_") -> Generator[Path, None, None]:
         _force_rmtree(Path(tmp))
 
 
+def new_temp_dir(prefix: str = "gmlst_") -> Path:
+    """Create a temp dir under ``GMLST_TMPDIR`` cleaned up at process exit.
+
+    Unlike :func:`temp_dir` the directory outlives the creating scope —
+    for paths that are handed to a caller and consumed after the current
+    function returns.
+    """
+    import atexit
+
+    root = get_temp_root()
+    tmp = Path(
+        tempfile.mkdtemp(prefix=prefix, dir=str(root) if root is not None else None)
+    )
+    atexit.register(_force_rmtree, tmp)
+    return tmp
+
+
 def _force_rmtree(path: Path, retries: int = 3, delay: float = 0.5) -> None:
     """Remove a directory tree, retrying on failure to handle lingering file handles."""
     import time
