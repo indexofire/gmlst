@@ -20,6 +20,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.5.1] - 2026-09-25
+
+### Added
+- All 54 multi-candidate (organism, type) groups now carry curated scheme
+  preferences. Highlights from the display-name review: A. baumannii MLST
+  prefers the Pasteur scheme over Oxford; Bacillus cereus cgMLST picks the
+  B. cereus scheme (the previous natural-order default resolved to the
+  B. anthracis scheme); cgMLST v2 variants, pubmlst mirrors, and
+  species-specific schemes are preferred over genus-wide ones.
+
+### Changed
+- Fingerprint database grows to 145 organisms (+7: Brachyspira spp.,
+  B. cepacia complex, Ca. Liberibacter solanacearum, Cutibacterium acnes,
+  Gallibacterium anatis, Glaesserella parasuis, Helicobacter pylori).
+  Plasmid MLST is deliberately excluded: plasmid k-mers are shared across
+  species and its fingerprint would create false species hits.
+
+### Fixed
+- PubMLST seqdef resolution for species grouped under shared REST orgs: a
+  pinned database-alias table resolves bcepacia / cacnes / cliberibacter /
+  ganatis / gparasuis / hpylori to their true databases regardless of the
+  org's arbitrary database list order (cutibacterium lists cavidum before
+  pacnes). This also unblocks plain `scheme download` for those schemes.
+- Docker release builds retry pip against the PyPI index propagation lag
+  and strip the leading ``v`` from release tag names.
+
 ## [0.5.0] - 2026-09-25
 
 ### Added
