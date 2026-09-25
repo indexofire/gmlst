@@ -20,11 +20,18 @@ RUN micromamba install -y -n base -c bioconda -c conda-forge \
       pip \
     && micromamba clean --all --yes
 
-RUN if [ -n "$GMLST_VERSION" ]; then \
-        micromamba run -n base pip install --no-cache-dir "gmlst==${GMLST_VERSION}"; \
-    else \
-        micromamba run -n base pip install --no-cache-dir gmlst; \
-    fi \
+# The retry loop tolerates the PyPI index propagation lag when the image
+# build races the release's publish job; "${GMLST_VERSION#v}" strips the
+# tag prefix so pip sees a bare version.
+RUN set -eux; \
+    for i in 1 2 3 4 5 6 7 8 9 10; do \
+        if [ -n "$GMLST_VERSION" ]; then \
+            micromamba run -n base pip install --no-cache-dir "gmlst==${GMLST_VERSION#v}" && break; \
+        else \
+            micromamba run -n base pip install --no-cache-dir gmlst && break; \
+        fi; \
+        sleep 30; \
+    done \
     && ln -s /opt/conda/bin/gmlst /usr/local/bin/gmlst
 
 RUN gmlst --version \
