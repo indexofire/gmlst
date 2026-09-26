@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `config get` masks credential-bearing values (API keys, tokens) by default;
+  `--reveal` opts into plaintext as an explicit, auditable choice, and the
+  JSON payload carries `is_masked` alongside `value`. `config set` no longer
+  echoes secret values in its confirmation output, and omitting VALUE
+  prompts with hidden input (plus confirmation for secrets) so credentials
+  never appear in shell history or terminal transcripts. Together these
+  keep secrets out of logs when driving gmlst from scripts or AI agents.
+
 ### Fixed
 - `gmlst config set` wrote env.sh but nothing read it back unless the current
   shell had sourced the file: `config show`/`get` displayed empty values (and

@@ -63,7 +63,15 @@ def test_config_get_reports_file_source_after_injection(
     from gmlst.cli import main
 
     result = CliRunner().invoke(
-        main, ["config", "get", "GMLST_PUBMLST_API_KEY", "--format", "json"]
+        main,
+        [
+            "config",
+            "get",
+            "GMLST_PUBMLST_API_KEY",
+            "--format",
+            "json",
+            "--reveal",
+        ],
     )
 
     assert result.exit_code == 0, result.output

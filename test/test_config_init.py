@@ -270,9 +270,7 @@ class TestConfigShowMasking:
         assert result.exit_code == 0
         assert "Secret values are masked" not in result.output
 
-    def test_get_still_returns_real_secret_value(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_get_masks_secret_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
         fake_key = "sk-pubmlst-abcdef1234567890"
         monkeypatch.setenv("GMLST_PUBMLST_API_KEY", fake_key)
 
@@ -280,7 +278,8 @@ class TestConfigShowMasking:
         result = runner.invoke(config_group, ["get", "GMLST_PUBMLST_API_KEY"])
 
         assert result.exit_code == 0
-        assert fake_key in result.output
+        assert "sk-p****7890" in result.output
+        assert fake_key not in result.output
 
 
 class TestConfigGetJson:
@@ -302,6 +301,7 @@ class TestConfigGetJson:
             "value": "/scratch/env-value",
             "source": "env",
             "is_default": False,
+            "is_masked": False,
         }
 
     def test_file_match_reports_file_source(
@@ -325,6 +325,7 @@ class TestConfigGetJson:
             "value": "/from/file",
             "source": "file",
             "is_default": False,
+            "is_masked": False,
         }
 
     def test_env_override_of_file_reports_env_source(
@@ -363,9 +364,10 @@ class TestConfigGetJson:
             "value": "/tmp",
             "source": "default",
             "is_default": True,
+            "is_masked": False,
         }
 
-    def test_secret_value_not_masked_in_json(
+    def test_secret_value_masked_in_json_by_default(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         fake_key = "sk-pubmlst-abcdef1234567890"
@@ -378,7 +380,8 @@ class TestConfigGetJson:
 
         assert result.exit_code == 0
         doc = json.loads(result.output)
-        assert doc["data"]["value"] == fake_key
+        assert doc["data"]["value"] == "sk-p****7890"
+        assert doc["data"]["is_masked"] is True
 
     def test_text_mode_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GMLST_TMPDIR", "/scratch/plain")

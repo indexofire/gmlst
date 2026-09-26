@@ -373,6 +373,15 @@ def cmd_show() -> None:
 @config_group.command("get", context_settings=HELP_SETTINGS)
 @click.argument("name", required=True)
 @click.option(
+    "--reveal",
+    is_flag=True,
+    help=(
+        "Output the plaintext value of credential-bearing variables. "
+        "Without this flag, API keys and tokens are masked so secrets "
+        "stay out of logs and terminal transcripts."
+    ),
+)
+@click.option(
     "--format",
     "fmt",
     default="text",
@@ -385,8 +394,11 @@ def cmd_show() -> None:
         "way, 'default' when unset (built-in default, is_default true)."
     ),
 )
-def cmd_get(name: str, fmt: str) -> None:
-    """Get the current value of a configuration variable."""
+def cmd_get(name: str, reveal: bool, fmt: str) -> None:
+    """Get the current value of a configuration variable.
+
+    Credential-bearing values are masked unless ``--reveal`` is given.
+    """
     entry = _REGISTRY_BY_NAME.get(name.upper())
     if not entry:
         err_console.print(f"[red]Unknown variable:[/red] {name}")
@@ -397,22 +409,35 @@ def cmd_get(name: str, fmt: str) -> None:
 
     val = _current_value(entry.name)
     if fmt == "json":
-        emit_versioned_json(_get_value_snapshot(entry, val), None, CONFIG_GET_V1)
+        snapshot = _get_value_snapshot(entry, val)
+        masked = bool(snapshot["value"]) and _is_secret(entry.name) and not reveal
+        snapshot["value"] = (
+            _mask_secret(snapshot["value"]) if masked else snapshot["value"]
+        )
+        snapshot["is_masked"] = masked
+        emit_versioned_json(snapshot, None, CONFIG_GET_V1)
         return
 
+    fallback = val if val else entry.default
+    masked = bool(val) and _is_secret(entry.name) and not reveal
+    shown = _mask_secret(val) if masked else fallback
     if val:
-        console.print(val)
+        console.print(shown)
     else:
-        console.print(f"[dim]{entry.default}[/dim]")
+        console.print(f"[dim]{shown}[/dim]")
 
 
 @config_group.command("set", context_settings=HELP_SETTINGS)
 @click.argument("name", required=True)
-@click.argument("value", required=True)
-def cmd_set(name: str, value: str) -> None:
+@click.argument("value", required=False)
+def cmd_set(name: str, value: str | None) -> None:
     """Set a configuration variable in the config file.
 
-    The value is written to ~/.config/gmlst/env.sh.
+    The value is written to ~/.config/gmlst/env.sh. Omit VALUE to be
+    prompted instead — credential-bearing variables are prompted with
+    hidden input (and confirmation) so the secret never appears in shell
+    history or terminal transcripts.
+
     Source this file in your shell profile to apply the changes:
 
         source ~/.config/gmlst/env.sh
@@ -424,6 +449,16 @@ def cmd_set(name: str, value: str) -> None:
             "Run [bold]gmlst config show[/bold] to see all available variables."
         )
         sys.exit(1)
+
+    if value is None:
+        if _is_secret(entry.name):
+            value = click.prompt(
+                f"Value for {entry.name}",
+                hide_input=True,
+                confirmation_prompt=True,
+            )
+        else:
+            value = click.prompt(f"Value for {entry.name}")
 
     env_file = _ENV_FILE_CANDIDATES[0]
     env_file.parent.mkdir(parents=True, exist_ok=True)
@@ -440,7 +475,8 @@ def cmd_set(name: str, value: str) -> None:
     env_file.write_text("\n".join(lines) + "\n")
     env_file.chmod(0o600)
 
-    status_console.print(f"[green]Set [bold]{entry.name}[/bold] = '{value}'[/green]")
+    shown = _mask_secret(value) if _is_secret(entry.name) else value
+    status_console.print(f"[green]Set [bold]{entry.name}[/bold] = '{shown}'[/green]")
     status_console.print(f"Written to: [bold]{env_file}[/bold]")
     status_console.print(f"\nApply now with: [bold]source {env_file}[/bold]")
     status_console.print(

@@ -582,18 +582,27 @@ Prints the current value of a single variable, or its default if unset.
 gmlst config get GMLST_CACHE_DIR
 ```
 
+Credential-bearing values (API keys, tokens) are masked by default so
+secrets stay out of logs and terminal transcripts. Pass `--reveal` to
+print the plaintext value (an explicit, auditable choice); the JSON
+payload carries an `is_masked` field alongside `value`.
+
 ### config set
 
 ```bash
 gmlst config set NAME VALUE
 ```
 
-Writes `export NAME="VALUE"` to `~/.config/gmlst/env.sh`. Source this file in your shell profile to apply the change:
+Writes `export NAME="VALUE"` to `~/.config/gmlst/env.sh` (mode 600). Source this file in your shell profile to apply the change:
 
 ```bash
 gmlst config set GMLST_CACHE_DIR /data/gmlst-cache
-source ~/.config/gmlst/env.sh
+source ~/.config/gmlst/env.sh   # optional: gmlst also reads this file itself
 ```
+
+Omit VALUE to be prompted instead — secrets are prompted with hidden
+input and confirmation so the value never lands in shell history, and
+the confirmation output shows a masked form only.
 
 **Note**: Provider URL variables (`GMLST_PUBMLST_BASE_URL`, `GMLST_PRIVATE_BIGSDB_URL`, etc.) are read at import time. You must `source` the config file before running gmlst for changes to take effect.
 

@@ -345,16 +345,17 @@ gmlst config [OPTIONS] COMMAND [ARGS]...
 子命令：
 
 - `env` — 以 shell 格式打印所有环境变量（可 source）
-- `show` — 分组表格显示所有配置变量
-- `get NAME` — 获取单个变量值
-- `set NAME VALUE` — 写入变量到配置文件
+- `show` — 分组表格显示所有配置变量（密钥自动脱敏）
+- `get NAME` — 获取单个变量值；密钥类默认掩码显示，加 `--reveal` 才输出明文（显式可审计的选择；JSON 附带 `is_masked` 字段）
+- `set NAME [VALUE]` — 写入变量到配置文件（权限 600）。省略 VALUE 则进入提示输入——密钥类使用隐藏输入并二次确认，值不进入 shell 历史，确认输出仅显示掩码
 
 示例：
 
 ```bash
 gmlst config show                          # 查看所有配置
 gmlst config set GMLST_CACHE_DIR /data     # 设置缓存目录
-source ~/.config/gmlst/env.sh              # 应用配置
+gmlst config set GMLST_PUBMLST_API_KEY     # 隐藏输入提示录入密钥
+source ~/.config/gmlst/env.sh              # 可选：gmlst 也会自动读取该文件
 ```
 
 ## utils
