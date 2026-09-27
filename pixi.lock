@@ -1034,8 +1034,8 @@ packages:
   - wheel ; extra == 'dev'
 - pypi: ./
   name: gmlst
-  version: 0.5.1
-  sha256: 09f4823d9b7c2df993400a85b7baa81b6b07ec69d2ccb5893d91a4bf05599b15
+  version: 0.5.2
+  sha256: ead569dcb70b04ca72b79d60a7d7cc8817ad1e8dcbc387d03cfd48ed39f742fe
   requires_dist:
   - click>=8.1
   - flask>=3.0
@@ -1046,6 +1046,7 @@ packages:
   - xxhash>=3.0
   - pytest>=8.0 ; extra == 'dev'
   - ruff>=0.4 ; extra == 'dev'
+  - pyright>=1.1.409 ; extra == 'dev'
   requires_python: '>=3.12,<3.13'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/gmp-6.3.0-hac33072_2.conda
   sha256: 309cf4f04fec0c31b6771a5809a1909b4b3154a2208f52351e1ada006f4c750c

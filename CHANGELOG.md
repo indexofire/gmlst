@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Cache storage optimization: support compressed scheme artifacts for downloaded
+  allele/profile data to reduce disk usage.
+- Keep backend typing behavior unchanged while adding compression support
+  (indexing/typing should continue to use materialized local files).
+- Design provider-specific incremental update strategy to avoid full re-downloads:
+  - PubMLST/Pasteur (BigsDb): compare remote metadata and fetch only changed
+    loci/profile assets when possible.
+  - Enterobase/cgMLST: evaluate available metadata/headers and implement
+    best-effort incremental sync.
+- Extend `.meta.json` schema to track update metadata needed for incremental
+  refresh (for example: timestamps/checksums/ETag-like fields).
+
+## [0.5.2] - 2026-09-27
+
+### Added
+- `scheme update-fingerprints --missing-only` sketches only organisms absent
+  from the current database (local, else bundled) and merges them in,
+  keeping existing entries — no full rebuild or overwrite prompt needed
+  when catalogs gain species. Merging refuses payloads sketched with
+  different k-mer parameters.
+
 ### Changed
+- pyright runs in CI on `gmlst/` (0 errors); `pixi run typecheck` no longer
+  ignores failures.
 - `config get` masks credential-bearing values (API keys, tokens) by default;
   `--reveal` opts into plaintext as an explicit, auditable choice, and the
   JSON payload carries `is_masked` alongside `value`. `config set` no longer
@@ -17,6 +41,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keep secrets out of logs when driving gmlst from scripts or AI agents.
 
 ### Fixed
+- Scheme short names are now stable across catalog refreshes. Names were
+  re-derived from upstream listing order on every save, so an upstream
+  insertion, removal or blocklisted entry shifted later names (e.g. every
+  pubmlst name after a filtered `salmonella_1`) and a name could silently
+  point at a different scheme's cached data. Catalogs now persist a
+  `name_history` (upstream identity -> name: BIGSdb scheme URL, Enterobase
+  directory, or type + display name): known schemes keep their names, only
+  new schemes are numbered, retired names are never reused, and
+  cross-provider renames stick. Existing catalogs seed the history from
+  their current names on first save, so upgrading renames nothing.
+- env.sh values for variables read at import time were ignored even after
+  the startup fallback landed: provider base URLs
+  (`GMLST_PUBMLST_BASE_URL`, `GMLST_PASTEUR_BASE_URL`,
+  `GMLST_PRIVATE_BIGSDB_*`), `GMLST_MINIMAP2_FASTA_PRESET` and
+  `GMLST_ALLOW_PRIVATE_URLS` were evaluated before env.sh was applied. The
+  console script now goes through a stdlib-only entry
+  (`gmlst._entry:main`) that applies env.sh before loading the CLI;
+  `python -m gmlst` uses the same path.
+- Config registry now matches what the code reads: registered
+  `GMLST_MINIMAP2_FASTA_PRESET` and `GMLST_CGMLST_CANDIDATE_MAX_ALLELES`
+  (previously invisible to `config show/set` and not applied from env.sh),
+  removed the never-read `GMLST_MINIMAP2_KMER_ENGINE` (and its docs), and a
+  test keeps registry and code in sync.
 - `gmlst config set` wrote env.sh but nothing read it back unless the current
   shell had sourced the file: `config show`/`get` displayed empty values (and
   the `file` provenance in `config get --format json` could never appear),
@@ -33,19 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scheme base "pmlst" is not a substring of any PubMLST database name.
   A seqdef alias resolves them to `pubmlst_plasmid_seqdef` — the audit
   across all 295 PubMLST/Pasteur catalog schemes now resolves 100%.
-
-### Planned
-- Cache storage optimization: support compressed scheme artifacts for downloaded
-  allele/profile data to reduce disk usage.
-- Keep backend typing behavior unchanged while adding compression support
-  (indexing/typing should continue to use materialized local files).
-- Design provider-specific incremental update strategy to avoid full re-downloads:
-  - PubMLST/Pasteur (BigsDb): compare remote metadata and fetch only changed
-    loci/profile assets when possible.
-  - Enterobase/cgMLST: evaluate available metadata/headers and implement
-    best-effort incremental sync.
-- Extend `.meta.json` schema to track update metadata needed for incremental
-  refresh (for example: timestamps/checksums/ETag-like fields).
 
 ## [0.5.1] - 2026-09-25
 
