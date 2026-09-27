@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from gmlst.commands.typing import _normalize_profile_dicts
+from gmlst.commands.typing_schemefree import _normalize_profile_dicts
 from gmlst.schema_versions import TGMLST_PROFILES_V1
 from gmlst.schemefree.io_handler import profiles_to_json
 

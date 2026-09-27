@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import functools
-import json
 import logging
 import sys
 from pathlib import Path
@@ -15,7 +13,6 @@ from gmlst.calling.scoring import passes_minscore
 from gmlst.commands.common import (
     HELP_SETTINGS,
     backend_option,
-    emit_output_text,
     emit_versioned_json,
     err_console,
     novel_data_options,
@@ -31,6 +28,7 @@ from gmlst.commands.typing_fastq import (
     prepare_sample_paths_for_pairing,
     temp_root_from_output,
 )
+from gmlst.commands.typing_guess_run import _run_guess_typing
 from gmlst.commands.typing_output import (
     announce_stream_output_written,
     close_stream_output,
@@ -46,29 +44,15 @@ from gmlst.commands.typing_scheme import (
     resolve_scheme_type,
     validate_scheme_mode,
 )
-from gmlst.commands.typing_schemefree_exit import (
-    count_errors_by_stage,
-    schemefree_exit_decision,
-)
+from gmlst.commands.typing_schemefree import cmd_typing_tgmlst
 from gmlst.commands.typing_species import resolve_scheme_for_typing
-from gmlst.core import run_typing, species_id
+from gmlst.core import run_typing
 from gmlst.database.cache import DatabaseCache
 from gmlst.database.schema import Scheme
 from gmlst.genbank_io import ensure_fasta_samples
 from gmlst.novel import NovelAlleleWriter, NovelProfileWriter
 from gmlst.novel.service import create_novel_writers, finalize_novel_typing_outputs
-from gmlst.schema_versions import (
-    TGMLST_PROFILES_V1,
-    TGMLST_STATS_V1,
-    TYPING_RESULTS_V1,
-)
-from gmlst.schemefree import (
-    SchemaFreeConfig,
-    SchemeFreeTyper,
-    profiles_to_tsv,
-    write_error_report_json,
-    write_summary_report_json,
-)
+from gmlst.schema_versions import TYPING_RESULTS_V1
 from gmlst.utils import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -90,6 +74,9 @@ if TYPE_CHECKING:
 )
 def cmd_typing() -> None:
     """Typing command group: mlst, cgmlst, and tgmlst modes."""
+
+
+cmd_typing.add_command(cmd_typing_tgmlst)
 
 
 def _validate_guess_flags(
@@ -463,165 +450,6 @@ def cmd_typing_cgmlst(
         )
 
 
-@cmd_typing.command("tgmlst", context_settings=HELP_SETTINGS, no_args_is_help=True)
-@click.argument(
-    "samples",
-    nargs=-1,
-    type=click.Path(exists=True, path_type=Path),
-    required=True,
-)
-@click.option(
-    "--format",
-    "fmt",
-    default="tsv",
-    show_default=True,
-    type=click.Choice(["tsv", "json", "pretty"]),
-    help="Output format.",
-)
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Write output to file."
-)
-@click.option("--no-header", is_flag=True, help="Suppress TSV header line")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress non-error logging.")
-@click.option(
-    "--hash-strategy",
-    default="safe",
-    show_default=True,
-    type=click.Choice(
-        ["safe", "fast", "ultra", "strict", "blast"], case_sensitive=False
-    ),
-    help="Hash strategy for allele identification.",
-)
-@click.option(
-    "--save-scheme",
-    "save_scheme",
-    type=click.Path(path_type=Path),
-    help="Write discovered schemefree scheme JSON.",
-)
-@click.option(
-    "--schemefree-save-scheme",
-    "save_scheme",
-    type=click.Path(path_type=Path),
-    hidden=True,
-)
-@click.option(
-    "--load-scheme",
-    "load_scheme",
-    type=click.Path(exists=True, path_type=Path),
-    help="Load an existing schemefree scheme JSON before typing.",
-)
-@click.option(
-    "--schemefree-load-scheme",
-    "load_scheme",
-    type=click.Path(exists=True, path_type=Path),
-    hidden=True,
-)
-@click.option(
-    "--stats",
-    "show_stats",
-    is_flag=True,
-    help="Print pipeline run stats to stderr.",
-)
-@click.option("--schemefree-stats", "show_stats", is_flag=True, hidden=True)
-@click.option(
-    "--max-workers",
-    "max_workers",
-    type=int,
-    help="Override schemefree max parallel samples.",
-)
-@click.option("--schemefree-max-workers", "max_workers", type=int, hidden=True)
-@click.option(
-    "--threads",
-    "threads",
-    "-t",
-    type=click.IntRange(min=1),
-    help="MMseqs clustering threads for tgMLST.",
-)
-@click.option(
-    "--assemble-timeout",
-    "assemble_timeout",
-    type=float,
-    help="Override schemefree assembly timeout seconds.",
-)
-@click.option(
-    "--schemefree-assemble-timeout",
-    "assemble_timeout",
-    type=float,
-    hidden=True,
-)
-@click.option(
-    "--error-report",
-    "error_report",
-    type=click.Path(path_type=Path),
-    help="Write per-sample schemefree errors to JSON.",
-)
-@click.option(
-    "--schemefree-error-report",
-    "error_report",
-    type=click.Path(path_type=Path),
-    hidden=True,
-)
-@click.option(
-    "--fail-on-error",
-    "fail_on_error",
-    is_flag=True,
-    help="Return non-zero if any schemefree sample fails.",
-)
-@click.option("--schemefree-fail-on-error", "fail_on_error", is_flag=True, hidden=True)
-@click.option(
-    "--summary-report",
-    "summary_report",
-    type=click.Path(path_type=Path),
-    help="Write machine-readable schemefree run summary JSON.",
-)
-@click.option(
-    "--schemefree-summary-report",
-    "summary_report",
-    type=click.Path(path_type=Path),
-    hidden=True,
-)
-def cmd_typing_tgmlst(
-    samples: tuple[Path, ...],
-    fmt: str,
-    output: Path | None,
-    no_header: bool,
-    quiet: bool,
-    hash_strategy: str,
-    save_scheme: Path | None,
-    load_scheme: Path | None,
-    show_stats: bool,
-    max_workers: int | None,
-    threads: int | None,
-    assemble_timeout: float | None,
-    error_report: Path | None,
-    fail_on_error: bool,
-    summary_report: Path | None,
-) -> None:
-    """Run scheme-free typing pipeline (tgMLST)."""
-    if quiet:
-        setup_logging(verbose=False, quiet=True)
-
-    with ensure_fasta_samples(samples) as samples_fasta:
-        exit_code = _run_schemefree_typing(
-            samples=list(samples_fasta),
-            hash_strategy=hash_strategy,
-            fmt=fmt,
-            output=output,
-            no_header=no_header,
-            save_scheme_path=save_scheme,
-            load_scheme_path=load_scheme,
-            show_stats=show_stats,
-            max_workers=max_workers,
-            threads=threads,
-            assemble_timeout=assemble_timeout,
-            error_report_path=error_report,
-            fail_on_error=fail_on_error,
-            summary_report_path=summary_report,
-        )
-    if exit_code != 0:
-        sys.exit(exit_code)
-
-
 def _resolve_scheme_with_fallback(
     cache: DatabaseCache,
     scheme: str,
@@ -686,6 +514,39 @@ def _resolve_scheme_with_fallback(
     return scheme_obj, provider, ensure_scheme_type
 
 
+def _normalize_call_policy(call_policy: str, mode: str) -> tuple[str, str]:
+    """Validate --call-policy; return (normalized policy, output policy).
+
+    ``chew-exact`` runs exact-only calling but formats output as chewBBACA.
+    Exits with status 1 on unknown policies or non-default policies
+    outside cgMLST.
+    """
+    normalized = call_policy.strip().lower()
+    if normalized not in {"default", "chewbbaca", "chew-exact"}:
+        err_console.print(
+            f"[red]Error:[/red] Unsupported --call-policy '{call_policy}'."
+        )
+        sys.exit(1)
+    if mode != "cgmlst" and normalized != "default":
+        err_console.print("[red]Error:[/red] call-policy is only for cgMLST.")
+        sys.exit(1)
+    return normalized, "chewbbaca" if normalized == "chew-exact" else normalized
+
+
+def _warn_thread_settings(*, mode: str, backend: str, threads: int) -> None:
+    """Warn about backend/thread combinations with poor performance."""
+    if backend.lower() == "nucmer" and threads > 1:
+        status_console.print(
+            "[yellow]Warning:[/yellow] nucmer backend may ignore thread settings; "
+            "multi-thread speedups are limited."
+        )
+    if mode == "cgmlst" and backend.lower() == "kma" and threads == 1:
+        status_console.print(
+            "[yellow]Warning:[/yellow] cgMLST with kma is very slow on one thread. "
+            "Use [cyan]-t[/cyan] (e.g. 8-16) for large schemes."
+        )
+
+
 def _run_mlst_like_typing(
     *,
     mode: str,
@@ -742,20 +603,7 @@ def _run_mlst_like_typing(
         err_console=err_console,
     )
     ensure_scheme_type = effective_scheme_type(mode=mode, resolved_type=scheme_type)
-    normalized_policy = call_policy.strip().lower()
-    if normalized_policy not in {"default", "chewbbaca", "chew-exact"}:
-        err_console.print(
-            f"[red]Error:[/red] Unsupported --call-policy '{call_policy}'."
-        )
-        sys.exit(1)
-    if mode != "cgmlst" and normalized_policy != "default":
-        err_console.print("[red]Error:[/red] call-policy is only for cgMLST.")
-        sys.exit(1)
-
-    if normalized_policy == "chew-exact":
-        output_policy = "chewbbaca"
-    else:
-        output_policy = normalized_policy
+    normalized_policy, output_policy = _normalize_call_policy(call_policy, mode)
 
     prepared_samples = prepare_sample_paths_for_pairing(samples)
     if max_fastq_depth > 0:
@@ -782,12 +630,7 @@ def _run_mlst_like_typing(
         ensure_scheme_type=ensure_scheme_type,
     )
 
-    if backend.lower() == "nucmer" and threads > 1:
-        status_console.print(
-            "[yellow]Warning:[/yellow] nucmer backend may ignore thread settings; "
-            "multi-thread speedups are limited."
-        )
-    # validate novel flags
+    _warn_thread_settings(mode=mode, backend=backend, threads=threads)
     if novel_profile and not novel_allele:
         err_console.print(
             "[red]Error:[/red] --novel-profile requires --novel-allele to be set."
@@ -829,12 +672,6 @@ def _run_mlst_like_typing(
             format_tsv_row_fn=_format_tsv_row,
             stream_file=stream_file,
             detail=detail,
-        )
-
-    if mode == "cgmlst" and backend.lower() == "kma" and threads == 1:
-        status_console.print(
-            "[yellow]Warning:[/yellow] cgMLST with kma is very slow on one thread. "
-            "Use [cyan]-t[/cyan] (e.g. 8-16) for large schemes."
         )
 
     if cds_coordinates_out is not None and max_workers > 1:
@@ -909,323 +746,6 @@ def _run_mlst_like_typing(
 
     finally:
         close_stream_output(stream_file)
-
-
-def _run_guess_typing(
-    *,
-    mode: str,
-    samples: tuple[Path, ...],
-    backend: str,
-    cgmlst_mode: str,
-    min_id: float,
-    min_cov: float,
-    min_depth: float,
-    min_join_overlap: int,
-    minscore: float,
-    fmt: str,
-    output: Path | None,
-    cache_dir: Path | None,
-    force_reindex: bool,
-    no_header: bool,
-    threads: int,
-    max_workers: int,
-    count_same_copy: bool,
-    quiet: bool,
-    detail: bool,
-) -> int:
-    """Type a mixed-species batch unattended (--guess).
-
-    Detects each assembly's species, picks one scheme per organism
-    (preference list → lone cached candidate → natural order), downloads
-    missing schemes without asking, and runs the typing engine once per
-    scheme group. Skipped samples are reported on stderr; the exit code
-    is 0 when at least one sample typed, 1 otherwise.
-    """
-    from gmlst.commands.scheme_common import build_fingerprints_with_progress
-    from gmlst.commands.typing_guess import resolve_guess_routes
-    from gmlst.commands.typing_output import (
-        announce_stream_output_written,
-        close_stream_output,
-        open_stream_output,
-        stream_header_if_needed,
-        stream_write,
-    )
-    from gmlst.commands.typing_species import _scheme_types_for_mode
-    from gmlst.database.scheme_prefs import load_scheme_preferences
-
-    cache = DatabaseCache(cache_dir)
-    fingerprints_file = species_id.fingerprints_path(cache)
-    if fingerprints_file.exists():
-        payload = species_id.load_fingerprints(fingerprints_file)
-    else:
-        bundled = species_id.bundled_fingerprints_path()
-        if bundled is not None:
-            payload = species_id.load_fingerprints(bundled)
-        else:
-            status_console.print(
-                "[yellow]guess:[/yellow] building fingerprint database…"
-            )
-            payload, _counts = build_fingerprints_with_progress(cache)
-            species_id.save_fingerprints(payload, fingerprints_file)
-
-    type_set, _type_label = _scheme_types_for_mode(mode)
-    plan = resolve_guess_routes(
-        samples,
-        type_set=type_set,
-        cache=cache,
-        fingerprints=payload,
-        preferences=load_scheme_preferences(),
-    )
-
-    for sample, reason in plan.skipped:
-        err_console.print(f"[yellow]skip:[/yellow] {sample.name}: {reason}")
-
-    if not plan.routes:
-        err_console.print("[red]Error:[/red] no samples resolved to a scheme.")
-        return 1
-
-    run_route = functools.partial(
-        _run_mlst_like_typing,
-        mode=mode,
-        backend=backend,
-        cgmlst_mode=cgmlst_mode,
-        min_id=min_id,
-        min_cov=min_cov,
-        min_depth=min_depth,
-        min_join_overlap=min_join_overlap,
-        minscore=minscore,
-        fmt=fmt,
-        output=None,
-        cache_dir=cache_dir,
-        force_reindex=force_reindex,
-        no_header=no_header,
-        threads=threads,
-        max_workers=max_workers,
-        count_same_copy=count_same_copy,
-        novel_allele=False,
-        novel_profile=False,
-        output_dir=None,
-        quiet=quiet,
-        detail=detail,
-        suppress_output=True,
-    )
-
-    results_by_scheme: dict[str, list] = {}
-    route_order: list[str] = []
-    for route in plan.routes:
-        status_console.print(f"[guess] {route.scheme}: {len(route.samples)} sample(s)")
-        sink: list = []
-        run_route(
-            samples=tuple(route.samples),
-            scheme=route.scheme,
-            provider=route.provider,
-            result_sink=sink,
-        )
-        results_by_scheme[route.scheme] = sink
-        route_order.append(route.scheme)
-
-    typed = sum(len(rows) for rows in results_by_scheme.values())
-    stream_file = open_stream_output(fmt=fmt, output=output)
-    try:
-        if fmt == "json":
-            emit_final_typing_output(
-                results=[
-                    r for route in plan.routes for r in results_by_scheme[route.scheme]
-                ],
-                fmt=fmt,
-                output=output,
-                emit_output_json_fn=_emit_typing_results_json,
-            )
-        elif fmt in {"tsv", "pretty"}:
-            for route in plan.routes:
-                scheme_obj = cache.ensure_scheme(route.scheme, provider=route.provider)
-                scheme = route.scheme
-                if fmt == "tsv":
-                    stream_header_if_needed(
-                        fmt=fmt,
-                        no_header=no_header,
-                        loci=scheme_obj.loci,
-                        stream_file=stream_file,
-                    )
-                for result in results_by_scheme[scheme]:
-                    if fmt == "pretty":
-                        stream_write(
-                            f"{result.sample_id}: ST={_format_st_for_tsv(result)}",
-                            stream_file=stream_file,
-                        )
-                    else:
-                        stream_write(
-                            _format_tsv_row(
-                                result,
-                                scheme_obj.loci,
-                                count_same_copy,
-                                call_policy="default",
-                                detail=detail,
-                            ),
-                            stream_file=stream_file,
-                        )
-            announce_stream_output_written(output=output)
-    finally:
-        close_stream_output(stream_file)
-
-    status_console.print(
-        f"[guess] typed {typed} sample(s) across {len(route_order)} scheme(s); "
-        f"skipped {len(plan.skipped)}"
-    )
-    return 0 if typed > 0 else 1
-
-
-def _normalize_allele_call(locus: str, call: object) -> str:
-    """Normalize one allele call to the schemefree JSON string form.
-
-    Mirrors ``gmlst.schemefree.io_handler._normalize_allele_call`` so the
-    CLI can build the JSON payload in memory without a dumps/loads
-    round-trip through the engine module.
-    """
-    if call is None:
-        return "0"
-    if isinstance(call, int):
-        return str(call)
-
-    call_str = str(call).strip()
-    if call_str in {"", "-"}:
-        return "0"
-    if call_str.isdigit():
-        return call_str
-
-    prefix = f"{locus}_"
-    if call_str.startswith(prefix):
-        suffix = call_str[len(prefix) :]
-        if suffix.isdigit():
-            return suffix
-
-    return call_str
-
-
-def _normalize_profile_dicts(
-    profile_dicts: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    """Apply the schemefree ``profiles_to_json`` normalization in memory.
-
-    Equivalence is locked by ``test_typing_serialization_round_trip``.
-    """
-    normalized: list[dict[str, object]] = []
-    for profile in profile_dicts:
-        profile_copy = dict(profile)
-        calls_map = profile_copy.get("profile")
-        if isinstance(calls_map, dict):
-            profile_copy["profile"] = {
-                locus: _normalize_allele_call(locus, call)
-                for locus, call in calls_map.items()
-            }
-        normalized.append(profile_copy)
-    return normalized
-
-
-def _run_schemefree_typing(
-    samples: list[Path],
-    hash_strategy: str,
-    fmt: str,
-    output: Path | None,
-    no_header: bool,
-    save_scheme_path: Path | None,
-    load_scheme_path: Path | None,
-    show_stats: bool,
-    max_workers: int | None,
-    threads: int | None,
-    assemble_timeout: float | None,
-    error_report_path: Path | None,
-    fail_on_error: bool,
-    summary_report_path: Path | None,
-) -> int:
-    config = SchemaFreeConfig()
-    config.hash.strategy = hash_strategy
-    if max_workers is None and threads is not None:
-        max_workers = threads
-    if max_workers is not None:
-        config.assembly.max_parallel_samples = max_workers
-    if threads is not None:
-        config.clustering.threads = str(threads)
-    if assemble_timeout is not None:
-        config.assembly.assemble_timeout_sec = assemble_timeout
-    typer = SchemeFreeTyper(config)
-
-    if load_scheme_path:
-        try:
-            typer.load_scheme(load_scheme_path)
-        except Exception as exc:
-            err_console.print(
-                f"[red]Error:[/red] Failed to load scheme from "
-                f"'{load_scheme_path}': {exc}"
-            )
-            sys.exit(1)
-
-    profiles = typer.type_sample_files(samples)
-
-    if save_scheme_path:
-        typer.export_scheme(save_scheme_path)
-
-    if fmt == "pretty":
-        output_text = "\n".join(f"{p.sample_id}: {p.loci_count} loci" for p in profiles)
-    else:
-        profile_dicts = [p.to_dict() for p in profiles]
-        if fmt == "json":
-            # Wrap at the CLI boundary: schemefree io_handler stays a pure engine.
-            output_text = json.dumps(
-                {
-                    "schema_version": TGMLST_PROFILES_V1,
-                    "data": _normalize_profile_dicts(profile_dicts),
-                },
-                indent=2,
-            )
-        else:
-            output_text = profiles_to_tsv(profile_dicts, include_header=not no_header)
-
-    wrote_file = emit_output_text(output_text, output)
-    if wrote_file and output is not None:
-        status_console.print(f"Results written to [cyan]{output}[/cyan]")
-
-    if error_report_path:
-        write_error_report_json(error_report_path, typer.last_run_errors)
-        status_console.print(
-            f"Schemefree errors written to [cyan]{error_report_path}[/cyan]"
-        )
-
-    if typer.last_run_errors:
-        failed_count = len(typer.last_run_errors)
-        status_console.print(
-            f"[yellow]Schemefree warning:[/yellow] {failed_count} sample(s) failed."
-        )
-
-    if show_stats:
-        # Stats go to stderr so stdout carries exactly one parseable document.
-        stats_envelope = {
-            "schema_version": TGMLST_STATS_V1,
-            "data": typer.last_run_stats,
-        }
-        click.echo(json.dumps(stats_envelope, indent=2), err=True)
-
-    exit_code, exit_reason, primary_failed_stage = schemefree_exit_decision(
-        success_count=len(profiles),
-        failed_count=len(typer.last_run_errors),
-        errors=typer.last_run_errors,
-        fail_on_error=fail_on_error,
-    )
-
-    if summary_report_path:
-        summary_payload = {
-            **typer.last_run_stats,
-            "exit_code": exit_code,
-            "exit_reason": exit_reason,
-            "primary_failed_stage": primary_failed_stage,
-            "failed_by_stage": count_errors_by_stage(typer.last_run_errors),
-        }
-        write_summary_report_json(summary_report_path, summary_payload)
-        status_console.print(
-            f"Schemefree summary written to [cyan]{summary_report_path}[/cyan]"
-        )
-
-    return exit_code
 
 
 def _format_st_for_tsv(result: STResult) -> str:

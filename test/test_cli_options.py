@@ -410,7 +410,7 @@ def test_typing_tgmlst_threads_option_passes_to_schemefree(
         return 0
 
     monkeypatch.setattr(
-        "gmlst.commands.typing._run_schemefree_typing", _fake_schemefree
+        "gmlst.commands.typing_schemefree._run_schemefree_typing", _fake_schemefree
     )
 
     runner = CliRunner()
@@ -423,7 +423,7 @@ def test_typing_tgmlst_threads_option_passes_to_schemefree(
 def test_run_schemefree_typing_threads_drive_default_max_workers(
     monkeypatch, tmp_path: Path
 ) -> None:
-    from gmlst.commands import typing as typing_cmd
+    from gmlst.commands import typing_schemefree as typing_cmd
 
     sample = tmp_path / "sample.fna"
     sample.write_text(">s\nATGC\n")
@@ -475,7 +475,7 @@ def test_run_schemefree_typing_threads_drive_default_max_workers(
 def test_run_schemefree_typing_max_workers_overrides_threads_worker_count(
     monkeypatch, tmp_path: Path
 ) -> None:
-    from gmlst.commands import typing as typing_cmd
+    from gmlst.commands import typing_schemefree as typing_cmd
 
     sample = tmp_path / "sample.fna"
     sample.write_text(">s\nATGC\n")

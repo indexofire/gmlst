@@ -119,8 +119,10 @@ def test_typing_tgmlst_stats_goes_to_stderr_not_stdout(
         def export_scheme(self, _path):
             return None
 
-    monkeypatch.setattr("gmlst.commands.typing.SchemeFreeTyper", _FakeTyper)
-    monkeypatch.setattr("gmlst.commands.typing._normalize_profile_dicts", lambda _p: [])
+    monkeypatch.setattr("gmlst.commands.typing_schemefree.SchemeFreeTyper", _FakeTyper)
+    monkeypatch.setattr(
+        "gmlst.commands.typing_schemefree._normalize_profile_dicts", lambda _p: []
+    )
 
     runner = CliRunner()
     result = runner.invoke(
