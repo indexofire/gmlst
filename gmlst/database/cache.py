@@ -580,6 +580,7 @@ class DatabaseCache:
         provider: str,
         schemes: list[dict[str, Any]],
         owners: dict[str, str],
+        retired: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         """Rename schemes whose names collide with higher-priority providers.
 
@@ -600,7 +601,8 @@ class DatabaseCache:
                     existing_max_suffix.get(base, 0), int(suffix_str)
                 )
 
-        taken = set(owners)
+        current = {s["scheme_name"] for s in schemes}
+        taken = set(owners) | ((retired or set()) - current)
         for scheme in schemes:
             name = scheme["scheme_name"]
             if name not in taken:
@@ -673,28 +675,104 @@ class DatabaseCache:
         self._heal_cross_provider_collisions(provider, schemes)
         return schemes
 
+    @staticmethod
+    def _scheme_identity_keys(schemes: list[dict[str, Any]]) -> list[str]:
+        """Stable upstream identity per scheme, used to keep names sticky.
+
+        BIGSdb schemes are keyed by scheme URL, Enterobase by directory,
+        others by type + display name (falling back to organism + loci).
+        Repeated keys within one listing get an occurrence suffix.
+        """
+        keys: list[str] = []
+        seen: dict[str, int] = defaultdict(int)
+        for scheme in schemes:
+            extra = scheme.get("extra") or {}
+            raw = (
+                extra.get("scheme_url")
+                or extra.get("directory")
+                or (
+                    f"{scheme.get('scheme_type', '')}:{scheme['display_name']}"
+                    if scheme.get("display_name")
+                    else f"{scheme.get('scheme_type', '')}:"
+                    f"{scheme.get('organism', '')}:{scheme.get('n_loci', '')}"
+                )
+            )
+            seen[raw] += 1
+            keys.append(raw if seen[raw] == 1 else f"{raw}#{seen[raw]}")
+        return keys
+
+    def _load_name_history(self, provider: str) -> dict[str, str] | None:
+        """Identity -> name map from the current catalog, or None if absent.
+
+        Catalogs written before histories existed seed it from their
+        current scheme names so upgrading does not renumber anything.
+        """
+        path = self._catalog_path(provider)
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            return None
+        history = dict(data.get("name_history") or {})
+        schemes = data.get("schemes", [])
+        for key, scheme in zip(
+            self._scheme_identity_keys(schemes), schemes, strict=True
+        ):
+            name = scheme.get("scheme_name")
+            if name:
+                history.setdefault(key, name)
+        return history
+
+    @staticmethod
+    def _next_free_name(base: str, taken: set[str]) -> str:
+        highest = 0
+        for name in taken:
+            head, _, suffix = name.rpartition("_")
+            if head == base and suffix.isdigit():
+                highest = max(highest, int(suffix))
+        return f"{base}_{highest + 1}"
+
     def _normalize_scheme_names(
-        self, schemes: list[dict[str, Any]]
+        self,
+        schemes: list[dict[str, Any]],
+        history: dict[str, str] | None = None,
+        reserved: set[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """Normalize scheme names to short format (e.g., 'lmonocytogenes_1')."""
+        """Assign short names (e.g. 'lmonocytogenes_1').
+
+        Without *history* (first save) names follow organism grouping and
+        listing order. With history, known schemes keep their names and
+        only new ones are numbered after every name ever used here or in
+        *reserved* (other providers' names), so names never shift or get
+        recycled onto different data.
+        """
         from gmlst.database.providers.base import generate_scheme_base_name
 
-        # Group schemes by their base organism
-        organism_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        keys = self._scheme_identity_keys(schemes)
+        if history is None:
+            organism_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+            for scheme in schemes:
+                organism_groups[scheme.get("organism", "")].append(scheme)
+            name_counters: dict[str, int] = defaultdict(int)
+            for organism, group_schemes in organism_groups.items():
+                base_name = generate_scheme_base_name(organism)
+                for scheme in group_schemes:
+                    name_counters[base_name] += 1
+                    scheme["scheme_name"] = f"{base_name}_{name_counters[base_name]}"
+            return schemes
 
-        for scheme in schemes:
-            organism = scheme.get("organism", "")
-            organism_groups[organism].append(scheme)
-
-        # Reassign scheme names with short format
-        name_counters: dict[str, int] = defaultdict(int)
-        for organism, group_schemes in organism_groups.items():
-            base_name = generate_scheme_base_name(organism)
-
-            for scheme in group_schemes:
-                name_counters[base_name] += 1
-                scheme["scheme_name"] = f"{base_name}_{name_counters[base_name]}"
-
+        taken = set(history.values()) | (reserved or set())
+        for key, scheme in zip(keys, schemes, strict=True):
+            known = history.get(key)
+            if known:
+                scheme["scheme_name"] = known
+                continue
+            name = self._next_free_name(
+                generate_scheme_base_name(scheme.get("organism", "")), taken
+            )
+            scheme["scheme_name"] = name
+            taken.add(name)
         return schemes
 
     def _copy_default_catalog(self, provider: str) -> bool:
@@ -747,14 +825,25 @@ class DatabaseCache:
                     provider,
                 )
 
-        # First, normalize names within this provider's schemes
-        schemes = self._normalize_scheme_names(schemes)
+        history = self._load_name_history(provider)
+        owners = self._get_existing_scheme_owners(exclude_provider=provider)
+        schemes = self._normalize_scheme_names(schemes, history, set(owners))
 
         # Rename only genuine cross-provider conflicts; every other name
         # keeps its identity (stability first).
-        owners = self._get_existing_scheme_owners(exclude_provider=provider)
         if owners:
-            schemes = self._resolve_cross_provider_conflicts(provider, schemes, owners)
+            schemes = self._resolve_cross_provider_conflicts(
+                provider, schemes, owners, retired=set((history or {}).values())
+            )
+
+        name_history = dict(history or {})
+        name_history.update(
+            zip(
+                self._scheme_identity_keys(schemes),
+                (s["scheme_name"] for s in schemes),
+                strict=True,
+            )
+        )
 
         path = self._catalog_path(provider)
         # Determine scheme_type from schemes (use first one or 'mixed')
@@ -767,6 +856,7 @@ class DatabaseCache:
             "updated_at": utc_now_iso(),
             "count": len(schemes),
             "schemes": schemes,
+            "name_history": name_history,
         }
         atomic_write_text(path, json.dumps(payload, indent=2))
         logger.info("Saved catalog: %s (%d schemes)", path, len(schemes))
