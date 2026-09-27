@@ -32,6 +32,10 @@ jobs:
         ruff check gmlst/
         ruff format --check gmlst/
 
+    - name: Type check with pyright
+      run: |
+        pyright gmlst/
+
     - name: Test with pytest
       run: |
         pytest -v

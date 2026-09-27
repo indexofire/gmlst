@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import sys
@@ -983,7 +984,8 @@ def _run_guess_typing(
         err_console.print("[red]Error:[/red] no samples resolved to a scheme.")
         return 1
 
-    engine_kwargs: dict[str, object] = dict(
+    run_route = functools.partial(
+        _run_mlst_like_typing,
         mode=mode,
         backend=backend,
         cgmlst_mode=cgmlst_mode,
@@ -1013,12 +1015,11 @@ def _run_guess_typing(
     for route in plan.routes:
         status_console.print(f"[guess] {route.scheme}: {len(route.samples)} sample(s)")
         sink: list = []
-        _run_mlst_like_typing(
+        run_route(
             samples=tuple(route.samples),
             scheme=route.scheme,
             provider=route.provider,
             result_sink=sink,
-            **engine_kwargs,
         )
         results_by_scheme[route.scheme] = sink
         route_order.append(route.scheme)

@@ -18,7 +18,7 @@ test-v = "pytest -v"
 install-dev = "pip install -e ."
 visual-ui-build = "npm --prefix gmlst/web/frontend run build"
 internal-docs-check = "python scripts/validation/validate_internal_docs.py"
-typecheck = "pyright gmlst/ test/ || true"
+typecheck = "pyright gmlst/"
 docs-build = "mkdocs build"
 docs-serve = "mkdocs serve"
 
