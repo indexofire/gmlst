@@ -214,6 +214,7 @@ gmlst/
 │   ├── typing.py         #   typing command group (mlst/cgmlst)
 │   ├── typing_schemefree.py # tgmlst command + runner
 │   ├── typing_guess_run.py  # --guess mixed-species runner
+│   ├── typing_options.py #   TypingOptions: settings shared across --guess routes
 │   ├── scheme.py         #   scheme command group (facade)
 │   ├── scheme_common.py  #   scheme shared helpers + constants
 │   ├── scheme_render.py  #   scheme table/text rendering

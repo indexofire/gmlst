@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import functools
 from pathlib import Path
 
 from gmlst.commands.common import err_console, status_console
+from gmlst.commands.typing_options import TypingOptions
 from gmlst.commands.typing_output import emit_final_typing_output
 from gmlst.core import species_id
 
@@ -86,8 +86,7 @@ def _run_guess_typing(
         err_console.print("[red]Error:[/red] no samples resolved to a scheme.")
         return 1
 
-    run_route = functools.partial(
-        typing_cmd._run_mlst_like_typing,
+    options = TypingOptions(
         mode=mode,
         backend=backend,
         cgmlst_mode=cgmlst_mode,
@@ -97,19 +96,14 @@ def _run_guess_typing(
         min_join_overlap=min_join_overlap,
         minscore=minscore,
         fmt=fmt,
-        output=None,
         cache_dir=cache_dir,
         force_reindex=force_reindex,
         no_header=no_header,
         threads=threads,
         max_workers=max_workers,
         count_same_copy=count_same_copy,
-        novel_allele=False,
-        novel_profile=False,
-        output_dir=None,
         quiet=quiet,
         detail=detail,
-        suppress_output=True,
     )
 
     results_by_scheme: dict[str, list] = {}
@@ -117,7 +111,7 @@ def _run_guess_typing(
     for route in plan.routes:
         status_console.print(f"[guess] {route.scheme}: {len(route.samples)} sample(s)")
         sink: list = []
-        run_route(
+        options.run_scheme(
             samples=tuple(route.samples),
             scheme=route.scheme,
             provider=route.provider,
