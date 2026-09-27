@@ -47,6 +47,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.4",
     "pyright>=1.1.409",
+    "pytest-cov>=5",
 ]
 
 [project.scripts]
@@ -88,3 +89,13 @@ indent-style = "space"
 [tool.pytest.ini_options]
 testpaths = ["test"]
 addopts = "-v"
+
+[tool.coverage.run]
+source = ["gmlst"]
+branch = false
+
+[tool.coverage.report]
+# Floor just under the measured baseline (84% at v0.5.2) so real
+# regressions fail CI without flaking on small refactors.
+fail_under = 80
+skip_covered = true

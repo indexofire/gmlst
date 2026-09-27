@@ -36,9 +36,9 @@ jobs:
       run: |
         pyright gmlst/
 
-    - name: Test with pytest
+    - name: Test with pytest (coverage)
       run: |
-        pytest -v
+        pytest -v --cov=gmlst --cov-report=term
 
   frontend:
     runs-on: ubuntu-latest
