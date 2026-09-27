@@ -211,18 +211,24 @@ gmlst/
 │   ├── gene_predictor.py #   Prodigal/pyrodigal gene prediction
 │   └── ...               #   Adapters, config, types, sequences
 ├── commands/             # CLI command implementations
-│   ├── typing.py         #   typing command group
+│   ├── typing.py         #   typing command group (mlst/cgmlst)
+│   ├── typing_schemefree.py # tgmlst command + runner
+│   ├── typing_guess_run.py  # --guess mixed-species runner
 │   ├── scheme.py         #   scheme command group (facade)
 │   ├── scheme_common.py  #   scheme shared helpers + constants
 │   ├── scheme_render.py  #   scheme table/text rendering
 │   ├── scheme_custom.py  #   scheme create / update-custom commands
+│   ├── scheme_update.py  #   scheme update command
+│   ├── scheme_fingerprints.py # scheme update-fingerprints command
 │   ├── utils.py          #   utils command group (facade)
 │   ├── utils_extract.py  #   extract / novel allele logic
 │   ├── utils_benchmark.py #  benchmark engine + cgmlst gate
 │   ├── config.py         #   config command group
 │   └── ...
 ├── visual/               # Flask web visualization
-│   ├── app.py            #   Flask API routes + helpers
+│   ├── app.py            #   Flask app factory + security hooks
+│   ├── api_routes.py     #   /api/* Blueprint
+│   ├── _api_helpers.py   #   request parsing + clustering helpers
 │   ├── cli.py            #   visual CLI subcommands
 │   ├── _cli_helpers.py   #   shared I/O + formatting helpers
 │   ├── _cli_export.py    #   export payload dispatcher

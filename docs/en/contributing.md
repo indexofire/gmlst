@@ -106,8 +106,8 @@ Useful starting points by task:
 | Contribution target | Start here |
 | --- | --- |
 | Top-level CLI registration | `gmlst/cli.py` |
-| Typing commands | `gmlst/commands/typing.py` |
-| Scheme commands | `gmlst/commands/scheme.py` |
+| Typing commands | `gmlst/commands/typing.py` (tgmlst: `typing_schemefree.py`, `--guess`: `typing_guess_run.py`) |
+| Scheme commands | `gmlst/commands/scheme.py` (`update`: `scheme_update.py`, `update-fingerprints`: `scheme_fingerprints.py`) |
 | Utility commands | `gmlst/commands/utils.py` |
 | Visual commands | `gmlst/visual/cli.py` |
 | Backend protocol | `gmlst/aligners/base.py` |
@@ -498,7 +498,8 @@ Useful docs to cross-reference:
 The visualization feature combines Flask and Vue.
 
 - command entry: `gmlst/visual/cli.py`
-- Flask app: `gmlst/visual/app.py`
+- Flask app: `gmlst/visual/app.py` (factory + security hooks)
+- JSON API: `gmlst/visual/api_routes.py` (Blueprint), helpers in `gmlst/visual/_api_helpers.py`
 - MST logic: `gmlst/visual/mst.py`
 - frontend source: `gmlst/web/frontend/`
 - built assets: `gmlst/web/static/visual/dist/`

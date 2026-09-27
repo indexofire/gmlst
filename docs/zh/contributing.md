@@ -106,8 +106,8 @@ docs/                  # 用户和开发者文档
 | 贡献目标 | 入口文件 |
 | --- | --- |
 | 顶层 CLI 注册 | `gmlst/cli.py` |
-| typing 命令 | `gmlst/commands/typing.py` |
-| scheme 命令 | `gmlst/commands/scheme.py` |
+| typing 命令 | `gmlst/commands/typing.py`（tgmlst：`typing_schemefree.py`，`--guess`：`typing_guess_run.py`） |
+| scheme 命令 | `gmlst/commands/scheme.py`（`update`：`scheme_update.py`，`update-fingerprints`：`scheme_fingerprints.py`） |
 | utils 命令 | `gmlst/commands/utils.py` |
 | visual 命令 | `gmlst/visual/cli.py` |
 | 后端协议 | `gmlst/aligners/base.py` |
@@ -498,7 +498,8 @@ pixi run gmlst visual --help
 可视化功能由 Flask 和 Vue 共同组成：
 
 - 命令入口：`gmlst/visual/cli.py`
-- Flask app：`gmlst/visual/app.py`
+- Flask app：`gmlst/visual/app.py`（工厂 + 安全钩子）
+- JSON API：`gmlst/visual/api_routes.py`（Blueprint），辅助函数在 `gmlst/visual/_api_helpers.py`
 - MST 逻辑：`gmlst/visual/mst.py`
 - 前端源码：`gmlst/web/frontend/`
 - 构建产物：`gmlst/web/static/visual/dist/`
