@@ -265,6 +265,7 @@ def build_fingerprints_with_progress(
     cache: DatabaseCache,
     *,
     organisms: set[str] | None = None,
+    exclude: set[str] | None = None,
     max_connections: int | None = None,
 ) -> tuple[dict, dict[str, int]]:
     """Build species fingerprints behind a stderr progress bar.
@@ -296,6 +297,7 @@ def build_fingerprints_with_progress(
         payload = build_fingerprints(
             cache,
             organisms=organisms,
+            exclude=exclude,
             max_connections=max_connections,
             progress_cb=on_event,
         )

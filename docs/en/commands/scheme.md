@@ -94,6 +94,9 @@ gmlst scheme update-fingerprints [-y] [-x N]
 
 # Build for specific organisms only
 gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
+
+# Add only organisms missing from the current database
+gmlst scheme update-fingerprints --missing-only
 ```
 
 ### Options
@@ -103,6 +106,7 @@ gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
 | `-y, --yes` | Skip confirmation when overwriting existing database. | `False` |
 | `-o, --organisms TEXT` | Comma-separated organisms (substring match). | all |
 | `-x, --connections INTEGER` | Concurrent downloads per scheme. Lower = gentler. | `4` |
+| `--missing-only` | Build only organisms absent from the existing database (local, else bundled) and merge them in; no overwrite prompt. | `False` |
 | `--cache-dir PATH` | Override cache directory. | auto |
 
 ### How it works

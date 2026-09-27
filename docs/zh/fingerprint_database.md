@@ -67,6 +67,7 @@
 ```bash
 gmlst scheme update-fingerprints -y [-x N]
 gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
+gmlst scheme update-fingerprints --missing-only  # 仅补充缺失物种，保留已有条目
 ```
 
 ### 注意事项

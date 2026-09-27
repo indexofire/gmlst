@@ -626,6 +626,118 @@ def test_scheme_update_fingerprints_confirm_declined(
     )
 
 
+def test_scheme_update_fingerprints_missing_only_builds_only_new(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import zlib as _z
+
+    allele_file = tmp_path / "alleles" / "src.tfa"
+    allele_file.parent.mkdir(parents=True)
+    allele_file.write_text(f">tst_1\n{_SPECIES_SEQ}\n")
+    existing = {
+        "version": 1,
+        "k": FINGERPRINT_K,
+        "sample_rate": FINGERPRINT_SAMPLE_RATE,
+        "fingerprints": [
+            {"organism": "Oldus oldus", "hashes": [1], "source_scheme": "old_1"}
+        ],
+    }
+    fingerprints = tmp_path / "species_fingerprints.json.gz"
+    fingerprints.write_bytes(_z.compress(json.dumps(existing).encode()))
+
+    def _load_catalog(self, provider: str):
+        if provider != "pubmlst":
+            return []
+        return [
+            {
+                "scheme_name": name,
+                "organism": organism,
+                "scheme_type": "mlst",
+                "n_loci": 1,
+                "provider": "pubmlst",
+            }
+            for name, organism in (("old_1", "Oldus oldus"), ("tst_1", "Testus testus"))
+        ]
+
+    downloaded: list[str] = []
+
+    def _ensure(self, name, **_kwargs):
+        downloaded.append(name)
+        return Scheme(name=name, loci=["tst"], allele_files={"tst": allele_file})
+
+    monkeypatch.setattr(DatabaseCache, "load_catalog", _load_catalog)
+    monkeypatch.setattr(
+        DatabaseCache, "is_downloaded", lambda self, name, provider: False
+    )
+    monkeypatch.setattr(DatabaseCache, "ensure_scheme", _ensure)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "scheme",
+            "update-fingerprints",
+            "--missing-only",
+            "--cache-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert downloaded == ["tst_1"]
+    payload = json.loads(_z.decompress(fingerprints.read_bytes()))
+    assert [f["organism"] for f in payload["fingerprints"]] == [
+        "Oldus oldus",
+        "Testus testus",
+    ]
+    assert payload["fingerprints"][0]["hashes"] == [1]
+
+
+def test_scheme_update_fingerprints_missing_only_nothing_to_do(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import zlib as _z
+
+    existing = {
+        "version": 1,
+        "k": FINGERPRINT_K,
+        "sample_rate": FINGERPRINT_SAMPLE_RATE,
+        "fingerprints": [{"organism": "Testus testus", "hashes": [1]}],
+    }
+    fingerprints = tmp_path / "species_fingerprints.json.gz"
+    fingerprints.write_bytes(_z.compress(json.dumps(existing).encode()))
+    monkeypatch.setattr(
+        DatabaseCache,
+        "load_catalog",
+        lambda self, provider: (
+            [
+                {
+                    "scheme_name": "tst_1",
+                    "organism": "Testus testus",
+                    "scheme_type": "mlst",
+                    "n_loci": 1,
+                    "provider": "pubmlst",
+                }
+            ]
+            if provider == "pubmlst"
+            else []
+        ),
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "scheme",
+            "update-fingerprints",
+            "--missing-only",
+            "--cache-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "already has a fingerprint" in result.output
+
+
 def test_scheme_update_fingerprints_help_lists_options() -> None:
     result = CliRunner().invoke(main, ["scheme", "update-fingerprints", "--help"])
 

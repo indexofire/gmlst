@@ -17,6 +17,7 @@ from gmlst.core.species_id import (
     fingerprints_path,
     is_unique_detection,
     load_fingerprints,
+    merge_fingerprints,
     save_fingerprints,
     schemes_for_organism,
     sketch_fasta_sample,
@@ -587,3 +588,79 @@ def test_select_source_scheme_prefers_seven_loci_classic() -> None:
     picked = _select_source_scheme(rows)
     assert picked is not None
     assert picked["scheme_name"] == "bpertussis_1"
+
+
+# ---------------------------------------------------------------------------
+# incremental builds (--missing-only)
+# ---------------------------------------------------------------------------
+
+
+def _two_organism_cache(tmp_path: Path) -> _FakeDownloadCache:
+    return _FakeDownloadCache(
+        {
+            "pubmlst": [
+                {
+                    "scheme_name": "alpha_1",
+                    "organism": "Alpha one",
+                    "scheme_type": "mlst",
+                    "n_loci": 7,
+                    "provider": "pubmlst",
+                },
+                {
+                    "scheme_name": "beta_1",
+                    "organism": "Beta two",
+                    "scheme_type": "mlst",
+                    "n_loci": 7,
+                    "provider": "pubmlst",
+                },
+            ]
+        },
+        tmp_path,
+    )
+
+
+def test_build_fingerprints_exclude_skips_without_download(tmp_path: Path) -> None:
+    cache = _two_organism_cache(tmp_path)
+
+    payload = build_fingerprints(cache, exclude={"alpha ONE"})
+
+    assert [f["organism"] for f in payload["fingerprints"]] == ["Beta two"]
+    assert cache.downloaded == [("beta_1", "pubmlst")]
+
+
+def test_merge_fingerprints_keeps_base_and_adds_new() -> None:
+    base = {
+        "version": 1,
+        "k": FINGERPRINT_K,
+        "sample_rate": FINGERPRINT_SAMPLE_RATE,
+        "fingerprints": [{"organism": "Alpha one", "hashes": [1]}],
+    }
+    new = {
+        "version": 1,
+        "k": FINGERPRINT_K,
+        "sample_rate": FINGERPRINT_SAMPLE_RATE,
+        "fingerprints": [
+            {"organism": "alpha one", "hashes": [9]},
+            {"organism": "Beta two", "hashes": [2]},
+        ],
+    }
+
+    merged = merge_fingerprints(base, new)
+
+    assert [(f["organism"], f["hashes"]) for f in merged["fingerprints"]] == [
+        ("Alpha one", [1]),
+        ("Beta two", [2]),
+    ]
+
+
+def test_merge_fingerprints_rejects_incompatible_sketch_params() -> None:
+    base = {"version": 1, "k": FINGERPRINT_K + 1, "sample_rate": 1, "fingerprints": []}
+    new = {
+        "version": 1,
+        "k": FINGERPRINT_K,
+        "sample_rate": FINGERPRINT_SAMPLE_RATE,
+        "fingerprints": [],
+    }
+
+    with pytest.raises(ValueError, match="sketch parameters"):
+        merge_fingerprints(base, new)

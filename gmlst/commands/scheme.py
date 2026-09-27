@@ -928,11 +928,20 @@ def cmd_update(
     show_default=True,
     help="Maximum concurrent downloads for scheme downloads.",
 )
+@click.option(
+    "--missing-only",
+    is_flag=True,
+    help=(
+        "Only build organisms absent from the existing database (local, or "
+        "the bundled one) and merge them in; existing entries are kept."
+    ),
+)
 @cache_dir_option
 def cmd_update_fingerprints(
     yes: bool,
     organisms: str | None,
     connections: int,
+    missing_only: bool,
     cache_dir: Path | None,
 ) -> None:
     """Build the local species fingerprint database for auto-detection.
@@ -946,6 +955,12 @@ def cmd_update_fingerprints(
     selected: set[str] | None = None
     if organisms:
         selected = {item.strip() for item in organisms.split(",") if item.strip()}
+
+    if missing_only:
+        _update_missing_fingerprints(
+            cache, fingerprints_file, selected=selected, connections=connections
+        )
+        return
 
     if (
         fingerprints_file.exists()
@@ -978,6 +993,57 @@ def cmd_update_fingerprints(
     status_console.print(
         f"[green]Done.[/green] Organisms sketched: {counts['sketch']}; "
         f"schemes downloaded: {counts['download']}; skipped: {skipped}"
+    )
+    status_console.print(f"Fingerprints written to [cyan]{fingerprints_file}[/cyan]")
+
+
+def _update_missing_fingerprints(
+    cache: DatabaseCache,
+    fingerprints_file: Path,
+    *,
+    selected: set[str] | None,
+    connections: int,
+) -> None:
+    """Sketch only organisms missing from the current database, then merge."""
+    base_file = (
+        fingerprints_file
+        if fingerprints_file.exists()
+        else species_id.bundled_fingerprints_path()
+    )
+    if base_file is None:
+        base: dict = {
+            "version": 1,
+            "k": species_id.FINGERPRINT_K,
+            "sample_rate": species_id.FINGERPRINT_SAMPLE_RATE,
+            "fingerprints": [],
+        }
+    else:
+        base = species_id.load_fingerprints(base_file)
+    known = {str(f.get("organism", "")) for f in base.get("fingerprints", [])}
+
+    status_console.print(
+        f"Building missing fingerprints ({len(known)} organisms already present) ..."
+    )
+    payload, counts = build_fingerprints_with_progress(
+        cache, organisms=selected, exclude=known, max_connections=connections
+    )
+    if counts["sketch"] == 0:
+        status_console.print(
+            "[green]Done.[/green] Every catalog organism already has a fingerprint"
+            + (f"; skipped: {counts['skip']}" if counts["skip"] else "")
+            + "."
+        )
+        return
+    try:
+        merged = species_id.merge_fingerprints(base, payload)
+    except ValueError as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        err_console.print("Rebuild the full database without --missing-only.")
+        sys.exit(1)
+    species_id.save_fingerprints(merged, fingerprints_file)
+    status_console.print(
+        f"[green]Done.[/green] Organisms added: {counts['sketch']}; "
+        f"schemes downloaded: {counts['download']}; skipped: {counts['skip']}"
     )
     status_console.print(f"Fingerprints written to [cyan]{fingerprints_file}[/cyan]")
 

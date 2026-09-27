@@ -261,6 +261,9 @@ gmlst scheme update-fingerprints [-y] [-x N]
 
 # 只构建指定物种
 gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
+
+# 仅补充当前数据库缺失的物种
+gmlst scheme update-fingerprints --missing-only
 ```
 
 ### 选项
@@ -270,6 +273,7 @@ gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
 | `-y, --yes` | 跳过覆盖确认 | `False` |
 | `-o, --organisms TEXT` | 逗号分隔的物种名（子串匹配） | 全部 |
 | `-x, --connections INTEGER` | 每个方案的并发下载数 | `4` |
+| `--missing-only` | 仅构建现有数据库（本地，否则随包）中缺失的物种并合并；不提示覆盖 | `False` |
 | `--cache-dir PATH` | 覆盖缓存目录 | 自动 |
 
 ### 工作原理

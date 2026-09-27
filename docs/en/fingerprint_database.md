@@ -70,6 +70,9 @@ gmlst scheme update-fingerprints -y [-x N]
 
 # Specific organisms only
 gmlst scheme update-fingerprints -o "Bordetella pertussis,Staphylococcus aureus"
+
+# Add only organisms missing from the current database (keeps existing entries)
+gmlst scheme update-fingerprints --missing-only
 ```
 
 ### Notes

@@ -197,14 +197,46 @@ def load_fingerprints(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
 
 
+def merge_fingerprints(base: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
+    """Return *base* plus organisms from *new* that *base* lacks.
+
+    Existing entries win (case-insensitive organism match). Raises
+    ValueError when the two payloads were sketched with different
+    k-mer size or sample rate, since their hashes are not comparable.
+    """
+    params = ("k", "sample_rate")
+    if any(base.get(key) != new.get(key) for key in params):
+        raise ValueError(
+            "Cannot merge fingerprints with different sketch parameters: "
+            f"existing k={base.get('k')}, sample_rate={base.get('sample_rate')}; "
+            f"new k={new.get('k')}, sample_rate={new.get('sample_rate')}"
+        )
+    existing = list(base.get("fingerprints", []))
+    known = {str(f.get("organism", "")).lower() for f in existing}
+    added = [
+        f
+        for f in new.get("fingerprints", [])
+        if str(f.get("organism", "")).lower() not in known
+    ]
+    merged = dict(base)
+    merged["fingerprints"] = sorted(
+        existing + added, key=lambda f: str(f.get("organism", "")).lower()
+    )
+    return merged
+
+
 def build_fingerprints(
     cache: DatabaseCache,
     *,
     organisms: set[str] | None = None,
+    exclude: set[str] | None = None,
     max_connections: int | None = None,
     progress_cb: ProgressCb | None = None,
 ) -> dict[str, Any]:
     """Build one fingerprint per catalog organism.
+
+    Organisms in *exclude* (case-insensitive, canonical names) are skipped
+    before any download, which lets callers build only missing entries.
 
     Each organism is sketched from its smallest MLST-type scheme (falling
     back to its smallest cgMLST scheme for cgMLST-only species); the
@@ -219,6 +251,9 @@ def build_fingerprints(
             progress_cb(event, detail)
 
     groups = _catalog_schemes_by_organism(cache, organisms)
+    if exclude:
+        skip = {o.strip().lower() for o in exclude}
+        groups = {o: rows for o, rows in groups.items() if o.lower() not in skip}
     emit("total", str(len(groups)))
 
     from gmlst.database.scheme_prefs import load_scheme_preferences
