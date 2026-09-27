@@ -13,7 +13,6 @@ readers) and driven through the adapter layer in
 
 from __future__ import annotations
 
-import os
 import shutil
 import time
 from collections.abc import Callable
@@ -23,6 +22,7 @@ from pathlib import Path
 from gmlst.aligners.base import AlignmentResult
 from gmlst.calling.allele import LocusCall
 from gmlst.core.types import CgmlstModeOverrides
+from gmlst.core_config import candidate_max_alleles_per_locus
 from gmlst.database.cache import DatabaseCache
 from gmlst.readers.sample import SampleInput
 from gmlst.utils import temp_dir
@@ -657,7 +657,7 @@ def _refine_capped_non_exact_loci(
     missing) and re-aligns them against the complete allele database.
     Updates locus_calls in place.
     """
-    candidate_max = int(os.getenv("GMLST_CGMLST_CANDIDATE_MAX_ALLELES", "0"))
+    candidate_max = candidate_max_alleles_per_locus()
     if candidate_max <= 0 or backend != "minimap2":
         return
 

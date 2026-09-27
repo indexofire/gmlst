@@ -413,7 +413,6 @@ gmlst scheme export -s custom_1 --format grapetree -o mst.tsv
 
 - `GMLST_CACHE_DIR`，覆盖缓存根目录（默认从 conda/venv 自动检测）
 - `GMLST_TMPDIR`，覆盖临时目录
-- `GMLST_MINIMAP2_KMER_ENGINE`，可选 `python`、`kmc`、`auto`
 - 各种 provider URL 覆盖变量，例如 `GMLST_PUBMLST_BASE_URL`
 
 示例：
@@ -421,7 +420,6 @@ gmlst scheme export -s custom_1 --format grapetree -o mst.tsv
 ```bash
 export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 export GMLST_TMPDIR="$PWD/.tmp/gmlst"
-export GMLST_MINIMAP2_KMER_ENGINE=auto
 ```
 
 ### 临时文件写到哪里？

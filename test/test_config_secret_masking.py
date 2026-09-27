@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import gmlst.commands.config as config_mod
+from gmlst import config_registry
 from gmlst.cli import main
 
 _SECRET = "test-key-1234567890abcdef"
@@ -94,7 +94,7 @@ def test_get_non_secret_stays_plaintext(monkeypatch: pytest.MonkeyPatch) -> None
 @pytest.fixture
 def env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "env.sh"
-    monkeypatch.setattr(config_mod, "_ENV_FILE_CANDIDATES", [path])
+    monkeypatch.setattr(config_registry, "ENV_FILE_CANDIDATES", [path])
     return path
 
 

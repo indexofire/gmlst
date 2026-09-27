@@ -49,7 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-gmlst = "gmlst.cli:main"
+gmlst = "gmlst._entry:main"
 
 [project.urls]
 Homepage = "https://github.com/indexofire/gmlst"

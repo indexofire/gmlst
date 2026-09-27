@@ -157,8 +157,6 @@ FASTQ 路径分两步。
 
 相关参数：
 
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto`，控制 k-mer 支持打分引擎。
-- `auto` 会在 KMC 可用时优先使用 KMC，否则退回内置 Python 打分器。
 - 如果系统安装了 `samtools`，定向验证阶段可以写出 BAM 临时文件。
 - `GMLST_TMPDIR` 用来控制临时文件目录。
 
@@ -259,14 +257,6 @@ gmlst typing cgmlst -s vparahaemolyticus_3 -b nucmer flagged_sample.fasta
 ```bash
 gmlst typing mlst -s saureus_1 -b kma reads/sample_R1.fastq.gz reads/sample_R2.fastq.gz
 ```
-
-### k-mer 支持打分
-
-对于 minimap2 FASTQ 分型，`GMLST_MINIMAP2_KMER_ENGINE` 控制打分引擎：
-
-- `python`，内置打分器
-- `kmc`，使用 KMC/KMC tools
-- `auto`，优先使用 KMC，否则回退 Python
 
 ### 定向验证
 

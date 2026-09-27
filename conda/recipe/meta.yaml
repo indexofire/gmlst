@@ -14,7 +14,7 @@ build:
   noarch: python
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vvv
   entry_points:
-    - gmlst = gmlst.cli:main
+    - gmlst = gmlst._entry:main
   run_exports:
     - {{ pin_subpackage('gmlst', max_pin="x.x") }}
 

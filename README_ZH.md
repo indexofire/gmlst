@@ -163,7 +163,6 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 - 对于 FASTQ cgMLST，CLI 采用 KMA-first 策略，chew 风格 cgMLST 模式主要面向 FASTA 场景。
 - FASTQ 输入会自动切换到 KMA 后端（`mlst` 和 `cgmlst` 均如此）。
 - `--max-depth` — 对 FASTQ 进行最大读深子采样（默认 100x，仅限 FASTQ）
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto` 可控制 minimap2 的 k-mer 支持评分引擎。
 
 ## 数据提供方
 
@@ -317,7 +316,6 @@ gmlst config get GMLST_CACHE_DIR --format json
 | --- | --- |
 | `GMLST_CACHE_DIR` | 覆盖缓存根目录（自动检测：conda 环境使用 `$CONDA_PREFIX/share/gmlst`，venv 使用 `$VIRTUAL_ENV/.cache/gmlst`，默认 `~/.cache/gmlst`） |
 | `GMLST_TMPDIR` | 覆盖分型与精修阶段使用的临时目录 |
-| `GMLST_MINIMAP2_KMER_ENGINE` | 选择 minimap2 的 k-mer 支持评分引擎，取值为 `python`、`kmc` 或 `auto` |
 | `GMLST_PUBMLST_BASE_URL` | 覆盖 PubMLST API 基础地址 |
 | `GMLST_PASTEUR_BASE_URL` | 覆盖 Pasteur BIGSdb API 基础地址 |
 | `GMLST_PRIVATE_BIGSDB_URL` | 注册私有 BIGSdb 实例为额外 provider |
@@ -332,7 +330,6 @@ gmlst config get GMLST_CACHE_DIR --format json
 ```bash
 export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
 export GMLST_TMPDIR="$PWD/.tmp/gmlst"
-export GMLST_MINIMAP2_KMER_ENGINE=auto
 export GMLST_PUBMLST_BASE_URL="https://rest.pubmlst.org/db"
 export GMLST_PASTEUR_BASE_URL="https://bigsdb.pasteur.fr/api/db"
 ```

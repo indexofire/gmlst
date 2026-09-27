@@ -118,7 +118,6 @@ gmlst typing cgmlst [OPTIONS] SAMPLES...
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | 控制二次精修阶段允许进入的缺失位点上限。 | `0` |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_BACKEND` | 为低置信度位点启用定向回退后端，可选 `none`、`blastn`、`kma`、`nucmer`。 | `none` |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI` | 限制进入回退确认阶段的位点数量。设为 `0` 表示不限。 | `300` |
-| `GMLST_MINIMAP2_KMER_ENGINE` | 控制 minimap2 的 k-mer 支持打分引擎，可选 `python`、`kmc`、`auto`。 | `python` |
 | `GMLST_TMPDIR` | 覆盖临时文件目录。 | 系统临时目录 |
 
 ### 示例

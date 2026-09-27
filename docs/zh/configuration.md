@@ -86,7 +86,6 @@ gmlst config get GMLST_CACHE_DIR --format json
 
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
-| `GMLST_MINIMAP2_KMER_ENGINE` | `python` | minimap2 FASTQ 分型的 k-mer 支持打分引擎。可选值：`python`、`kmc`、`auto`。 | minimap2 FASTQ |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | `default` | minimap2 FASTA 路径的速度档位。可选值：`default`、`fast`、`ultrafast`。 | minimap2 FASTA、cgMLST FASTA 流程 |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | `1` | 在 minimap2 的 FASTA 组装比对中输出 CIGAR。设为 `0` 可以减少速度导向流程中的额外工作。 | minimap2 FASTA |
 | `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | 在 minimap2 主比对前启用哈希优先的候选缩减。 | cgMLST FASTA、minimap2 prefilter 路径 |

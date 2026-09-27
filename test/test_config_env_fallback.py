@@ -8,14 +8,14 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import gmlst.commands.config as config_mod
-from gmlst.commands.config import load_env_file_into_environ
+from gmlst import config_registry
+from gmlst.config_registry import load_env_file_into_environ
 
 
 @pytest.fixture
 def env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "env.sh"
-    monkeypatch.setattr(config_mod, "_ENV_FILE_CANDIDATES", [path])
+    monkeypatch.setattr(config_registry, "ENV_FILE_CANDIDATES", [path])
     return path
 
 
@@ -48,7 +48,8 @@ def test_existing_environment_wins_over_file(
 
 
 def test_missing_file_is_noop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(config_mod, "_ENV_FILE_CANDIDATES", [tmp_path / "absent.sh"])
+    absent = tmp_path / "absent.sh"
+    monkeypatch.setattr(config_registry, "ENV_FILE_CANDIDATES", [absent])
 
     assert load_env_file_into_environ() == {}
 

@@ -157,7 +157,6 @@ The FASTQ path has two stages.
 
 Related knobs:
 
-- `auto` prefers KMC when available and otherwise falls back to the built-in Python scorer.
 - When `samtools` is installed, targeted validation can write BAM temp files.
 - `GMLST_TMPDIR` controls where temporary files are created.
 
@@ -257,13 +256,6 @@ Example:
 ```bash
 gmlst typing mlst -s saureus_1 -b kma reads/sample_R1.fastq.gz reads/sample_R2.fastq.gz
 ```
-
-### k-mer support scoring
-
-
-- `python`, built-in scorer
-- `kmc`, KMC/KMC tools
-- `auto`, prefer KMC when installed, otherwise use Python
 
 ### Targeted validation
 

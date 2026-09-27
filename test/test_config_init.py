@@ -10,13 +10,13 @@ import pytest
 from click.testing import CliRunner
 
 from gmlst.commands.config import (
-    _CONFIG_REGISTRY,
     _build_source_line,
     _detect_shell_rc,
     _is_secret,
     _mask_secret,
     config_group,
 )
+from gmlst.config_registry import CONFIG_REGISTRY
 
 
 class TestDetectShellRc:
@@ -163,7 +163,7 @@ class TestConfigSetFilePermissions:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         env_file = tmp_path / "env.sh"
-        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setattr("gmlst.config_registry.ENV_FILE_CANDIDATES", [env_file])
 
         runner = CliRunner()
         result = runner.invoke(
@@ -183,7 +183,7 @@ class TestConfigSetFilePermissions:
         os.chmod(env_file, 0o644)
         assert env_file.stat().st_mode & 0o777 == 0o644
 
-        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setattr("gmlst.config_registry.ENV_FILE_CANDIDATES", [env_file])
 
         runner = CliRunner()
         runner.invoke(config_group, ["set", "GMLST_TMPDIR", "/scratch"])
@@ -260,7 +260,7 @@ class TestConfigShowMasking:
     def test_unset_secret_not_replaced_by_mask(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        for entry in _CONFIG_REGISTRY:
+        for entry in CONFIG_REGISTRY:
             if _is_secret(entry.name):
                 monkeypatch.delenv(entry.name, raising=False)
 
@@ -309,7 +309,7 @@ class TestConfigGetJson:
     ) -> None:
         env_file = tmp_path / "env.sh"
         env_file.write_text('export GMLST_TMPDIR="/from/file"\n')
-        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setattr("gmlst.config_registry.ENV_FILE_CANDIDATES", [env_file])
         monkeypatch.setenv("GMLST_TMPDIR", "/from/file")
 
         runner = CliRunner()
@@ -333,7 +333,7 @@ class TestConfigGetJson:
     ) -> None:
         env_file = tmp_path / "env.sh"
         env_file.write_text("export GMLST_TMPDIR=/from/file\n")
-        monkeypatch.setattr("gmlst.commands.config._ENV_FILE_CANDIDATES", [env_file])
+        monkeypatch.setattr("gmlst.config_registry.ENV_FILE_CANDIDATES", [env_file])
         monkeypatch.setenv("GMLST_TMPDIR", "/overridden")
 
         runner = CliRunner()

@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import shlex
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -14,181 +13,15 @@ from rich.box import MINIMAL_HEAVY_HEAD
 from rich.console import Console
 from rich.table import Table
 
+from gmlst import config_registry as _reg
 from gmlst.commands.common import HELP_SETTINGS, emit_versioned_json
+from gmlst.config_registry import ConfigEntry
 from gmlst.schema_versions import CONFIG_GET_V1
 
 console = Console()
 status_console = Console(stderr=True)
 err_console = Console(stderr=True)
 
-
-@dataclass(frozen=True)
-class ConfigEntry:
-    """One registry entry describing a supported environment variable."""
-
-    name: str
-    description: str
-    default: str
-    category: str
-
-
-_CONFIG_REGISTRY: list[ConfigEntry] = [
-    ConfigEntry("GMLST_CACHE_DIR", "Cache root directory", "~/.cache/gmlst", "Cache"),
-    ConfigEntry("GMLST_TMPDIR", "Temp working directory for typing", "/tmp", "Cache"),
-    ConfigEntry(
-        "GMLST_PUBMLST_BASE_URL",
-        "PubMLST REST API base URL",
-        "https://rest.pubmlst.org/db",
-        "Provider",
-    ),
-    ConfigEntry(
-        "GMLST_PASTEUR_BASE_URL",
-        "Pasteur BIGSdb API base URL",
-        "https://bigsdb.pasteur.fr/api/db",
-        "Provider",
-    ),
-    ConfigEntry(
-        "GMLST_PRIVATE_BIGSDB_URL", "Private BIGSdb instance URL", "", "Provider"
-    ),
-    ConfigEntry(
-        "GMLST_PRIVATE_BIGSDB_NAME", "Private BIGSdb provider name", "", "Provider"
-    ),
-    ConfigEntry(
-        "GMLST_PRIVATE_BIGSDB_LABEL", "Private BIGSdb display label", "", "Provider"
-    ),
-    ConfigEntry(
-        "GMLST_PUBMLST_API_KEY",
-        "PubMLST API key (post-2024 data access)",
-        "",
-        "Auth",
-    ),
-    ConfigEntry(
-        "GMLST_PASTEUR_API_KEY",
-        "Pasteur BIGSdb API key (post-2024 data access)",
-        "",
-        "Auth",
-    ),
-    ConfigEntry(
-        "GMLST_ALLOW_PRIVATE_URLS",
-        "Bypass SSRF guard for private URLs (1/0)",
-        "0",
-        "Security",
-    ),
-    ConfigEntry("ENTEROBASE_TOKEN", "Enterobase API auth token", "", "Auth"),
-    ConfigEntry(
-        "GMLST_MINIMAP2_KMER_ENGINE",
-        "minimap2 k-mer scoring engine (python/kmc/auto)",
-        "auto",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_MINIMAP2_FASTA_EMIT_CIGAR",
-        "minimap2 FASTA emit CIGAR (1/0)",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_MINIMAP2_FASTA_SPEED_PROFILE",
-        "minimap2 FASTA speed profile",
-        "",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_PREFILTER_MAX_LOCI",
-        "Max loci for cgMLST prefilter",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_HASH_PREFILTER",
-        "Use minimap2 hash prefilter (1/0)",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI",
-        "Max loci for hash refinement",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N",
-        "Top-N loci for hash prefilter",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_BSR_CONFIRM_MAX_LOCI",
-        "Max loci for BSR confirmation",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI",
-        "Max loci for ultrafast 2nd pass",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_MINIMAP2_REPRESENTATIVE_MAIN_ALIGNMENT",
-        "Use representative alignment (1/0)",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_KMA_FASTQ_MEM_MODE", "KMA FASTQ mem mode (1/0)", "0", "cgMLST"
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_KMA_FASTQ_MEM_CONFIRM_MAX_LOCI",
-        "Max loci for KMA FASTQ confirm",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_EXACT_HASH_PREFILTER",
-        "Use exact hash prefilter (1/0)",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_EVIDENCE_FALLBACK_BACKEND",
-        "Evidence fallback backend",
-        "blastn",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI",
-        "Max loci for evidence fallback",
-        "0",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_CDS_PREDICTION_MODE",
-        "CDS prediction mode (prodigal/none)",
-        "prodigal",
-        "cgMLST",
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_CDS_TRAINING_FILE", "CDS training file path", "", "cgMLST"
-    ),
-    ConfigEntry("GMLST_CGMLST_CDS_CLOSED_ENDS", "CDS closed ends (1/0)", "0", "cgMLST"),
-    ConfigEntry(
-        "GMLST_CGMLST_CDS_COORDINATES_OUT", "Output CDS coordinates file", "", "cgMLST"
-    ),
-    ConfigEntry(
-        "GMLST_CGMLST_FASTQ_KMA_AUTO_THREADS",
-        "Auto threads for FASTQ KMA (1/0)",
-        "0",
-        "cgMLST",
-    ),
-]
-
-_REGISTRY_BY_NAME: dict[str, ConfigEntry] = {e.name: e for e in _CONFIG_REGISTRY}
-
-_ENV_FILE_CANDIDATES = [
-    Path.home() / ".config" / "gmlst" / "env.sh",
-    Path.home() / ".gmlst" / "env.sh",
-]
 
 _INIT_MARKER = "# gmlst config"
 
@@ -197,29 +30,6 @@ _SHELL_RC_MAP: dict[str, str] = {
     "zsh": ".zshrc",
     "fish": ".config/fish/config.fish",
 }
-
-
-def load_env_file_into_environ() -> dict[str, str]:
-    """Apply env.sh values into ``os.environ`` for keys not already set.
-
-    ``gmlst config set`` writes env.sh expecting the shell to source it;
-    when the current shell hasn't (new machine, subshell, CI), the CLI
-    applies the file itself as a fallback layer so ``config show``/``get``
-    and authenticated provider downloads see the configured values.
-    Explicit environment variables always win. Returns the injected
-    mapping.
-    """
-    if _find_env_file() is None:
-        return {}
-    injected: dict[str, str] = {}
-    for entry in _CONFIG_REGISTRY:
-        if os.environ.get(entry.name):
-            continue
-        value = _env_file_export_value(entry.name)
-        if value:
-            os.environ[entry.name] = value
-            injected[entry.name] = value
-    return injected
 
 
 def _current_value(name: str) -> str:
@@ -249,41 +59,6 @@ def _mask_secret(value: str) -> str:
     return f"{value[:4]}****{value[-4:]}"
 
 
-def _find_env_file() -> Path | None:
-    for p in _ENV_FILE_CANDIDATES:
-        if p.exists():
-            return p
-    return None
-
-
-def _env_file_export_value(name: str) -> str | None:
-    """Return the value exported for *name* in the env.sh config file, if any.
-
-    The config file is sourced by the shell before the CLI runs, so its
-    values are indistinguishable from other environment variables at
-    runtime; matching the live value against the file's export line is the
-    closest available provenance heuristic. Later exports win, matching
-    shell semantics.
-    """
-    env_file = _find_env_file()
-    if env_file is None:
-        return None
-    prefix = f"export {name}="
-    value: str | None = None
-    for line in env_file.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped.startswith(prefix):
-            continue
-        raw = stripped[len(prefix) :]
-        try:
-            tokens = shlex.split(raw, comments=True)
-        except ValueError:
-            # Malformed quoting in a user-edited file; skip this line.
-            continue
-        value = " ".join(tokens)
-    return value
-
-
 def _get_value_snapshot(entry: ConfigEntry, val: str) -> dict[str, Any]:
     """Build the `config get --format json` payload for *entry*.
 
@@ -291,7 +66,7 @@ def _get_value_snapshot(entry: ConfigEntry, val: str) -> dict[str, Any]:
     if the explicit value happens to equal the built-in default.
     """
     if val:
-        source = "file" if _env_file_export_value(entry.name) == val else "env"
+        source = "file" if _reg.env_file_export_value(entry.name) == val else "env"
         return {
             "name": entry.name,
             "value": val,
@@ -314,7 +89,7 @@ def config_group() -> None:
 @config_group.command("env", context_settings=HELP_SETTINGS)
 def cmd_env() -> None:
     """Print all environment variables in shell format (sourceable)."""
-    for entry in _CONFIG_REGISTRY:
+    for entry in _reg.CONFIG_REGISTRY:
         val = _current_value(entry.name)
         if val:
             console.print(f'export {entry.name}="{val}"')
@@ -324,7 +99,7 @@ def cmd_env() -> None:
 def cmd_show() -> None:
     """Show configuration grouped by category."""
     categories: dict[str, list[ConfigEntry]] = {}
-    for entry in _CONFIG_REGISTRY:
+    for entry in _reg.CONFIG_REGISTRY:
         categories.setdefault(entry.category, []).append(entry)
 
     table = Table(
@@ -359,7 +134,7 @@ def cmd_show() -> None:
             " use 'gmlst config get <NAME>' to retrieve.[/dim]"
         )
 
-    env_file = _find_env_file()
+    env_file = _reg.find_env_file()
     if env_file:
         status_console.print(f"\nConfig file: [bold]{env_file}[/bold]")
     else:
@@ -399,7 +174,7 @@ def cmd_get(name: str, reveal: bool, fmt: str) -> None:
 
     Credential-bearing values are masked unless ``--reveal`` is given.
     """
-    entry = _REGISTRY_BY_NAME.get(name.upper())
+    entry = _reg.REGISTRY_BY_NAME.get(name.upper())
     if not entry:
         err_console.print(f"[red]Unknown variable:[/red] {name}")
         err_console.print(
@@ -442,7 +217,7 @@ def cmd_set(name: str, value: str | None) -> None:
 
         source ~/.config/gmlst/env.sh
     """
-    entry = _REGISTRY_BY_NAME.get(name.upper())
+    entry = _reg.REGISTRY_BY_NAME.get(name.upper())
     if not entry:
         err_console.print(f"[red]Unknown variable:[/red] {name}")
         err_console.print(
@@ -452,15 +227,17 @@ def cmd_set(name: str, value: str | None) -> None:
 
     if value is None:
         if _is_secret(entry.name):
-            value = click.prompt(
-                f"Value for {entry.name}",
-                hide_input=True,
-                confirmation_prompt=True,
+            value = str(
+                click.prompt(
+                    f"Value for {entry.name}",
+                    hide_input=True,
+                    confirmation_prompt=True,
+                )
             )
         else:
-            value = click.prompt(f"Value for {entry.name}")
+            value = str(click.prompt(f"Value for {entry.name}"))
 
-    env_file = _ENV_FILE_CANDIDATES[0]
+    env_file = _reg.ENV_FILE_CANDIDATES[0]
     env_file.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []

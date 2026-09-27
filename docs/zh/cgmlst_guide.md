@@ -346,7 +346,6 @@ gmlst typing cgmlst -s vparahaemolyticus_3 \
 
 - `GMLST_CACHE_DIR=/path/to/cache`
 - `GMLST_TMPDIR=/path/to/tmp`
-- `GMLST_MINIMAP2_KMER_ENGINE=python|kmc|auto`
 
 ### 环境变量示例
 
