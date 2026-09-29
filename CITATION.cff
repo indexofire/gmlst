@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use gmlst, please cite it using this metadata and the DOI of your chosen release."
+title: "gmlst: unified MLST, cgMLST and scheme-free bacterial typing from assemblies and reads with swappable alignment backends"
+authors:
+  - family-names: Renton
+    given-names: Mark
+    affiliation: "Hangzhou Center for Disease Control and Prevention, Hangzhou, China"
+license: MIT
+repository-code: "https://github.com/indexofire/gmlst"
+abstract: >-
+  gmlst unifies classical MLST, cgMLST/wgMLST and scheme-free typing in
+  one command-line interface for assemblies and raw reads, with swappable
+  BLAST+, KMA, minimap2 and MUMmer4 backends, unified access to PubMLST,
+  Pasteur BIGSdb, EnteroBase and cgmlst.org schemes with API-key
+  authentication, a two-layer exact-hash and k-mer pre-resolution,
+  novel-allele extraction into local laboratory schemes, built-in minimum
+  spanning trees, and an automation-first interface suited to scripts,
+  workflow engines and autonomous agents.
+keywords:
+  - bacterial typing
+  - MLST
+  - cgMLST
+  - epidemiology
+  - genomics
