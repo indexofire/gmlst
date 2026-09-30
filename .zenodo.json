@@ -1,0 +1,21 @@
+{
+  "title": "gmlst: unified MLST, cgMLST and scheme-free bacterial typing from assemblies and reads with swappable alignment backends",
+  "creators": [
+    {
+      "name": "Renton, Mark",
+      "affiliation": "Hangzhou Center for Disease Control and Prevention, Hangzhou, China"
+    }
+  ],
+  "description": "gmlst unifies classical MLST, cgMLST/wgMLST and scheme-free typing in one command-line interface for assemblies and raw reads, with swappable BLAST+, KMA, minimap2 and MUMmer4 backends, unified access to PubMLST, Pasteur BIGSdb, EnteroBase and cgmlst.org schemes with API-key authentication, a two-layer exact-hash and k-mer pre-resolution, novel-allele extraction into local laboratory schemes, built-in minimum spanning trees, and an automation-first interface suited to scripts, workflow engines and autonomous agents.",
+  "license": "MIT",
+  "keywords": [
+    "bacterial typing",
+    "MLST",
+    "cgMLST",
+    "epidemiology",
+    "genomics",
+    "bioinformatics"
+  ],
+  "access_right": "open",
+  "upload_type": "software"
+}
