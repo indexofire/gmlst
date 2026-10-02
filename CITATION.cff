@@ -2,8 +2,9 @@ cff-version: 1.2.0
 message: "If you use gmlst, please cite it using this metadata."
 title: "gmlst: unified MLST, cgMLST and scheme-free bacterial typing from assemblies and reads with swappable alignment backends"
 authors:
-  - family-names: Renton
-    given-names: Mark
+  - family-names: Yu
+    given-names: Hua
+    orcid: "https://orcid.org/0000-0002-6896-8056"
     affiliation: "Hangzhou Center for Disease Control and Prevention, Hangzhou, China"
 doi: 10.5281/zenodo.23072500
 version: 0.5.4
