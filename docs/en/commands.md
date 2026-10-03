@@ -29,6 +29,7 @@ Top-level commands:
 - `typing` - type FASTA/FASTQ samples against a scheme
 - `scheme` - scheme/provider/cache management
 - `utils` - extraction and sequence utility commands
+- `config` - inspect and manage configuration variables
 - `visual` - local web visualization tools
 
 ## typing
@@ -196,6 +197,7 @@ Subcommands:
 - `show`
 - `download`
 - `update`
+- `update-fingerprints`
 - `remove`
 - `create`
 - `update-custom`
@@ -243,7 +245,7 @@ Positional argument:
 Options:
 
 - `-p, --provider [<registered-provider>|local|all]`
-- `-t, --type [mlst|cgmlst|wgmlst|all]`
+- `-t, --type [mlst|cgmlst|wgmlst|rmlst|other|all]`
 - `-l, --limit INTEGER` (show at most N schemes; no limit by default)
 - `--cache-dir PATH`
 
@@ -263,10 +265,10 @@ gmlst scheme list [OPTIONS]
 Typical options:
 
 - `-p, --provider [<registered-provider>|local|all]`
-- `-t, --type [mlst|cgmlst|wgmlst|all]`
+- `-t, --type [mlst|cgmlst|wgmlst|rmlst|other|all]`
 - `-n, --name TEXT`
 - `-f, --format [text|table|csv|tsv|json]`
-- `-a, --available`
+- `-a, --available` (only show schemes that are already downloaded/cached)
 - `-l, --limit INTEGER` (show at most N schemes; no limit by default)
 - `--pager` (interactive; requires a terminal)
 - `--cache-dir PATH`
@@ -307,19 +309,24 @@ Notes:
 ### scheme show
 
 ```bash
-gmlst scheme show [OPTIONS]
+gmlst scheme show [SCHEME] [OPTIONS]
 ```
+
+Positional argument:
+
+- `SCHEME` — scheme name (optional; without it gmlst shows guidance, then falls back to listing output)
 
 Options:
 
-- `-s, --scheme TEXT`
+- `-s, --scheme TEXT` (deprecated, use positional argument)
+- `-a, --all` — show per-locus allele statistics (requires a downloaded scheme)
 - `-f, --format [text|table|csv|tsv|json]`
 - `--cache-dir PATH`
 
 Behavior:
 
-- With `-s`: show detailed information for one scheme.
-- Without `-s`: show guidance, then fall back to listing output.
+- With a scheme name: show detailed information for that scheme.
+- Without a scheme name: show guidance, then fall back to listing output.
 
 ### scheme update
 
@@ -329,17 +336,20 @@ gmlst scheme update [OPTIONS]
 
 Options:
 
-- `-s, --scheme TEXT`
-- `-f, --force`
-- `--download-tool [auto|aria2c|curl|wget|httpx|requests]`
-- `-x, --connections INTEGER`
-- `--token TEXT`
+- `-s, --scheme TEXT` — update one specific cached scheme
+- `-a, --all` — update all cached scheme databases
+- `-y, --yes` — skip the confirmation prompt when updating all schemes
+- `-f, --force` — force refresh catalogs from providers before update actions
+- `--download-tool [auto|aria2c|curl|wget|httpx|requests]` (default: `auto`)
+- `-x, --connections INTEGER` (default: 4)
+- `--token TEXT` (env fallback: `ENTEROBASE_TOKEN`)
+- `--format [text|json]` — output format for the completion summary (default: `text`)
 - `--cache-dir PATH`
 
 Behavior:
 
 - Without `-s`: refresh provider catalogs.
-- With `-s`: provider-specific cached-scheme refresh/update.
+- With `-s`: provider-specific cached-scheme refresh/update (incremental; see the [providers page](providers.md#update-mechanism-incremental)).
 
 Provider endpoint override (for self-hosted BIGSdb):
 

@@ -32,7 +32,7 @@ docker build --build-arg GMLST_VERSION=0.3.3 -t gmlst:0.3.3 .
 
 ## Nextflow
 
-见 [`examples/pipelines/gmlst_mlst.nf`](../../examples/pipelines/gmlst_mlst.nf)：
+见 [`examples/pipelines/gmlst_mlst.nf`](https://github.com/indexofire/gmlst/blob/main/examples/pipelines/gmlst_mlst.nf)：
 
 ```bash
 nextflow run gmlst_mlst.nf \
@@ -46,7 +46,7 @@ nextflow run gmlst_mlst.nf \
 
 ## Snakemake
 
-见 [`examples/pipelines/Snakefile`](../../examples/pipelines/Snakefile)：
+见 [`examples/pipelines/Snakefile`](https://github.com/indexofire/gmlst/blob/main/examples/pipelines/Snakefile)：
 
 ```bash
 snakemake -j 16 --use-singularity --config scheme=saureus_1 sample_dir=data/assemblies

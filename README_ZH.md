@@ -447,7 +447,7 @@ pixi run ruff check .
 pixi run ruff format .
 ```
 
-贡献流程见 [docs/contributing.md](docs/contributing.md)，模块边界与分型路径说明见 [docs/architecture.md](docs/architecture.md)。
+贡献流程见 [docs/zh/contributing.md](docs/zh/contributing.md)，模块边界与分型路径说明见 [docs/zh/architecture.md](docs/zh/architecture.md)。
 
 ## 文档索引
 

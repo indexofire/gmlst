@@ -20,6 +20,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extend `.meta.json` schema to track update metadata needed for incremental
   refresh (for example: timestamps/checksums/ETag-like fields).
 
+## [0.5.4] - 2026-09-30
+
+Retag of [0.5.3] for Zenodo metadata integration; the tag points at the same
+commit and contains no additional changes.
+
+## [0.5.3] - 2026-09-30
+
+### Added
+- `CITATION.cff` and `.zenodo.json` for GitHub-Zenodo release integration.
+- CI coverage measurement with an 80% floor.
+
+### Changed
+- Internal restructuring, no CLI behavior changes:
+  - `typing.py` split — `tgmlst` and `--guess` runners moved into their own
+    modules (`typing_schemefree.py`, `typing_guess_run.py`), shared run
+    helpers extracted; `TypingOptions` added for settings shared across
+    `--guess` scheme routes.
+  - `scheme.py` split — `update` and `update-fingerprints` moved into their
+    own modules (`scheme_update.py`, `scheme_fingerprints.py`).
+  - `visual`: `/api` routes moved into a Blueprint, hooks moved to module
+    level.
+- Documentation updated for the new command and visual module layout.
+
 ## [0.5.2] - 2026-09-27
 
 ### Added

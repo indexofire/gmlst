@@ -7,9 +7,14 @@ This directory collects user guides, developer notes, internal references, and p
 - [en/installation.md](en/installation.md) - Installation and environment setup
 - [en/quickstart.md](en/quickstart.md) - First-run workflow and result interpretation
 - [en/commands.md](en/commands.md) - Command-line reference
+  - [en/commands/typing.md](en/commands/typing.md) - `typing` command group
+  - [en/commands/scheme.md](en/commands/scheme.md) - `scheme` command group
+  - [en/commands/utils.md](en/commands/utils.md) - `utils` command group
+  - [en/commands/visual.md](en/commands/visual.md) - `visual` command group
 - [en/backends.md](en/backends.md) - Alignment backend comparison and selection guide
 - [en/configuration.md](en/configuration.md) - Environment variables and configuration reference
 - [en/providers.md](en/providers.md) - Data provider documentation (PubMLST, Pasteur, Enterobase, etc.)
+- [en/fingerprint_database.md](en/fingerprint_database.md) - Species fingerprint database (auto-detection)
 - [en/novel_workflow.md](en/novel_workflow.md) - Novel allele detection and custom scheme workflow
 - [en/pipelines.md](en/pipelines.md) - Docker, Nextflow, and Snakemake pipeline integration
 - [en/cgmlst_guide.md](en/cgmlst_guide.md) - cgMLST/wgMLST typing modes and optimization
@@ -22,13 +27,20 @@ This directory collects user guides, developer notes, internal references, and p
 
 - [zh/installation.md](zh/installation.md) - 安装指南
 - [zh/quickstart.md](zh/quickstart.md) - 快速入门
+- [zh/commands.md](zh/commands.md) - 命令参考
+  - [zh/commands/typing.md](zh/commands/typing.md) - `typing` 命令组
+  - [zh/commands/scheme.md](zh/commands/scheme.md) - `scheme` 命令组
+  - [zh/commands/utils.md](zh/commands/utils.md) - `utils` 命令组
+  - [zh/commands/visual.md](zh/commands/visual.md) - `visual` 命令组
 - [zh/backends.md](zh/backends.md) - 后端比较
 - [zh/configuration.md](zh/configuration.md) - 配置参考
 - [zh/providers.md](zh/providers.md) - 数据源文档
+- [zh/fingerprint_database.md](zh/fingerprint_database.md) - 物种指纹数据库（自动检测）
 - [zh/novel_workflow.md](zh/novel_workflow.md) - Novel 工作流
 - [zh/pipelines.md](zh/pipelines.md) - 流水线集成（Docker/Nextflow/Snakemake）
 - [zh/cgmlst_guide.md](zh/cgmlst_guide.md) - cgMLST 指南
 - [zh/visual_guide.md](zh/visual_guide.md) - 可视化指南
+- [zh/faq.md](zh/faq.md) - 常见问题
 - [zh/architecture.md](zh/architecture.md) - 架构文档
 - [zh/contributing.md](zh/contributing.md) - 贡献指南
 

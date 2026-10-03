@@ -86,7 +86,31 @@ PubMLST 是经典 MLST 最主要的来源，同时也包含不少 cgMLST 与 wgM
 
 ### 认证说明
 
-当前源码将 PubMLST 作为公开 BIGSdb REST provider 处理。`gmlst/database/providers/bigsdb.py` 中目前没有专门的 PubMLST token 配置路径。如果需要认证式 BIGSdb 访问，目前代码库支持的方式是后文的 private BIGSdb 机制。
+PubMLST 运行在 BIGSdb 平台上。自 **2025 年 1 月 1 日**起，PubMLST 要求认证后才能访问 2024 年 12 月 31 日之后新增的 allele、profile 和 isolate 数据；此前的历史数据仍可匿名访问。
+
+#### 如何获取 PubMLST API key
+
+1. 在 [pubmlst.org](https://pubmlst.org) 注册账号
+2. 登录后进入个人资料页
+3. 打开 **Preferences** → **API keys**
+4. 点击 **Create new API key**
+5. 复制生成的 key（格式：`XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`）
+
+- **认证方式**：Personal API Key，通过 `X-API-Key: <key>` 请求头传递（注：BIGSdb 文档同时记载了 `Authorization: Bearer` 和 OAuth，但 PubMLST 实际服务器只接受 `X-API-Key`）
+
+#### 在 gmlst 中使用 API key
+
+```bash
+gmlst config set GMLST_PUBMLST_API_KEY your-key-here
+source ~/.config/gmlst/env.sh
+```
+
+之后所有 PubMLST 请求都会自动携带 `X-API-Key` 请求头。没有 key 时只能访问 2025 年之前的数据（profile 和 allele 会被截断）。
+
+#### 参考链接
+
+- [BIGSdb API 认证文档](https://bigsdb.readthedocs.io/en/latest/rest.html#api-oauth)
+- [PubMLST 数据访问政策变更](http://pubmlst.org/change-data-access-policy)
 
 ## Pasteur
 
@@ -110,6 +134,73 @@ Pasteur 提供 MLST，以及部分更大的 scheme。`gmlst/database/providers/b
 
 `gmlst/database/providers/bigsdb.py` 会从 `gmlst/data/organism_mapping.json` 读取物种名映射，以便不同 provider 的 catalog 使用更一致的物种标签。
 
+### 认证说明
+
+Pasteur 与 PubMLST 运行相同的 BIGSdb 平台，并采用了**相同的数据访问政策**：自 **2025 年 1 月 1 日**起，2024 年 12 月 31 日之后整理的数据需要认证才能访问。认证机制与 PubMLST 一致（`X-API-Key` 请求头）。
+
+#### 如何获取 Pasteur BIGSdb API key
+
+申请过程需要人工审核，比 PubMLST 耗时更长：
+
+**第 1 步：创建账号**
+
+在 [bigsdb.pasteur.fr/register/](https://bigsdb.pasteur.fr/register/) 注册
+
+**第 2 步：注册到具体数据库**
+
+登录后，向你需要的每个物种数据库提交注册（如 Bordetella、E. coli、Listeria）。**只有已注册的数据库才会授予 API key 权限**。
+
+**第 3 步：通过邮件申请 API key**
+
+按你的所属领域联系 Pasteur 团队：
+
+| 你的领域 | 联系邮箱 |
+|---|---|
+| 学术 / 非营利 / 公共卫生 | [bigsdb@pasteur.fr](mailto:bigsdb@pasteur.fr) |
+| 商业 / 营利 | [bigsdb-policy@pasteur.fr](mailto:bigsdb-policy@pasteur.fr) |
+
+邮件模板：
+
+```
+Subject: API Key Request for gmlst typing pipeline
+
+BIGSdb-Pasteur Username: <your username>
+Affiliation: <your institution>
+Email address: <your email>
+Sector: Academic / Non-profit
+Database(s) you intend to use:
+  - <species 1, e.g. Bordetella>
+  - <species 2, e.g. E. coli>
+Motivation:
+  I use gmlst (https://github.com/indexofire/gmlst), a bacterial genome
+  typing CLI tool, for automated MLST/cgMLST typing. I need API access
+  to download scheme allele sequences and ST profiles for integration
+  into our typing pipeline.
+```
+
+团队审核后会回复 API key（通常几个工作日内）。
+
+**第 4 步：在 gmlst 中配置 key**
+
+```bash
+gmlst config set GMLST_PASTEUR_API_KEY your-pasteur-key
+source ~/.config/gmlst/env.sh
+```
+
+验证：
+
+```bash
+gmlst config get GMLST_PASTEUR_API_KEY
+```
+
+之后所有 Pasteur 请求都会自动携带 `X-API-Key` 请求头。没有 key 时只能访问 2025 年之前的数据。
+
+#### 参考链接
+
+- [Pasteur API key 申请页面](https://bigsdb.pasteur.fr/requesting-api-key/)
+- [Pasteur 数据访问政策](https://bigsdb.pasteur.fr/news/novel-data-access-policy/)
+- [BIGSdb API 认证文档](https://bigsdb.readthedocs.io/en/latest/rest.html#api-oauth)
+
 ## Enterobase
 
 ### 基本信息
@@ -120,22 +211,29 @@ Pasteur 提供 MLST，以及部分更大的 scheme。`gmlst/database/providers/b
 
 ### 交付模型
 
-在本项目里，Enterobase 不是通过 BIGSdb 实现的。`gmlst/database/providers/enterobase.py` 采用已知目录结构上的直接 HTTP 下载。
+在本项目里，Enterobase 不是通过 BIGSdb 实现的。`gmlst/database/providers/enterobase.py` 直接从 Enterobase 开放 scheme 目录 `https://enterobase.warwick.ac.uk/schemes/` 进行 HTTP 下载。
 
-provider 内部维护了 `_SCHEME_MAP`，把 `ecoli_1`、`senterica_2` 这样的公开 scheme 名，映射到上游目录名。
+### Scheme 发现
+
+`list_schemes()` 会动态扫描 Enterobase `/schemes/` 的 HTTP 目录索引来发现可用的 scheme 目录。这意味着 Enterobase 新增的 scheme 在执行 `gmlst scheme update --force` 后即可自动可见，无需等待代码更新。当网络不可用时，provider 会回退到源码中定义的静态 `_SCHEME_MAP`。
+
+scheme 目录名会直接用作 catalog 中的 `scheme_name`（如 `Salmonella.Achtman7GeneMLST`）。catalog 的 `extra.directory` 字段携带该目录名，并传递给 `download_scheme()` 和 `update_scheme()`，确保下载始终解析到正确的远程路径。
 
 ### Scheme 覆盖范围
 
-当前实现包含一些常见 Enterobase 物种和 scheme，例如：
+Enterobase provider 会跨多个物种发现 scheme，包括：
 
-- *Escherichia coli*
+- *Escherichia coli* / *Shigella*
 - *Salmonella enterica*
 - *Yersinia enterocolitica*
 - *Klebsiella pneumoniae*
 - *Streptococcus pneumoniae*
 - *Vibrio* spp.
+- *Moraxella catarrhalis*
+- *Clostridium botulinum*
+- *Photorhabdus luminescens*
 
-它支持 MLST、cgMLST、wgMLST，以及部分 rMLST 风格的条目，具体取决于映射目录。
+支持的 scheme 类型（MLST、cgMLST、wgMLST、rMLST）取决于服务器上实际存在的目录。
 
 ### 下载格式
 
@@ -143,7 +241,23 @@ provider 内部维护了 `_SCHEME_MAP`，把 `ecoli_1`、`senterica_2` 这样的
 
 ### Token 说明
 
-`gmlst/commands/scheme.py` 为 Enterobase 相关命令暴露了 `--token` 选项，并支持环境变量 `ENTEROBASE_TOKEN`。不过当前 `gmlst/database/providers/enterobase.py` 的实现仍然以直接 HTTP 下载为主，所以 token 支持在实际流程中的作用比较有限。
+Enterobase 使用的认证体系与 PubMLST/Pasteur BIGSdb **完全不同**，其 REST API 一直需要认证。
+
+- **认证方式**：API Token，通过 `Authorization: Basic <token>` 请求头传递（注意是 Basic 认证，不是 Bearer，与 BIGSdb 不同）
+- **获取方式**：
+  1. 在 [enterobase.warwick.ac.uk](https://enterobase.warwick.ac.uk) 注册
+  2. **发邮件到 enterobase@warwick.ac.uk**，为所需数据库申请 API 访问权限
+  3. Token 会显示在数据库面板的 "Important information" 下
+- **API 文档**：[Enterobase API 入门](https://enterobase.readthedocs.io/en/latest/api/api-getting-started.html)
+- **使用限制**：
+  - API 请求之间应暂停 1–2 秒
+  - **不要**通过 API 做大规模批量下载
+  - rMLST allele 数据受牛津大学版权保护，**不可下载**
+  - 商业使用需获得华威大学明确授权
+
+`gmlst/commands/scheme.py` 暴露了 `--token` 选项，并支持 `ENTEROBASE_TOKEN` 环境变量回退。token 会经由缓存层传给 Enterobase provider，并以 `Authorization: Basic <token>` 请求头附加到所有 HTTP 请求上（目录列表、locus 计数和文件下载）。
+
+> **注意**：部分 Enterobase scheme 目录（如 `Vibrio.Lan7Gene`）即使无认证要求也返回 HTTP 403 —— 这是服务器对特定目录的限制。此时请改用其他 provider 的等价 scheme（如 PubMLST）。
 
 ## cgMLST.org
 
@@ -221,7 +335,7 @@ private provider 仍然复用 `gmlst/database/providers/bigsdb.py` 中的 `BigSd
 
 `gmlst/database/download.py` 支持多种下载工具，provider 层可使用：
 
-- `aria2c`
+- `aria2c`（默认，带重试：`--max-tries=5 --retry-wait=3`）
 - `curl`
 - `wget`
 - Python `httpx`
@@ -231,34 +345,131 @@ private provider 仍然复用 `gmlst/database/providers/bigsdb.py` 中的 `BigSd
 
 ### 并行下载
 
-需要下载大量 locus 文件的 provider，尤其是 BIGSdb 和 Enterobase，会通过 `gmlst/database/providers/base.py` 和 `gmlst/database/download.py` 中的 batch helper 进行并行下载。CLI 可通过 `-x` 或 `--connections` 控制连接数。
+需要下载大量 locus 文件的 provider，尤其是 BIGSdb 和 Enterobase，会通过 `gmlst/database/providers/base.py` 和 `gmlst/database/download.py` 中的 batch helper 进行并行下载。CLI 可通过 `-x` 或 `--connections`（默认 4）控制连接数。每台服务器的连接数上限为 2，以避免触发上游限流（HTTP 429）。
 
-### Catalog 新鲜度
+### Catalog 生命周期
 
-provider catalog 会被缓存。`gmlst scheme update` 会通过 `gmlst/database/cache.py` 中的 `DatabaseCache.update_catalog()` 刷新这些缓存。
+catalog 是连接 scheme 名称与 provider 数据的中枢索引，完整生命周期如下：
+
+1. **发现**：各 provider 的 `list_schemes()` 查询自己的上游源：
+   - PubMLST/Pasteur：BIGSdb REST API（`GET /db` → schemes → loci）
+   - Enterobase：动态抓取 `/schemes/` 目录索引
+   - cgMLST.org：`gmlst/database/providers/cgmlst_schemes.py` 中的静态 catalog
+2. **屏蔽**：`gmlst/data/blocked_schemes.json` 列出的 scheme 会在 `save_catalog()` 时被过滤，缓存 catalog JSON 中永远不会出现被屏蔽条目。匹配同时作用于 `scheme_name` 和 `extra.directory`。
+3. **缓存**：`DatabaseCache.save_catalog()` 写入 `_catalog/<provider>.json`，并保证 scheme 名称全局唯一（跨 provider 后缀去重）。
+4. **展示**：`gmlst scheme list` 直接读取缓存的 catalog JSON，列表时不发生网络请求。
+5. **刷新**：`gmlst scheme update --force` 重新为所有 provider 执行 `list_schemes()` 并覆盖 catalog JSON。这是获取上游新增 scheme 的唯一方式。
 
 ### Scheme 名称全局唯一
 
 仅靠 provider 名称还不够，因为多个 provider 可能都包含同一物种的 scheme。`gmlst/database/cache.py` 中的 `DatabaseCache.save_catalog()` 会先在单个 provider 内标准化名称，再在 provider 之间继续增加数字后缀，保证名称全局唯一。
 
-### Enterobase 与认证
+### Enterobase 认证模型
 
-CLI 确实暴露了 Enterobase token 相关选项，但当前 provider 实现依旧以直接 HTTP 下载为中心。如果你的环境依赖受保护的 Enterobase 工作流，建议先确认远端接口的认证要求。
+Enterobase 有两条数据访问路径：
+
+| 路径 | URL | 认证 | 覆盖范围 |
+|---|---|---|---|
+| `/schemes/` 目录 | `enterobase.warwick.ac.uk/schemes/` | 无（开放） | 24 个 scheme 目录，每日更新 |
+| REST API v2.0 | `enterobase.warwick.ac.uk/api/v2.0/` | Token（Basic 认证） | 网站全部数据库（M. tuberculosis、Enterococcus 等） |
+
+当前实现仅使用 `/schemes/` 目录。`--token` 选项和 `ENTEROBASE_TOKEN` 环境变量会以 `Authorization: Basic <token>` 请求头附加到所有 Enterobase HTTP 请求上。提供 token 时，每个请求（目录列表、locus 计数、文件下载）都会携带它。
+
+基于 API 的 scheme 下载（用于不在 `/schemes/` 中的物种）计划在后续版本支持。
+
+### Enterobase 数据新鲜度
+
+`/schemes/` 目录由 Enterobase 的自动化脚本每日更新。所有 allele FASTA 和 profile 文件都携带当日日期，即使该物种未在 Enterobase 网站首页展示（如 Streptococcus、Photorhabdus、Clostridium botulinum）。HTTP 索引中显示的目录级修改时间是目录创建时间，可能已是多年前；目录内的单个文件才是每日重新生成的。
 
 ## Blocked schemes
 
-blocked scheme 由 `gmlst/data/blocked_schemes.json` 控制，并通过 `gmlst/commands/common.py` 中的 `_load_blocked_schemes()` 读取。
+blocked scheme 由 `gmlst/data/blocked_schemes.json` 控制，由 `gmlst/commands/common.py`（CLI 层）和 `gmlst/database/cache.py`（数据层）中的 `_load_blocked_schemes()` 读取。
 
-`gmlst/commands/scheme.py` 会在 scheme 列表、下载和更新时应用这一过滤逻辑。
+过滤在两层生效：
+
+1. **catalog 写入时**（`save_catalog`）：屏蔽条目在 catalog JSON 写入前被移除，保证缓存 catalog 始终干净。
+2. **CLI 展示时**（`scheme list`、`scheme search`、`scheme download`）：纵深防御过滤器，拦截写入时过滤上线之前遗留的旧缓存 catalog 中的屏蔽条目。
+
+屏蔽匹配同时作用于 `scheme_name`（如 `salmonella_1`）和 `extra.directory`（如 `clostridium.Griffiths_MLST`），因此不受跨 provider 重新编号的影响。
 
 这个机制用于隐藏不应暴露给普通用户的条目，例如：
 
-- 已弃用 scheme
-- 已知存在问题的 catalog 条目
+- 已弃用或停止维护的 scheme（如 `clostridium.Griffiths_MLST` —— 最后一次整理是 2019 年，profile 为空）
+- 已知存在数据质量问题的 catalog 条目
 - 不适合常规工作流的特殊 scheme
+
+## Scheme 元数据（.meta.json）
+
+每个下载的 scheme 目录都包含一个 `.meta.json` 文件，记录下载元数据：
+
+```json
+{
+    "scheme": "saureus_1",
+    "provider": "pubmlst",
+    "scheme_type": "mlst",
+    "downloaded_at": "2026-07-10T12:00:00Z",
+    "loci": ["arcC", "aroE", "glpF", "gmk", "pta", "tpi", "yqiL"],
+    "locus_meta": {
+        "arcC": { "records": 458, "last_updated": "2026-07-01" }
+    },
+    "profile_meta": {
+        "records": 5000, "last_updated": "2026-07-01", "last_added": "2026-07-01"
+    }
+}
+```
+
+元数据记录下载/更新时间戳、每个 locus 的 allele 数量、profile 数量，以及用于增量更新检测的远端更新时间戳。
+
+## 增量更新机制
+
+`gmlst scheme update` 采用**增量更新** —— 只重新下载发生变化的数据，而不是整个 scheme。具体机制因 provider 而异：
+
+### PubMLST / Pasteur（BIGSdb）
+
+BIGSdb 通过 REST API 提供每个 locus 的元数据，可实现精确的变更检测：
+
+1. **查询 locus 元数据**：对每个 locus 执行 `GET /loci/{locus}/alleles`，返回 `records`（allele 数）和 `last_updated`（时间戳）。
+2. **与本地 `.meta.json` 对比**：满足以下任一条件即标记该 locus 需要重新下载：
+   - 本地 `.tfa` 文件不存在
+   - 本地 allele 数 < 服务器 allele 数
+   - 存储的 `records` 值与服务器不一致
+   - 存储的 `last_updated` 时间戳与服务器不一致
+3. **只下载变化的 locus**：仅检测到变化的 locus 通过 `alleles_fasta` 重新下载，未变化的 locus 完全跳过。
+4. **Profile 检查**：仅当 ST profile 的 `records`、`last_updated` 或 `last_added` 变化时才重新下载。
+
+示例：一个含 2000 个 locus 的 cgMLST scheme，其中 50 个 locus 有新 allele → 只下载 50 个文件（总量的 2.5%）。
+
+**限制**：每个变化的 locus 以**全量 allele FASTA 替换**的方式下载（不是追加）。这是因为 BIGSdb API 只提供 `alleles_fasta`（单文件包含全部 allele），没有"仅新 allele"接口。
+
+### Enterobase
+
+Enterobase 使用 HTTP 头（ETag、Last-Modified）做文件级变更检测：
+
+1. **HEAD 请求**：对每个远程文件（`{locus}.fasta.gz`、`profiles.list.gz`）发送 `HEAD` 请求，将 `ETag` / `Last-Modified` / `Content-Length` 与本地存储值对比。
+2. **下载变化的文件**：仅重新下载头部发生变化的文件。
+3. **解压并替换**：下载的 `.fasta.gz` 解压为 `.tfa` 并原子替换旧文件。
+
+### cgMLST.org
+
+cgMLST.org 为每个 scheme 提供单一批量 ZIP。当 schema 版本或 locus 数变化时，更新会重新下载整个 ZIP，没有按 locus 的增量 API。
+
+### 更新工作流
+
+```bash
+# 增量更新单个 scheme
+gmlst scheme update saureus_1
+
+# 更新所有已缓存的 scheme
+gmlst scheme update --all
+
+# 先强制刷新所有 provider 的 catalog，再更新已缓存的 scheme
+gmlst scheme update --force --all
+```
+
+`--force` 会在更新前先从所有 provider 刷新 catalog（scheme 列表）。不加 `--force` 时，只检查已缓存 scheme 数据的更新。
 
 ## 相关文档
 
 - [`docs/architecture.md`](./architecture.md)，系统设计与分层
 - [`docs/commands.md`](commands.md)，命令语法与选项
-- [`docs/quickstart.md`](../quickstart.md)，基础上手流程
+- [`docs/quickstart.md`](quickstart.md)，基础上手流程

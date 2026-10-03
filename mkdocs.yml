@@ -51,9 +51,11 @@ nav:
       - Visual: en/commands/visual.md
       - Alignment Backends: en/backends.md
       - Data Providers: en/providers.md
+      - Fingerprint Database: en/fingerprint_database.md
       - cgMLST Guide: en/cgmlst_guide.md
       - Novel Workflow: en/novel_workflow.md
       - Visualization: en/visual_guide.md
+      - Pipeline Integration: en/pipelines.md
     - FAQ: en/faq.md
     - Development:
       - Architecture: en/architecture.md
@@ -71,9 +73,11 @@ nav:
       - Visual 命令: zh/commands/visual.md
       - 比对后端: zh/backends.md
       - 数据源: zh/providers.md
+      - 指纹数据库: zh/fingerprint_database.md
       - cgMLST 指南: zh/cgmlst_guide.md
       - Novel 工作流: zh/novel_workflow.md
       - 可视化: zh/visual_guide.md
+      - 流水线集成: zh/pipelines.md
     - FAQ: zh/faq.md
     - 开发:
       - 架构: zh/architecture.md
@@ -88,9 +92,13 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
 
 plugins:
   - search
   - exclude:
       glob:
         - internal/**
+        - README.md
