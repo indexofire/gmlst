@@ -20,14 +20,14 @@ docker run --rm -v "$PWD:/data" -v "$PWD/.gmlst-cache:/home/mambauser/.cache/gml
     typing mlst -s saureus_1 -t 1 --max-workers 16 /data/assemblies/*.fna -o /data/batch.tsv
 ```
 
-每个发布版本均有对应标签（`indexofire/gmlst:0.3.3`、`0.3` 等）。镜像构建内置冒烟测试（`gmlst --version`、`blastn`、`minimap2`、`kma`）——见 `.github/workflows/docker.yml`。
+每个发布版本均有对应标签（`indexofire/gmlst:0.5.2`、`0.5` 等）。镜像构建内置冒烟测试（`gmlst --version`、`blastn`、`minimap2`、`kma`）——见 `.github/workflows/docker.yml`。
 
 从本地源码构建：
 
 ```bash
 docker build -t gmlst:local .
 # 或固定精确 PyPI 版本：
-docker build --build-arg GMLST_VERSION=0.3.3 -t gmlst:0.3.3 .
+docker build --build-arg GMLST_VERSION=0.5.2 -t gmlst:0.5.2 .
 ```
 
 ## Nextflow

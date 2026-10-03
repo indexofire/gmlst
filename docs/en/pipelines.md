@@ -20,14 +20,14 @@ docker run --rm -v "$PWD:/data" -v "$PWD/.gmlst-cache:/home/mambauser/.cache/gml
     typing mlst -s saureus_1 -t 1 --max-workers 16 /data/assemblies/*.fna -o /data/batch.tsv
 ```
 
-Version-pinned images are tagged per release (`indexofire/gmlst:0.3.3`, `0.3`, …). The image build is smoke-tested (`gmlst --version`, `blastn`, `minimap2`, `kma`) before push — see `.github/workflows/docker.yml`.
+Version-pinned images are tagged per release (`indexofire/gmlst:0.5.2`, `0.5`, …). The image build is smoke-tested (`gmlst --version`, `blastn`, `minimap2`, `kma`) before push — see `.github/workflows/docker.yml`.
 
 Build locally from a checkout:
 
 ```bash
 docker build -t gmlst:local .
 # Or pin an exact PyPI version:
-docker build --build-arg GMLST_VERSION=0.3.3 -t gmlst:0.3.3 .
+docker build --build-arg GMLST_VERSION=0.5.2 -t gmlst:0.5.2 .
 ```
 
 ## Nextflow

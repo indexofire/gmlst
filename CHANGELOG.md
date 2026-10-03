@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Version metadata realigned across the repository: `pyproject.toml`,
+  `gmlst/__init__.py` (`gmlst --version`), and `pixi.toml` now report 0.5.4,
+  matching the `v0.5.4` git tag and `CITATION.cff`. Conda recipes
+  (`recipes/gmlst`, `conda/recipe`) were still pinned to 0.1.2 with a stale
+  sdist hash; they now track the newest PyPI release (0.5.2, with the correct
+  sha256). Docker examples in the docs reference a published image tag.
+  Note: `v0.5.3`/`v0.5.4` tags were Zenodo snapshots — no GitHub Release was
+  created, so PyPI/Docker Hub remain at 0.5.2; bump the recipe again when the
+  next release publishes.
+
 ### Planned
 - Cache storage optimization: support compressed scheme artifacts for downloaded
   allele/profile data to reduce disk usage.
