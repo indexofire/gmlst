@@ -235,6 +235,7 @@ def cmd_typing_mlst(
             novel_allele=novel_allele,
             novel_profile=novel_profile,
             output_dir=output_dir,
+            max_fastq_depth=max_fastq_depth,
             quiet=quiet,
             detail=detail,
         )

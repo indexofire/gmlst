@@ -72,3 +72,38 @@ def test_subsample_paired_sample_input_keeps_metadata(tmp_path: Path) -> None:
     assert result.path.exists()
     assert result.mate_path is not None
     assert result.mate_path.exists()
+
+
+def test_cli_mlst_max_depth_option_reaches_typing_run(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """`typing mlst --max-depth` must reach the typing run (regression)."""
+    from click.testing import CliRunner
+
+    from gmlst.cli import main
+
+    captured: dict[str, object] = {}
+
+    def fake_run_mlst_like_typing(**kwargs):
+        captured.update(kwargs)
+        return None
+
+    monkeypatch.setattr(
+        "gmlst.commands.typing._run_mlst_like_typing",
+        fake_run_mlst_like_typing,
+    )
+    monkeypatch.setattr(
+        "gmlst.commands.typing.resolve_scheme_for_typing",
+        lambda **_kwargs: "ecoli_1",
+    )
+
+    sample = tmp_path / "sample.fna"
+    sample.write_text(">c1\nATGC\n")
+
+    result = CliRunner().invoke(
+        main,
+        ["typing", "mlst", "-s", "ecoli_1", "--max-depth", "25", str(sample)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert captured["max_fastq_depth"] == 25
