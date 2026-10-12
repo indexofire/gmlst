@@ -1080,8 +1080,8 @@ packages:
   - wheel ; extra == 'dev'
 - pypi: ./
   name: gmlst
-  version: 0.5.4
-  sha256: eb97595290e6dd0aab10ae57d8f4fe89543ebe4e7c7082e137ed0641f065dfad
+  version: 0.5.5
+  sha256: 82d51a44a33fbb7b5e8e213c6ae8f77ec16c723c7403d27d2691bf2b966e5dd6
   requires_dist:
   - click>=8.1
   - flask>=3.0

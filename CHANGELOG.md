@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5] - 2026-10-12
+
+### Fixed
+- `typing mlst --max-depth` was silently ignored: the option was accepted
+  but never forwarded to the typing run, so FASTQ subsampling always used
+  the default 100x. The value now reaches the engine (regression-locked
+  by a CLI plumbing test).
+
+### Changed
+- Code quality pass: removed dead parameters
+  (`render_scheme_show_table`'s `locus_stats`, `_suggestions`' `nodes`),
+  renamed unused tuple-unpacks to underscore names, and annotated the
+  scheme-free hash strategy registry as `ClassVar`.
+
 ## [Unreleased]
 
 ### Fixed
