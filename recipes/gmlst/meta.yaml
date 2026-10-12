@@ -1,5 +1,5 @@
 {% set name = "gmlst" %}
-{% set version = "0.5.2" %}
+{% set version = "0.5.4" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/gmlst-{{ version }}.tar.gz
-  sha256: 76857980ea068cf51ea34f0f444e36df01d5202c99193b3bbef47a8b9751fab3
+  sha256: 3e84b2cd42b6656a7b12fe6768e1f50570d5183dc2a7708ab1e6f3bf74392d30
 
 build:
   number: 0
