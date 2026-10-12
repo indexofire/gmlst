@@ -497,7 +497,7 @@ def cmd_show(
         json_schema_version=SCHEME_SHOW_V1,
     ):
         return
-    table = render_scheme_show_table(payload, scheme, locus_stats)
+    table = render_scheme_show_table(payload, scheme)
     emit_output_table(
         output=None,
         render_text=lambda: _render_scheme_show_text(payload),

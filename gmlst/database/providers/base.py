@@ -139,7 +139,7 @@ def download_required_files(
         return
 
     total = len(url_dest_pairs)
-    success, fail = download_files_batch(
+    _success, fail = download_files_batch(
         url_dest_pairs,
         max_concurrent=max_connections or 4,
         tool=download_tool,

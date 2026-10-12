@@ -393,7 +393,7 @@ def _minimum_arborescence(
     replaced_target: int | None = None
     for edge in contracted_solution:
         if edge.target == supernode:
-            original_adjusted, original_target = enter_map[(edge.source, edge.target)]
+            _original_adjusted, original_target = enter_map[(edge.source, edge.target)]
             replaced_target = original_target
             expanded.append(
                 next(

@@ -12,7 +12,7 @@ import shutil
 import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from gmlst.utils import temp_dir
 
@@ -459,7 +459,7 @@ class BlastHashStrategy(HashStrategy):
 class HashStrategyManager:
     """Manager for hash strategy registration and instantiation."""
 
-    _strategies: dict[str, type[HashStrategy]] = {
+    _strategies: ClassVar[dict[str, type[HashStrategy]]] = {
         "safe": SafeHashStrategy,
         "fast": FastHashStrategy,
         "ultra": UltraHashStrategy,

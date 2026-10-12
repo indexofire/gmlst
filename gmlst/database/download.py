@@ -593,7 +593,7 @@ def download_files_batch(
                 total_batches,
                 len(chunk),
             )
-            s, f = _download_single_batch(
+            _successes, f = _download_single_batch(
                 chunk,
                 max_concurrent,
                 timeout,

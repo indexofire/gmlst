@@ -89,7 +89,7 @@ def summarize_mst_payload(
         "top_variable_loci": _variable_loci(edges),
         "outliers": _outliers(edges),
         "metadata_fields": metadata_fields,
-        "suggested_analysis": _suggestions(edges, nodes),
+        "suggested_analysis": _suggestions(edges),
     }
 
 
@@ -197,7 +197,7 @@ def _outliers(edges: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return ranked[:_MAX_OUTLIERS]
 
 
-def _suggestions(edges: list[dict[str, Any]], nodes: list[dict[str, Any]]) -> list[str]:
+def _suggestions(edges: list[dict[str, Any]]) -> list[str]:
     suggestions: list[str] = []
     weights = [int(e.get("weight", 0)) for e in edges]
     outliers = [w for w in weights if w > _OUTLIER_WEIGHT]

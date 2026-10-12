@@ -135,11 +135,7 @@ def _render_scheme_show_text(payload: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
-def render_scheme_show_table(
-    payload: dict[str, object],
-    scheme: str,
-    locus_stats: list[dict[str, int | str]],
-) -> Table:
+def render_scheme_show_table(payload: dict[str, object], scheme: str) -> Table:
     """Build rich Table for `scheme show` output."""
     table = Table(title=str(payload["display_name"]), show_lines=False, padding=(0, 1))
     table.add_column("Field", style="cyan", no_wrap=True)

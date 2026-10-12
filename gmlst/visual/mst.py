@@ -119,7 +119,7 @@ def build_distance_matrix_from_tsv(
         raise ValueError("No TSV content provided")
 
     metadata_by_sample, extra_metadata_fields = _parse_metadata_text(metadata_text)
-    nodes, loci, metadata_fields = _parse_rows(
+    nodes, _loci, metadata_fields = _parse_rows(
         tsv_text,
         metadata_by_sample=metadata_by_sample,
         extra_metadata_fields=extra_metadata_fields,
