@@ -18,6 +18,7 @@ def test_legacy_is_default(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_gseek_wraps_blastn(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("gseek")
     from gmlst.gseek_engine import GseekAligner
 
     monkeypatch.setenv("GMLST_ENGINE", "gseek")

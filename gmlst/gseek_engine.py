@@ -12,6 +12,7 @@ The switch uses :mod:`gseek.compat`; legacy mode never imports gseek.
 from __future__ import annotations
 
 import functools
+import importlib
 import logging
 import os
 import time
@@ -29,10 +30,7 @@ from gmlst.aligners.base import (
 )
 from gmlst.fasta_io import iter_fasta_records
 
-if TYPE_CHECKING:
-    from gseek.compat import Engine
-
-    from gmlst.aligners.base import Aligner
+from gmlst.aligners.base import Aligner
 
 logger = logging.getLogger(__name__)
 _ENGINE_ENV = "GMLST_ENGINE"
@@ -41,9 +39,8 @@ _ENGINE_ENV = "GMLST_ENGINE"
 @functools.lru_cache(maxsize=1)
 def _resolver() -> Any:
     """Cache tool probes for one gmlst process."""
-    from gseek.execution import ToolResolver
-
-    return ToolResolver()
+    execution = importlib.import_module("gseek.execution")
+    return execution.ToolResolver()
 
 
 _VALID_MODES = frozenset({"legacy", "gseek", "shadow"})
@@ -67,7 +64,7 @@ class _LegacyEngine:
         return legacy()
 
 
-def engine() -> _LegacyEngine | Engine:
+def engine() -> Any:
     """Return the engine switch, importing gseek only for gseek/shadow."""
     raw = os.environ.get(_ENGINE_ENV, "legacy").strip().lower() or "legacy"
     if raw not in _VALID_MODES:
@@ -77,13 +74,13 @@ def engine() -> _LegacyEngine | Engine:
     if raw == "legacy":
         return _LegacyEngine()
     try:
-        from gseek.compat import Engine
+        compat = importlib.import_module("gseek.compat")
     except ImportError as exc:
         raise RuntimeError(
             "GMLST_ENGINE=gseek requires the optional gseek package "
             "(install gmlst[gseek])"
         ) from exc
-    return Engine.from_env(_ENGINE_ENV, logger=logger)
+    return compat.Engine.from_env(_ENGINE_ENV, logger=logger)
 
 
 def engine_mode() -> str:
@@ -169,7 +166,7 @@ def _gseek_align(
     if input_type != "fasta":
         raise ValueError("BlastnAligner does not support FASTQ input. Use kma backend.")
 
-    import gseek
+    gseek = importlib.import_module("gseek")
 
     sample_id = sample.stem.split(".")[0]
     alleles_fasta = index_path.parent / "alleles.fasta"
