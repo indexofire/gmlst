@@ -132,7 +132,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/02/10/5da547df7a391dcde17f59520a231527b8571e6f46fc8efb02ccb370ab12/docutils-0.22.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f7/ec/67fbef5d497f86283db54c22eec6f6140243aae73265799baaaa19cd17fb/ghp_import-2.1.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/4f/33/b732a3fea4d20d4e00c217546cd8d4ef146c650c0456e4c9350b314ab7eb/gseek-0.9.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/74/fd/e970468eb813917a7eafefd02aba211234f53b5b4939cf8aba68045595d6/gseek-0.9.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/77/de194443bf38daed9452139e960c632b0ef9f9a5dd9ce605fdf18ca9f1b1/id-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl
@@ -295,7 +295,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/02/10/5da547df7a391dcde17f59520a231527b8571e6f46fc8efb02ccb370ab12/docutils-0.22.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f7/ec/67fbef5d497f86283db54c22eec6f6140243aae73265799baaaa19cd17fb/ghp_import-2.1.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/4f/33/b732a3fea4d20d4e00c217546cd8d4ef146c650c0456e4c9350b314ab7eb/gseek-0.9.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/74/fd/e970468eb813917a7eafefd02aba211234f53b5b4939cf8aba68045595d6/gseek-0.9.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/77/de194443bf38daed9452139e960c632b0ef9f9a5dd9ce605fdf18ca9f1b1/id-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl
@@ -455,7 +455,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/02/10/5da547df7a391dcde17f59520a231527b8571e6f46fc8efb02ccb370ab12/docutils-0.22.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f7/ec/67fbef5d497f86283db54c22eec6f6140243aae73265799baaaa19cd17fb/ghp_import-2.1.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/4f/33/b732a3fea4d20d4e00c217546cd8d4ef146c650c0456e4c9350b314ab7eb/gseek-0.9.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/74/fd/e970468eb813917a7eafefd02aba211234f53b5b4939cf8aba68045595d6/gseek-0.9.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/77/de194443bf38daed9452139e960c632b0ef9f9a5dd9ce605fdf18ca9f1b1/id-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl
@@ -1084,7 +1084,7 @@ packages:
 - pypi: ./
   name: gmlst
   version: 0.5.5
-  sha256: 6cf17186e025cf0a637c19d96b849669274baea00e35494a1147a585e57441d5
+  sha256: 3206b7bfa3750aafd86edcb2349fd85fc0b69c67641d43c3d0705537bdc97f54
   requires_dist:
   - click>=8.1
   - flask>=3.0
@@ -1093,7 +1093,7 @@ packages:
   - requests>=2.31
   - rich>=13.0
   - xxhash>=3.0
-  - gseek>=0.9.1 ; extra == 'gseek'
+  - gseek>=0.9.2 ; extra == 'gseek'
   - pytest>=8.0 ; extra == 'dev'
   - ruff>=0.4 ; extra == 'dev'
   - pyright>=1.1.409 ; extra == 'dev'
@@ -1129,10 +1129,10 @@ packages:
   purls: []
   size: 365188
   timestamp: 1718981343258
-- pypi: https://files.pythonhosted.org/packages/4f/33/b732a3fea4d20d4e00c217546cd8d4ef146c650c0456e4c9350b314ab7eb/gseek-0.9.1-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/74/fd/e970468eb813917a7eafefd02aba211234f53b5b4939cf8aba68045595d6/gseek-0.9.2-py3-none-any.whl
   name: gseek
-  version: 0.9.1
-  sha256: 51de4cbe5b033defd22dcf04c9d50172596ee62dd2cce841ca2be7c611f2d758
+  version: 0.9.2
+  sha256: 0d91125dac6fbd887d4f81dd6e52277957b769aa28bb5b6ccd9bb4aafdc3f934
   requires_dist:
   - hypothesis>=6.100 ; extra == 'dev'
   - pre-commit>=3.7 ; extra == 'dev'

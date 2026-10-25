@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   four backends and the biological JSON fields (ST, allele calls, identity,
   coverage) are identical; aggregate batch wall time is ~5% slower.
 
+### Fixed
+
+- gseek BLASTN now receives `sseq`, so `--novel-allele` produces the same
+  `{locus}_novel.fasta` content as legacy.
+- minimap2 `fast`/`ultrafast` speed profiles are forwarded to gseek.
+- KMA `mem_mode` is accepted by the gseek index path; FASTQ `-mem_mode` works
+  with a fresh index.
+
 ## [0.5.5] - 2026-10-12
 
 ### Fixed
