@@ -28,6 +28,7 @@ def test_gseek_wraps_blastn(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_other_backends_stay_legacy_in_gseek_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    pytest.importorskip("gseek")
     monkeypatch.setenv("GMLST_ENGINE", "gseek")
     assert isinstance(get_aligner("minimap2"), Minimap2Aligner)
 
