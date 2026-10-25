@@ -18,9 +18,10 @@ import os
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 from gmlst.aligners.base import (
+    Aligner,
     AlignmentResult,
     AlleleMatch,
     build_alignment_result,
@@ -29,8 +30,6 @@ from gmlst.aligners.base import (
     split_allele_id,
 )
 from gmlst.fasta_io import iter_fasta_records
-
-from gmlst.aligners.base import Aligner
 
 logger = logging.getLogger(__name__)
 _ENGINE_ENV = "GMLST_ENGINE"
