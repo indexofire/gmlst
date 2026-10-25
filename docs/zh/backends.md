@@ -24,6 +24,23 @@
 | 序列差异较大或非标准物种 | `nucmer` | 对远缘匹配更敏感 |
 | 快速跑完后再做复核 | `blastn` | 很适合作为第二遍确认后端 |
 
+
+## 可选 gseek 引擎
+
+`GMLST_ENGINE=legacy|gseek|shadow` 选择比对实现。默认 `legacy`；`gseek` 当前只把
+**BLASTN** 路径切到 [gseek](https://github.com/indexofire/gseek)，`shadow` 同时跑两套、
+比较 allele calls 并返回 legacy。`kma`、`minimap2`、`nucmer` 目前仍走原有实现。
+
+```bash
+GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+```
+
+gseek 要求 Python >= 3.12。用 `pip install "gmlst[gseek]"` 安装；pixi 开发环境已包含。
+legacy 安装不会 import gseek。
+
+JSON 输出可能只在 runtime 元数据，以及同一 exact allele 出现在多个 contig 时报告的
+contig/strand 上不同；allele calls、ST、identity、coverage 完全一致。TSV 输出不变。
+
 ## BLASTN (`blastn`)
 
 `blastn` 是组装基因组场景下最稳妥的参考后端。它只接受 FASTA 输入，使用 BLAST+ 数据库流程，因此很适合做基准分型、结果复核，或者作为其他快速后端的对照。

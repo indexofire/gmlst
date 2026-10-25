@@ -24,6 +24,26 @@ In short, use `blastn` for classic MLST on assemblies, `kma` for FASTQ typing, `
 | Divergent alleles or non-standard organisms | `nucmer` | Sensitive for distant sequence matches |
 | Result confirmation after a fast pass | `blastn` | Useful as a slower second pass on flagged samples |
 
+
+## Optional gseek engine
+
+`GMLST_ENGINE=legacy|gseek|shadow` selects the alignment implementation. The
+default is `legacy`; `gseek` currently routes **BLASTN** through
+[gseek](https://github.com/indexofire/gseek), and `shadow` runs both, compares
+the allele calls, and returns legacy. The other backends (`kma`, `minimap2`,
+`nucmer`) remain on their legacy implementations for now.
+
+```bash
+GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+```
+
+gseek requires Python >= 3.12. Install it with `pip install "gmlst[gseek]"`; the
+pixi dev environment includes it. Legacy installs do not import gseek.
+
+Pure-JSON output can differ only in runtime metadata and in the reported
+contig/strand when the same exact allele occurs on multiple contigs; the allele
+calls, ST, identity, and coverage are identical. TSV output is unchanged.
+
 ## BLASTN (`blastn`)
 
 `blastn` is the conservative reference backend for assembled genomes. It only accepts FASTA input and uses the BLAST+ database workflow, so it is usually the easiest backend to trust when you want a validation run or a final comparison point.

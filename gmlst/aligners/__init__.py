@@ -34,7 +34,14 @@ def get_aligner(name: str, **kwargs) -> Aligner:
         raise ValueError(
             f"Unknown backend '{name}'. Available: {', '.join(AVAILABLE_BACKENDS)}"
         )
-    return _REGISTRY[name](**kwargs)
+    aligner = _REGISTRY[name](**kwargs)
+    from gmlst.gseek_engine import GseekAligner, engine_mode
+
+    # BLASTN is the first migrated backend; the others remain legacy until
+    # their gseek bridges are implemented.
+    if engine_mode() == "legacy" or name != "blastn":
+        return aligner
+    return GseekAligner(name, aligner)
 
 
 __all__ = [

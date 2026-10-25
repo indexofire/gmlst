@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Optional gseek engine for BLASTN.** `GMLST_ENGINE=legacy|gseek|shadow`
+  routes the default `blastn` backend through gseek; legacy stays the default,
+  shadow compares calls and returns legacy, and `kma`/`minimap2`/`nucmer`
+  remain legacy for now. On 100 *V. parahaemolyticus* genomes the batch TSV
+  output is byte-identical and the biological JSON fields (ST, allele calls,
+  identity, coverage) are identical; batch wall time is ~9% slower.
+
 ## [0.5.5] - 2026-10-12
 
 ### Fixed

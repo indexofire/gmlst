@@ -43,6 +43,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+gseek = ["gseek>=0.9.1"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
