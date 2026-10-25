@@ -197,6 +197,7 @@ def _gseek_blastn(
             "evalue": 10.0,
             "dust": False,
             "min_identity": 80.0,
+            "sseq": True,
         },
         index="none",
         resolver=_resolver(),
@@ -264,7 +265,7 @@ def _blast_fragments(records: tuple[Any, ...], loci: list[str]) -> list[AlleleMa
                 coverage=coverage,
                 alignment_length=aln_len,
                 score=record.bit_score or 0.0,
-                sequence=None,
+                sequence=getattr(record, "target_aligned", None),
                 strand="-" if reverse else "+",
                 query_contig=record.target_id,
                 query_start=tstart + 1,
@@ -293,7 +294,11 @@ def _gseek_minimap2(
         raise ValueError(
             "Minimap2Aligner does not support FASTQ input. Use kma backend."
         )
-    from gmlst.aligners.minimap2 import _FASTA_PRESET, _revcomp
+    from gmlst.aligners.minimap2 import (
+        _FASTA_PRESET,
+        _FASTA_SPEED_PROFILES,
+        _revcomp,
+    )
     from gmlst.readers.sample import SampleInput
 
     gseek = importlib.import_module("gseek")
@@ -303,6 +308,10 @@ def _gseek_minimap2(
         "secondary": "no",
         "cigar": bool(getattr(legacy, "fasta_emit_cigar", False)),
     }
+    profile = getattr(legacy, "fasta_speed_profile", "default")
+    speed = _FASTA_SPEED_PROFILES.get(profile, [])
+    for flag, value in zip(speed[::2], speed[1::2], strict=True):
+        params[flag.lstrip("-")] = value
     started = time.perf_counter()
     result = gseek.align(
         backend="minimap2",
