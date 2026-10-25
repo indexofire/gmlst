@@ -28,10 +28,9 @@ In short, use `blastn` for classic MLST on assemblies, `kma` for FASTQ typing, `
 ## Optional gseek engine
 
 `GMLST_ENGINE=legacy|gseek|shadow` selects the alignment implementation. The
-default is `legacy`; `gseek` currently routes **BLASTN** through
-[gseek](https://github.com/indexofire/gseek), and `shadow` runs both, compares
-the allele calls, and returns legacy. The other backends (`kma`, `minimap2`,
-`nucmer`) remain on their legacy implementations for now.
+default is `legacy`; `gseek` routes all four backends (`blastn`, `kma`,
+`minimap2`, `nucmer`) through [gseek](https://github.com/indexofire/gseek), and
+`shadow` runs both, compares the allele calls, and returns legacy.
 
 ```bash
 GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
