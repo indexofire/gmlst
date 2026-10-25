@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Optional gseek engine for BLASTN.** `GMLST_ENGINE=legacy|gseek|shadow`
-  routes the default `blastn` backend through gseek; legacy stays the default,
-  shadow compares calls and returns legacy, and `kma`/`minimap2`/`nucmer`
-  remain legacy for now. On 100 *V. parahaemolyticus* genomes the batch TSV
-  output is byte-identical and the biological JSON fields (ST, allele calls,
-  identity, coverage) are identical; batch wall time is ~9% slower.
+- **Optional gseek engine for all four backends.** `GMLST_ENGINE=legacy|gseek|shadow`
+  routes `blastn`, `kma`, `minimap2`, and `nucmer` through gseek; legacy stays
+  the default and shadow compares calls and returns legacy. On 100
+  *V. parahaemolyticus* genomes the batch TSV output is byte-identical for all
+  four backends and the biological JSON fields (ST, allele calls, identity,
+  coverage) are identical; aggregate batch wall time is ~5% slower.
 
 ## [0.5.5] - 2026-10-12
 

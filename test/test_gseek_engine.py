@@ -9,7 +9,6 @@ import pytest
 
 from gmlst.aligners import get_aligner
 from gmlst.aligners.blastn import BlastnAligner
-from gmlst.aligners.minimap2 import Minimap2Aligner
 
 
 def test_legacy_is_default(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -23,14 +22,9 @@ def test_gseek_wraps_blastn(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("GMLST_ENGINE", "gseek")
     assert isinstance(get_aligner("blastn"), GseekAligner)
-
-
-def test_other_backends_stay_legacy_in_gseek_mode(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    pytest.importorskip("gseek")
-    monkeypatch.setenv("GMLST_ENGINE", "gseek")
-    assert isinstance(get_aligner("minimap2"), Minimap2Aligner)
+    assert isinstance(get_aligner("minimap2"), GseekAligner)
+    assert isinstance(get_aligner("kma"), GseekAligner)
+    assert isinstance(get_aligner("nucmer"), GseekAligner)
 
 
 def test_invalid_engine_mode(monkeypatch: pytest.MonkeyPatch) -> None:

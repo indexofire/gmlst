@@ -27,9 +27,9 @@
 
 ## 可选 gseek 引擎
 
-`GMLST_ENGINE=legacy|gseek|shadow` 选择比对实现。默认 `legacy`；`gseek` 当前只把
-**BLASTN** 路径切到 [gseek](https://github.com/indexofire/gseek)，`shadow` 同时跑两套、
-比较 allele calls 并返回 legacy。`kma`、`minimap2`、`nucmer` 目前仍走原有实现。
+`GMLST_ENGINE=legacy|gseek|shadow` 选择比对实现。默认 `legacy`；`gseek` 将四种后端
+（`blastn`、`kma`、`minimap2`、`nucmer`）全部切到
+[gseek](https://github.com/indexofire/gseek)，`shadow` 同时跑两套、比较 allele calls 并返回 legacy。
 
 ```bash
 GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
