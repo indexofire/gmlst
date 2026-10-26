@@ -81,7 +81,7 @@ test("buildNewickString builds tree from single root", () => {
   const parent = new Map([
     [0, -1],
     [1, 0],
-    [2, 0],
+    [99, 0],
   ]);
   const layout = { parent };
   const graph = {
@@ -103,4 +103,68 @@ test("buildNewickString builds tree from single root", () => {
 test("newickBlob creates a text/plain blob", () => {
   const blob = newickBlob("(A,B);");
   assert.equal(blob.type, "text/plain;charset=utf-8");
+});
+
+test("buildNewickString terminates every root in a forest", () => {
+  const parent = new Map([
+    [0, -1],
+    [1, -1],
+  ]);
+  const graph = {
+    nodes: [
+      { id: 0, label: "a" },
+      { id: 1, label: "b" },
+    ],
+    edges: [],
+  };
+  const result = buildNewickString({ parent }, graph);
+  assert.ok(result);
+  const trees = result.split("\n");
+  assert.equal(trees.length, 2);
+  assert.ok(trees.every((tree) => tree.endsWith(";")));
+});
+
+test("buildNewickString excludes nodes filtered out of the rendered graph", () => {
+  const parent = new Map([
+    [0, -1],
+    [1, 0],
+    [99, 0],
+  ]);
+  const graph = {
+    nodes: [
+      { id: 0, label: "visible-root" },
+      { id: 1, label: "visible-leaf" },
+    ],
+    edges: [{ source: 1, target: 0, weight: 1 }],
+  };
+  const result = buildNewickString({ parent }, graph);
+  assert.ok(result);
+  assert.ok(result.includes("visible-root"));
+  assert.ok(result.includes("visible-leaf"));
+  assert.ok(!result.includes("99"));
+});
+
+
+test("buildSessionJsonPayload preserves color scheme, theme, table and timeline state", () => {
+  const payload = buildSessionJsonPayload({
+    lastData: { export: { schema_version: "v1" } },
+    tsvText: "tsv",
+    metadataText: "",
+    colorScheme: "vivid",
+    theme: "dark",
+    tableQuery: "K12",
+    tableSortKey: "ST",
+    tableSortDirection: "desc",
+    tableSelectionOnly: true,
+    timelineField: "year",
+    timelineValue: 2024,
+  });
+  assert.equal(payload.options.color_scheme, "vivid");
+  assert.equal(payload.options.theme, "dark");
+  assert.equal(payload.options.table_query, "K12");
+  assert.equal(payload.options.table_sort_key, "ST");
+  assert.equal(payload.options.table_sort_direction, "desc");
+  assert.equal(payload.options.table_selection_only, true);
+  assert.equal(payload.options.timeline_field, "year");
+  assert.equal(payload.options.timeline_value, 2024);
 });

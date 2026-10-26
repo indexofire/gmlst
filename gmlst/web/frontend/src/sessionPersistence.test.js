@@ -64,3 +64,27 @@ test("parseSessionState handles null response gracefully", () => {
   assert.deepEqual(state.tableRows, []);
   assert.equal(state.lastData, null);
 });
+
+
+test("parseSessionState restores color scheme, theme, table and timeline state", () => {
+  const state = parseSessionState({
+    options: {
+      color_scheme: "vivid",
+      theme: "dark",
+      table_query: "K12",
+      table_sort_key: "ST",
+      table_sort_direction: "desc",
+      table_selection_only: true,
+      timeline_field: "year",
+      timeline_value: 2024,
+    },
+  });
+  assert.equal(state.colorScheme, "vivid");
+  assert.equal(state.theme, "dark");
+  assert.equal(state.tableQuery, "K12");
+  assert.equal(state.tableSortKey, "ST");
+  assert.equal(state.tableSortDirection, "desc");
+  assert.equal(state.tableSelectionOnly, true);
+  assert.equal(state.timelineField, "year");
+  assert.equal(state.timelineValue, 2024);
+});

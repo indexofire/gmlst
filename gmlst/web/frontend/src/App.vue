@@ -30,7 +30,6 @@ import {
 
 import {
   aggregateGraph,
-  buildNewick,
   colorMapFor,
   colorValueForNode,
   correctBranchLengths,
@@ -62,7 +61,6 @@ import {
   heatmapJsonBlob,
   heatmapTsvBlob,
   newickBlob,
-  svgBlob,
   tableTsvBlob,
 } from "./tableExport.js";
 
@@ -73,6 +71,7 @@ import AlleleHeatmap from "./components/AlleleHeatmap.vue";
 import LegendBar from "./components/LegendBar.vue";
 import { fetchMst, fetchDistanceMatrix, fetchAlleleHeatmap, fetchCompareResults, fetchCompareLoci } from "./mstApi.js";
 import { parseSessionState } from "./sessionPersistence.js";
+import { buildGraphStats } from "./mstStats.js";
 
 export default {
   name: "VisualApp",
@@ -241,66 +240,15 @@ export default {
       }));
     },
     statsData() {
-      if (!this.lastData?.nodes?.length || !this.lastData?.edges?.length) {
-        return null;
-      }
-      const nodes = this.lastData.nodes;
-      const edges = this.lastData.edges;
-      const weights = edges.map((e) => Number(e.weight) || 0).sort((a, b) => a - b);
-      const n = weights.length;
-      const q = (p) => weights[Math.min(n - 1, Math.floor(p * n))] || 0;
-      const degreeMap = {};
-      for (const e of edges) {
-        degreeMap[e.source] = (degreeMap[e.source] || 0) + 1;
-        degreeMap[e.target] = (degreeMap[e.target] || 0) + 1;
-      }
-      const nodeMap = new Map(nodes.map((nd) => [String(nd.id), nd]));
-      const topDegree = Object.entries(degreeMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([id, deg]) => ({
-          label: nodeMap.get(String(id))?.label || id,
-          degree: deg,
-        }));
-      const min = weights[0];
-      const max = weights[n - 1];
-      const bins = 20;
-      const step = max === min ? 1 : (max - min) / bins;
-      const counts = new Array(bins).fill(0);
-      for (const w of weights) {
-        counts[Math.min(bins - 1, Math.floor((w - min) / step))]++;
-      }
-      const histogram = counts
-        .map((count, i) => ({
-          label: `${Math.round(min + i * step)}–${Math.round(min + (i + 1) * step)}`,
-          count,
-          pct: Math.round((count / n) * 100),
-        }))
-        .filter((b) => b.count > 0);
-      const outliers = edges
-        .filter((e) => (Number(e.weight) || 0) > 50)
-        .sort((a, b) => b.weight - a.weight)
-        .slice(0, 5)
-        .map((e) => ({
-          source: e.source_label,
-          target: e.target_label,
-          weight: e.weight,
-        }));
-      return {
-        nodeCount: nodes.length,
-        edgeCount: edges.length,
-        weightMin: min,
-        weightQ25: q(0.25),
-        weightMedian: q(0.5),
-        weightQ75: q(0.75),
-        weightMax: max,
-        zeroWeightCount: weights.filter((w) => w === 0).length,
-        histogram,
-        topDegree,
-        outliers,
-        clusterCount: this.clusterSummary.length,
-        metadataFields: this.metadataFields,
-      };
+      const graph = this.currentRenderedGraph || this.lastData;
+      return buildGraphStats(
+        graph?.nodes,
+        graph?.edges,
+        {
+          clusterCount: this.clusterSummary.length,
+          metadataFields: this.metadataFields,
+        },
+      );
     },
     summaryData() {
       if (!this.statsData) return null;
@@ -2965,49 +2913,12 @@ export default {
         this.setStatus("error", "Build a graph before exporting Newick");
         return;
       }
-      const layout = this.currentLayout;
-      const parentMap = layout.parent;
-      const childrenMap = new Map();
-      for (const [nodeId, parentId] of parentMap) {
-        if (parentId !== -1 && parentId !== undefined) {
-          if (!childrenMap.has(parentId)) {
-            childrenMap.set(parentId, []);
-          }
-          childrenMap.get(parentId).push(nodeId);
-        }
-      }
-      const edges = this.currentRenderedGraph.edges || [];
-      const weightMap = new Map();
-      for (const edge of edges) {
-        const sourceId = Number(edge.source);
-        const targetId = Number(edge.target);
-        const parentId = parentMap.get(sourceId);
-        if (parentId === targetId) {
-          weightMap.set(String(sourceId), Number(edge.weight));
-        }
-        const parentId2 = parentMap.get(targetId);
-        if (parentId2 === sourceId) {
-          weightMap.set(String(targetId), Number(edge.weight));
-        }
-      }
-      const roots = [];
-      for (const [nodeId, parentId] of parentMap) {
-        if (parentId === -1 || parentId === undefined) {
-          roots.push(nodeId);
-        }
-      }
-      if (roots.length === 0) {
+      const newick = buildNewickString(this.currentLayout, this.currentRenderedGraph);
+      if (!newick) {
         this.setStatus("error", "No root node found for Newick export");
         return;
       }
-      const parts = [];
-      const renderedNodes = this.currentRenderedGraph.nodes;
-      for (const root of roots) {
-        const visited = new Set();
-        parts.push(buildNewick(root, null, weightMap, childrenMap, visited, renderedNodes));
-      }
-      const newick = parts.join("\n") + ";";
-      this._downloadBlob("gmlst_tree.nwk", new Blob([newick], { type: "text/plain;charset=utf-8" }));
+      this._downloadBlob("gmlst_tree.nwk", newickBlob(newick));
       this.setStatus("ok", "Newick tree exported");
     },
     exportGraphJson() {
@@ -3015,11 +2926,13 @@ export default {
         this.setStatus("error", "Build a graph before exporting JSON");
         return;
       }
-      this.downloadJson("gmlst_graph.json", {
-        schema_version: this.lastData.export?.schema_version || "gmlst-visual-export-v1",
-        exported_from: "gmlst visual",
-        graph: this.currentRenderedGraph,
-      });
+      this.downloadJson(
+        "gmlst_graph.json",
+        buildGraphJsonPayload(
+          this.lastData.export?.schema_version,
+          this.currentRenderedGraph,
+        ),
+      );
       this.setStatus("ok", "Current graph JSON exported");
     },
     exportTableTsv() {
@@ -3116,42 +3029,7 @@ export default {
         this.setStatus("error", "Build a graph before exporting session JSON");
         return;
       }
-      this.downloadJson("gmlst_session.json", {
-        schema_version: this.lastData.export?.schema_version || "gmlst-visual-export-v1",
-        exported_from: "gmlst visual",
-        inputs: {
-          tsv: this.tsvText,
-          metadata_tsv: this.metadataText,
-        },
-        options: {
-          analysis_view: this.analysisView,
-          include_missing: this.includeMissing,
-          aggregate_profiles: this.aggregateProfiles,
-          overlap_relief: this.overlapRelief,
-          layout_mode: this.layoutMode,
-          edge_length_mode: this.edgeLengthMode,
-          edge_length_scale: this.edgeLengthScale,
-          long_branch_mode: this.longBranchMode,
-          long_branch_threshold: this.longBranchThreshold,
-          color_by: this.colorBy,
-          max_weight: this.maxWeight,
-          collapsed_nodes: this.collapsedNodes,
-          collapse_threshold: this.collapseThreshold,
-          hidden_legend_values: this.hiddenLegendValues,
-          node_search_query: this.nodeSearchQuery,
-          show_edge_labels: this.showEdgeLabels,
-          scale_node_size: this.scaleNodeSize,
-          aggregate_nodes: this.aggregateNodes,
-          correctness_overlay: this.correctnessOverlay,
-          manual_root_id: this.manualRootId,
-          view_filter_mode: this.viewFilterMode,
-          cluster_filter: this.clusterFilter,
-          node_position_overrides: this.nodePositionOverrides,
-          hidden_node_ids: this._hiddenNodeIds,
-          custom_node_colors: this._customNodeColors,
-        },
-        response: this.lastData,
-      });
+      this.downloadJson("gmlst_session.json", buildSessionJsonPayload(this));
       this.setStatus("ok", "Session JSON exported");
     },
   },

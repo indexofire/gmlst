@@ -73,20 +73,26 @@ export function downloadJson(filename, payload) {
  */
 export function buildNewickString(layout, renderedGraph) {
   const parentMap = layout.parent
+  const renderedNodes = renderedGraph.nodes || []
+  const renderedIds = new Set(renderedNodes.map((node) => node.id))
   const childrenMap = new Map()
   for (const [nodeId, parentId] of parentMap) {
-    if (parentId !== -1 && parentId !== undefined) {
-      if (!childrenMap.has(parentId)) {
-        childrenMap.set(parentId, [])
-      }
-      childrenMap.get(parentId).push(nodeId)
+    if (!renderedIds.has(nodeId) || !renderedIds.has(parentId)) {
+      continue
     }
+    if (!childrenMap.has(parentId)) {
+      childrenMap.set(parentId, [])
+    }
+    childrenMap.get(parentId).push(nodeId)
   }
 
   const weightMap = new Map()
   for (const edge of renderedGraph.edges || []) {
     const sourceId = Number(edge.source)
     const targetId = Number(edge.target)
+    if (!renderedIds.has(sourceId) || !renderedIds.has(targetId)) {
+      continue
+    }
     const parentId = parentMap.get(sourceId)
     if (parentId === targetId) {
       weightMap.set(String(sourceId), Number(edge.weight))
@@ -97,12 +103,9 @@ export function buildNewickString(layout, renderedGraph) {
     }
   }
 
-  const roots = []
-  for (const [nodeId, parentId] of parentMap) {
-    if (parentId === -1 || parentId === undefined) {
-      roots.push(nodeId)
-    }
-  }
+  const roots = renderedNodes
+    .map((node) => node.id)
+    .filter((nodeId) => !parentMap.has(nodeId) || !renderedIds.has(parentMap.get(nodeId)))
   if (roots.length === 0) {
     return null
   }
@@ -110,9 +113,9 @@ export function buildNewickString(layout, renderedGraph) {
   const parts = []
   for (const root of roots) {
     const visited = new Set()
-    parts.push(buildNewick(root, null, weightMap, childrenMap, visited, renderedGraph.nodes))
+    parts.push(buildNewick(root, null, weightMap, childrenMap, visited, renderedNodes))
   }
-  return parts.join("\n") + ";"
+  return parts.map((part) => `${part};`).join("\n")
 }
 
 /**
@@ -211,6 +214,14 @@ export function buildSessionJsonPayload(state) {
       long_branch_mode: state.longBranchMode,
       long_branch_threshold: state.longBranchThreshold,
       color_by: state.colorBy,
+      color_scheme: state.colorScheme,
+      theme: state.theme,
+      table_query: state.tableQuery,
+      table_sort_key: state.tableSortKey,
+      table_sort_direction: state.tableSortDirection,
+      table_selection_only: state.tableSelectionOnly,
+      timeline_field: state.timelineField,
+      timeline_value: state.timelineValue,
       max_weight: state.maxWeight,
       collapsed_nodes: state.collapsedNodes,
       collapse_threshold: state.collapseThreshold,
