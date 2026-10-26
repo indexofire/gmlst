@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/visualSelection.test.js",
+    "test": "node --test src/*.test.js",
     "audit": "npm audit --audit-level=moderate"
   },
   "dependencies": {
