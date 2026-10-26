@@ -1,3 +1,3 @@
 """gmlst – Fast MLST, cgMLST/wgMLST typing via multiple alignment backends."""
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
