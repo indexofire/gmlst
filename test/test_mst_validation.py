@@ -407,3 +407,31 @@ class TestMstCrossMethodComparison:
         assert len(set(counts.values())) == 1, (
             f"{tsv_name}: node counts differ across methods: {counts}"
         )
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_mst_method_node_limit_rejects_oversized_tree(
+    method: MstMethod, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from gmlst.visual import mst as mst_module
+
+    monkeypatch.setitem(mst_module.MAX_MST_NODES, method, 2)
+    with pytest.raises(ValueError, match="too many nodes"):
+        build_mst_from_tsv(LINEAR_CHAIN_TSV, method=method)
+
+
+@pytest.mark.parametrize("kind", ["matrix", "heatmap"])
+def test_matrix_builder_sample_limit(
+    kind: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from gmlst.visual import mst as mst_module
+
+    monkeypatch.setattr(mst_module, "MAX_MATRIX_NODES", 2)
+    if kind == "matrix":
+        with pytest.raises(ValueError, match="too many samples"):
+            mst_module.build_distance_matrix_from_tsv(
+                LINEAR_CHAIN_TSV, include_missing=False
+            )
+    else:
+        with pytest.raises(ValueError, match="too many samples"):
+            mst_module.build_allele_heatmap_from_tsv(LINEAR_CHAIN_TSV)

@@ -34,6 +34,17 @@ VALID_MST_METHODS: tuple[MstMethod, ...] = (
     "grapetree_classic",
 )
 
+# Method-specific guards: Edmonds is the most expensive (directed arborescence
+# + root recrafting), and grapetree_v2 builds quadratic distance/edge tables.
+# Classic Kruskal is the safe path for very large trees.
+MAX_MST_NODES: dict[str, int] = {
+    "edmonds": 1000,
+    "grapetree_v2": 2000,
+    "grapetree_classic": 5000,
+}
+# A full n x n JSON matrix is quadratic in bytes and browser memory.
+MAX_MATRIX_NODES = 1000
+
 
 def build_mst_from_tsv(
     tsv_text: str,
@@ -90,6 +101,13 @@ def build_mst_from_tsv(
             nodes, loci, include_missing=include_missing, method=method
         )
 
+    limit = MAX_MST_NODES.get(method)
+    if limit is not None and len(payload_mst_nodes) > limit:
+        raise ValueError(
+            f"too many nodes for MST method {method!r}: "
+            f"{len(payload_mst_nodes)} > {limit}; use a cheaper method or fewer samples"
+        )
+
     payload_nodes = _build_payload(payload_mst_nodes, meta_breakdowns)
     if len(payload_mst_nodes) == 1:
         return payload_nodes, [], metadata_fields
@@ -128,6 +146,10 @@ def build_distance_matrix_from_tsv(
     if aggregate_profiles:
         nodes, meta_breakdowns = _aggregate_profiles(nodes)
 
+    if len(nodes) > MAX_MATRIX_NODES:
+        raise ValueError(
+            f"too many samples for distance matrix: {len(nodes)} > {MAX_MATRIX_NODES}"
+        )
     payload_nodes = _build_payload(nodes, meta_breakdowns)
     labels = [str(node["label"]) for node in payload_nodes]
     matrix: list[list[int]] = []
@@ -240,6 +262,10 @@ def build_allele_heatmap_from_tsv(
     if aggregate_profiles:
         nodes, meta_breakdowns = _aggregate_profiles(nodes)
 
+    if len(nodes) > MAX_MATRIX_NODES:
+        raise ValueError(
+            f"too many samples for allele heatmap: {len(nodes)} > {MAX_MATRIX_NODES}"
+        )
     payload_nodes = _build_payload(nodes, meta_breakdowns)
     labels = [str(node["label"]) for node in payload_nodes]
 

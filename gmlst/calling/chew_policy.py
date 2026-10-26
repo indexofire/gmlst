@@ -26,6 +26,18 @@ from pathlib import Path
 from gmlst.calling.allele import LocusCall
 from gmlst.fasta_io import iter_fasta_records, iter_fasta_sequences
 
+# Parsed allele metadata is expensive to rebuild per sample.  The key is
+# content-stat based so a scheme update naturally invalidates the entry.
+_CHEW_METADATA_CACHE: dict[
+    tuple[tuple[str, str, int, int], ...],
+    tuple[
+        dict[str, tuple[int, int, int]],
+        dict[tuple[str, str], str],
+        dict[tuple[str, str], str],
+    ],
+] = {}
+_CHEW_METADATA_CACHE_MAX = 8
+
 
 def classify_chew_style_calls(
     *,
@@ -70,9 +82,7 @@ def classify_chew_style_calls(
     dict[str, str]
         ``{locus: classification}`` for every input locus call.
     """
-    stats = _load_locus_length_stats(allele_files)
-    allele_hashes = _load_allele_data(allele_files, as_hash=True)
-    allele_sequences = _load_allele_data(allele_files)
+    stats, allele_hashes, allele_sequences = _load_chew_metadata(allele_files)
     classified: dict[str, str] = {}
     for locus, call in locus_calls.items():
         classified[locus] = _classify_locus(
@@ -235,6 +245,51 @@ def _size_classification(
     if seq_len > high:
         return "ALM"
     return None
+
+
+def _load_chew_metadata(
+    allele_files: dict[str, Path],
+) -> tuple[
+    dict[str, tuple[int, int, int]],
+    dict[tuple[str, str], str],
+    dict[tuple[str, str], str],
+]:
+    """Load lengths, hashes, and sequences in one pass, memoized by file stats."""
+    key = tuple(
+        sorted(
+            (
+                locus,
+                str(path),
+                path.stat().st_size,
+                path.stat().st_mtime_ns,
+            )
+            for locus, path in allele_files.items()
+        )
+    )
+    cached = _CHEW_METADATA_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    stats: dict[str, tuple[int, int, int]] = {}
+    hashes: dict[tuple[str, str], str] = {}
+    sequences: dict[tuple[str, str], str] = {}
+    for locus, allele_file in allele_files.items():
+        lengths: list[int] = []
+        for header, sequence in iter_fasta_records(allele_file):
+            allele_id = _resolve_allele_id(locus, header)
+            lengths.append(len(sequence))
+            hashes[(locus, allele_id)] = hashlib.sha256(
+                sequence.upper().encode("ascii")
+            ).hexdigest()
+            sequences[(locus, allele_id)] = sequence.upper()
+        if lengths:
+            stats[locus] = (min(lengths), _mode(lengths), max(lengths))
+
+    result = (stats, hashes, sequences)
+    if len(_CHEW_METADATA_CACHE) >= _CHEW_METADATA_CACHE_MAX:
+        _CHEW_METADATA_CACHE.pop(next(iter(_CHEW_METADATA_CACHE)))
+    _CHEW_METADATA_CACHE[key] = result
+    return result
 
 
 def _load_locus_length_stats(

@@ -2112,3 +2112,9 @@ def test_get_routes_unaffected_by_origin_check() -> None:
     assert index.status_code == 200
     health = client.get("/health", headers={"Origin": "http://evil.com"})
     assert health.status_code == 200
+
+
+def test_visual_default_upload_cap_matches_client_file_limit() -> None:
+    from gmlst.visual import app as visual_app
+
+    assert visual_app._MAX_CONTENT_LENGTH == 64 * 1024 * 1024

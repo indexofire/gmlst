@@ -14,7 +14,7 @@ from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 from gmlst.visual.api_routes import api_bp
 
 _WELL_KNOWN_PREFIX = "/.well-known/"
-_MAX_CONTENT_LENGTH = 32 * 1024 * 1024
+_MAX_CONTENT_LENGTH = 64 * 1024 * 1024
 
 
 class _QuietNotFoundFilter(logging.Filter):
@@ -92,7 +92,7 @@ def create_visual_app(*, title: str) -> Flask:
     """Create the visualization Flask app serving the Vue UI and JSON API.
 
     Installs same-origin protection for state-changing requests, security
-    headers, a 32 MB upload cap, and the /api/* routes from
+    headers, a 64 MB upload cap, and the /api/* routes from
     :mod:`gmlst.visual.api_routes`.
     """
     web_root = Path(__file__).resolve().parents[1] / "web"
