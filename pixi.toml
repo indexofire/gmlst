@@ -1,6 +1,6 @@
 [workspace]
 name = "gmlst"
-version = "0.5.5"
+version = "0.6.0"
 description = "Fast MLST typing via multiple alignment backends"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64", "osx-arm64", "osx-64"]
@@ -40,7 +40,7 @@ samtools = ">=1.23.1,<2"
 pytest-cov = ">=5"
 
 [pypi-dependencies]
-gseek = ">=0.9.2"
+gseek = ">=0.10.2"
 click = ">=8.1"
 flask = ">=3.0"
 requests = ">=2.31"

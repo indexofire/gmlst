@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gmlst"
-version = "0.5.5"
+version = "0.6.0"
 description = "Fast bacterial genome typing with MLST, cgMLST, and scheme-free discovery"
 readme = "README.md"
 license = {text = "MIT"}
@@ -43,7 +43,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-gseek = ["gseek>=0.9.2"]
+gseek = ["gseek>=0.10.2"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
