@@ -1,6 +1,6 @@
 # cgMLST Guide
 
-This guide covers `gmlst typing cgmlst`, including mode selection, FASTA and FASTQ behavior, prefiltering, CDS-aware classification, and performance tuning. For the full CLI surface, see [CLI reference](cli/index.md). For broader implementation context, see [system architecture](../architecture/system.md).
+This guide covers `gmlst typing cgmlst`, including mode selection, FASTA and FASTQ behavior, prefiltering, CDS-aware classification, and performance tuning. For the full CLI surface, see [CLI reference](cli/index.md). For broader implementation context, see [typing pipeline](../architecture/typing-pipeline.md).
 
 ## Overview
 

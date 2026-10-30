@@ -443,7 +443,7 @@ pixi run ruff check .
 pixi run ruff format .
 ```
 
-See [docs/development/contributing.md](docs/development/contributing.md) for contributor workflow and [docs/architecture/system.md](docs/architecture/system.md) for module boundaries and typing-path contracts.
+See [docs/development/index.md](docs/development/index.md) for contributor workflow and [docs/architecture/index.md](docs/architecture/index.md) for module boundaries and typing-path contracts.
 
 ## Documentation Index
 

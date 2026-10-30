@@ -1,6 +1,6 @@
 # Providers
 
-This document describes the scheme providers supported by `gmlst`, how they are implemented, and where provider-specific behavior lives in the code. For the overall system design, see [`docs/architecture/system.md`](../architecture/system.md).
+This document describes the scheme providers supported by `gmlst`, how they are implemented, and where provider-specific behavior lives in the code. For the overall system design, see [`docs/architecture/overview.md`](../architecture/overview.md).
 
 ## Overview
 
@@ -470,6 +470,6 @@ The `--force` flag refreshes the catalog (scheme list) from all providers before
 
 ## Related documentation
 
-- [`docs/architecture/system.md`](../architecture/system.md), system design and layering
+- [`docs/architecture/overview.md`](../architecture/overview.md), system design and layering
 - [`docs/usage/cli/index.md`](cli/index.md), command syntax and options
 - [`docs/installation/quick-start.md`](../installation/quick-start.md), basic end-to-end usage

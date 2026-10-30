@@ -21,7 +21,7 @@ MLST、大规模 cgMLST/wgMLST 方案以及无方案发现流程。它可以对�
 | 在浏览器中构建 MST | [可视化](usage/visualization.zh.md) |
 | 不指定 `-s` 自动检测物种 | [指纹数据库](usage/fingerprint-database.zh.md) |
 | 安全消费 JSON 输出 | [JSON 输出信封](usage/cli/index.zh.md#json-输出信封) |
-| 排查问题 | [常见问题](reference/faq.zh.md) |
+| 排查问题 | [常见问题](reference/index.zh.md) |
 
 ## gmlst 做什么
 

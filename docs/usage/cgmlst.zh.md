@@ -1,6 +1,6 @@
 # cgMLST 指南
 
-本文介绍 `gmlst typing cgmlst` 的使用方法，包括模式选择、FASTA 与 FASTQ 行为、预过滤、CDS 预测、调用策略以及性能调优。完整命令请参见 [CLI 参考](cli/index.zh.md)，更底层的实现说明可参考 [系统架构](../architecture/system.zh.md)。
+本文介绍 `gmlst typing cgmlst` 的使用方法，包括模式选择、FASTA 与 FASTQ 行为、预过滤、CDS 预测、调用策略以及性能调优。完整命令请参见 [CLI 参考](cli/index.zh.md)，更底层的实现说明可参考 [分型流水线](../architecture/typing-pipeline.zh.md)。
 
 ## 概述
 

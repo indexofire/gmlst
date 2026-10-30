@@ -118,7 +118,7 @@ Architecture lock:
 
 - FASTA: chew-style mode branches are active and interpreted normally.
 - FASTQ: KMA-first policy is enforced at CLI layer; mode-specific chew branches are not interpreted as FASTQ features.
-- Full contract and flow diagrams: see `docs/architecture/system.md`.
+- Full contract and flow diagrams: see `docs/architecture/typing-pipeline.md`.
 
 Additional tuning:
 

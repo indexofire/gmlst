@@ -23,7 +23,7 @@ visualizer.
 | Build an MST in the browser | [Visualization](usage/visualization.md) |
 | Auto-detect species without `-s` | [Fingerprint database](usage/fingerprint-database.md) |
 | Consume JSON output safely | [JSON output envelope](usage/cli/index.md#json-output-envelope) |
-| Troubleshoot a problem | [FAQ](reference/faq.md) |
+| Troubleshoot a problem | [FAQ](reference/index.md) |
 
 ## What gmlst does
 

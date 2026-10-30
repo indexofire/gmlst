@@ -60,6 +60,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Long documentation pages split by topic, with extra examples:
+  - `architecture/` → overview, modules, CLI, typing pipeline, backends,
+    providers, cache, workflows, visualization
+  - `reference/` → general, installation, schemes, typing, output,
+    configuration, performance, errors (each FAQ topic on its own page)
+  - `development/` → setup, workflow, code style, extending, testing,
+    documentation, frontend, pull requests, release
 - Documentation reorganized to match the `gside` layout: docs now use topic
   sections (`installation/`, `usage/`, `architecture/`, `reference/`,
   `development/`) with an `index.md` landing page per section and bilingual

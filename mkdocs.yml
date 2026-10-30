@@ -42,11 +42,28 @@ plugins:
             Visualization: 可视化
             Fingerprint Database: 指纹数据库
             Architecture: 架构
-            System Architecture: 系统架构
+            Overview: 概览
+            Modules and Layers: 模块与分层
+            CLI Layer: CLI 层
+            Typing Pipeline: 分型流水线
+            Cache Management: 缓存管理
+            Workflows: 工作流
             Reference: 参考
-            FAQ: 常见问题
+            General Questions: 一般问题
+            Schemes: 方案
+            Output: 输出
+            Performance: 性能
+            Errors: 错误与退出码
             Development: 开发
-            Contributing: 贡献指南
+            Setup: 开发环境
+            Workflow: 开发工作流
+            Code Style: 代码风格
+            Extending: 扩展
+            Testing: 测试
+            Documentation: 文档
+            Frontend: 前端
+            Pull Requests: Pull Request
+            Release: 发布流程
 
 theme:
   name: material
@@ -100,13 +117,36 @@ nav:
     - Fingerprint Database: usage/fingerprint-database.md
   - Architecture:
     - architecture/index.md
-    - System Architecture: architecture/system.md
+    - Overview: architecture/overview.md
+    - Modules and Layers: architecture/modules.md
+    - CLI Layer: architecture/cli.md
+    - Typing Pipeline: architecture/typing-pipeline.md
+    - Alignment Backends: architecture/backends.md
+    - Database Providers: architecture/providers.md
+    - Cache Management: architecture/cache.md
+    - Workflows: architecture/workflows.md
+    - Visualization: architecture/visualization.md
   - Reference:
     - reference/index.md
-    - FAQ: reference/faq.md
+    - General Questions: reference/general.md
+    - Installation: reference/installation.md
+    - Schemes: reference/schemes.md
+    - Typing: reference/typing.md
+    - Output: reference/output.md
+    - Configuration: reference/configuration.md
+    - Performance: reference/performance.md
+    - Errors: reference/errors.md
   - Development:
     - development/index.md
-    - Contributing: development/contributing.md
+    - Setup: development/setup.md
+    - Workflow: development/workflow.md
+    - Code Style: development/code-style.md
+    - Extending: development/extending.md
+    - Testing: development/testing.md
+    - Documentation: development/docs.md
+    - Frontend: development/frontend.md
+    - Pull Requests: development/pull-requests.md
+    - Release: development/release.md
 
 markdown_extensions:
   - md_in_html

@@ -1,6 +1,6 @@
 # Providers 文档
 
-本文说明 `gmlst` 支持的 scheme provider、它们在代码中的实现方式，以及各 provider 的特殊行为。系统整体设计请参考 [`docs/architecture/system.md`](../architecture/system.zh.md)。
+本文说明 `gmlst` 支持的 scheme provider、它们在代码中的实现方式，以及各 provider 的特殊行为。系统整体设计请参考 [`docs/architecture/overview.zh.md`](../architecture/overview.zh.md)。
 
 ## 概览
 
@@ -470,6 +470,6 @@ gmlst scheme update --force --all
 
 ## 相关文档
 
-- [`docs/architecture/system.md`](../architecture/system.zh.md)，系统设计与分层
+- [`docs/architecture/overview.zh.md`](../architecture/overview.zh.md)，系统设计与分层
 - [`docs/usage/cli/index.md`](cli/index.zh.md)，命令语法与选项
 - [`docs/installation/quick-start.md`](../installation/quick-start.zh.md)，基础上手流程

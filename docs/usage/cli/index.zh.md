@@ -118,7 +118,7 @@ cgMLST 默认值与性能说明：
 
 - FASTA：chew 风格模式分支处于激活状态并正常解释。
 - FASTQ：CLI 层强制 KMA-first 策略；与模式相关的 chew 分支不会按 FASTQ 特性解释。
-- 完整契约与流程图见 `docs/architecture/system.md`。
+- 完整契约与流程图见 `docs/architecture/typing-pipeline.md`。
 
 额外调优（环境变量）：
 
