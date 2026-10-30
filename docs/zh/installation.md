@@ -30,10 +30,32 @@ pip install gmlst
 
 ```bash
 # 让 gmlst 发挥所有功能，安装所有的依赖软件
-conda install blast, minimap2, mummer4, kma
+conda install -c conda-forge -c bioconda blast minimap2 mummer4 kma
 ```
 
-### 方式 2：使用源代码安装
+### 方式 2：使用仓库自带的 `environment.yml`
+
+仓库根目录提供了 `environment.yml`，它会从 conda-forge 安装 Python 3.12，并一次性装齐 gmlst 能调用的全部外部工具（BLAST+、minimap2、MUMmer4、KMA、KMC、samtools、MMseqs2、Prodigal、aria2），随后从 PyPI 安装 `gmlst`。在仓库内工作时，这是获得完整功能环境最省事的方式：
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+conda env create -f environment.yml
+conda activate gmlst
+```
+
+如果希望安装本地源码而不是 PyPI 发布版，请在创建环境前把 `environment.yml` 的 `pip:` 小节中的 `gmlst` 条目替换为 `- -e .`。
+
+验证安装：
+
+```bash
+gmlst --version
+gmlst utils check -b blastn
+```
+
+版本约束与 `pixi.toml`（项目的权威环境定义）保持一致，四个比对后端开箱即用。如果已有环境、只想补装工具，请使用方式 1。
+
+### 方式 3：使用源代码安装
 
 #### 使用 pixi 安装
 
@@ -132,7 +154,7 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
-### 方式 3：使用 Docker 安装
+### 方式 4：使用 Docker 安装
 
 如果你想要一个开箱即用的完整环境（无需配置 Python 或 conda），推荐使用 Docker。镜像包含 gmlst 以及所有外部比对工具（blastn、minimap2、nucmer、kma、mmseqs2、prodigal、samtools）。
 
@@ -341,7 +363,7 @@ gmlst --version
 
 ## 外部依赖
 
-如果你使用 Pixi，这些工具会自动安装。如果你使用 pip 或源码安装，则需要根据自己打算使用的后端手动安装对应工具。
+如果你使用 Pixi，这些工具会自动安装。仓库自带的 [`environment.yml`](https://github.com/indexofire/gmlst/blob/main/environment.yml) 可以一次性装齐。如果你使用 pip 或源码安装，则需要根据自己打算使用的后端手动安装对应工具。
 
 | 工具 | 作用 | 对应后端或功能 | Conda 安装命令 | Homebrew 安装命令 |
 |---|---|---|---|---|

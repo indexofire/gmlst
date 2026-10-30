@@ -59,6 +59,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `environment.yml` at the repository root: creates a conda environment with
+  Python 3.12, every external tool gmlst can drive (BLAST+, minimap2,
+  MUMmer4, KMA, KMC, samtools, MMseqs2, Prodigal, aria2) and the package
+  itself, so one `conda env create -f environment.yml` yields a fully
+  functional install. Tool constraints mirror `pixi.toml`.
+
 ### Fixed
 - Version metadata realigned across the repository: `pyproject.toml`,
   `gmlst/__init__.py` (`gmlst --version`), and `pixi.toml` now report 0.5.4,

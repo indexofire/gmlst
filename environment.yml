@@ -1,0 +1,44 @@
+# Conda environment for gmlst with all external tools it can drive.
+#
+#   conda env create -f environment.yml
+#   conda activate gmlst
+#   gmlst utils check -b blastn     # verify backend availability
+#
+# This installs the Python package from PyPI. If you are working from a
+# checkout and want your local code instead, replace the `gmlst` entry in the
+# `pip:` section with `- -e .` and run:
+#
+#   conda env create -f environment.yml
+#
+# Version constraints mirror pixi.toml, the project's canonical environment.
+# They are lower bounds (plus upper bounds where a major release is known to
+# break the caller), so the solver can pick current builds per platform.
+name: gmlst
+
+channels:
+  # Channel order matters: conda-forge provides the shared dependencies that
+  # bioconda packages are built against, so it must be searched first.
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - python=3.12
+
+  # Alignment backends (select with -b/--backend)
+  - blast>=2.14          # blastn  - FASTA
+  - minimap2>=2.26       # minimap2 - FASTA (cgMLST default)
+  - mummer4>=4.0         # nucmer   - FASTA, sensitive comparisons
+  - kma>=1.6.8,<2        # kma      - FASTA and FASTQ
+
+  # Supporting tools
+  - mmseqs2>=15          # tgmlst gene clustering (hash fallback when absent)
+  - prodigal>=2.6        # CDS prediction fallback for pyrodigal
+  - kmc>=3.2.4,<4        # k-mer tooling, bundled by pixi.toml and the Docker image
+  - samtools>=1.23.1,<2  # BAM temp files for minimap2 targeted validation
+  - aria2>=1.36          # preferred downloader; curl/wget/httpx are fallbacks
+
+  - pip
+  - pip:
+      - gmlst>=0.6.1
+      # Optional accelerated alignment engine (GMLST_ENGINE=gseek).
+      - gseek>=0.10.2

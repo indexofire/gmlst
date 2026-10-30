@@ -30,10 +30,32 @@ To make gmlst functional, you also need to install bioinformatics alignment tool
 
 ```bash
 # Install all backend dependencies for full functionality
-conda install blast minimap2 mummer4 kma
+conda install -c conda-forge -c bioconda blast minimap2 mummer4 kma
 ```
 
-### Method 2: Install from source
+### Method 2: Install with the bundled `environment.yml`
+
+The repository ships an `environment.yml` that installs Python 3.12 from conda-forge plus every external tool gmlst can drive (BLAST+, minimap2, MUMmer4, KMA, KMC, samtools, MMseqs2, Prodigal, aria2), then installs the `gmlst` package from PyPI. This is the shortest path to a fully functional environment when working from a checkout:
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+conda env create -f environment.yml
+conda activate gmlst
+```
+
+To install your local checkout instead of the PyPI release, replace the `gmlst` entry in the `pip:` section of `environment.yml` with `- -e .` before creating the environment.
+
+Verify the result:
+
+```bash
+gmlst --version
+gmlst utils check -b blastn
+```
+
+Version constraints follow `pixi.toml` (the project's canonical environment), so all four alignment backends are usable out of the box. If you already have an environment and only need the tools, use Method 1 instead.
+
+### Method 3: Install from source
 
 #### Install with Pixi
 
@@ -132,7 +154,7 @@ gmlst --help
 gmlst utils check -b blastn
 ```
 
-### Method 3: Install with Docker
+### Method 4: Install with Docker
 
 Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed. The image includes gmlst plus all external alignment tools (blastn, minimap2, nucmer, kma, mmseqs2, prodigal, samtools).
 
@@ -341,7 +363,7 @@ gmlst --version
 
 ## External Dependencies
 
-If you install with Pixi, these tools are handled for you. If you install with pip or from source, install the ones required by the backends you plan to use.
+If you install with Pixi, these tools are handled for you. The bundled [`environment.yml`](https://github.com/indexofire/gmlst/blob/main/environment.yml) installs all of them at once. If you install with pip or from source, install the ones required by the backends you plan to use.
 
 | Tool | Used for | Needed by backend or feature | Conda install | Homebrew install |
 |---|---|---|---|---|

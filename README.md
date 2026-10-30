@@ -46,7 +46,16 @@ To make gmlst functional, you also need to install bioinformatics alignment tool
 
 ```bash
 # Install all backend dependencies for full functionality
-conda install blast minimap2 mummer4 kma
+conda install -c conda-forge -c bioconda blast minimap2 mummer4 kma
+```
+
+Or install the package and every external tool in one step with the bundled environment file (requires a checkout):
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+conda env create -f environment.yml
+conda activate gmlst
 ```
 
 For other installation methods (Pixi, uv, source, Docker), see the [Installation Guide](docs/en/installation.md).

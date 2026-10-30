@@ -45,10 +45,19 @@ pip install gmlst
 
 ```bash
 # 让 gmlst 发挥所有功能，安装所有的依赖软件
-conda install blast, minimap2, mummer4, kma
+conda install -c conda-forge -c bioconda blast minimap2 mummer4 kma
 ```
 
-其他安装方法参见文档/安装部分。
+也可以借助仓库自带的 `environment.yml`，一次性装好 gmlst 与全部外部工具（需先克隆仓库）：
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+conda env create -f environment.yml
+conda activate gmlst
+```
+
+其他安装方法参见[安装文档](docs/zh/installation.md)。
 
 ## 快速开始
 
