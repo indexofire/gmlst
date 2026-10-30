@@ -7,7 +7,7 @@
 
 `gmlst` is a fast Python 3.12 CLI for bacterial genome typing with classical MLST, large cgMLST and wgMLST schemes, and scheme-free discovery workflows. It supports assembled genomes and raw reads, several alignment backends, multiple public data providers, custom local schemes, offline cache reuse, and local MST visualization from one command-line interface.
 
-English | [简体中文](README_ZH.md)
+English | [简体中文](README.zh.md)
 
 ## Features
 
@@ -58,7 +58,7 @@ conda env create -f environment.yml
 conda activate gmlst
 ```
 
-For other installation methods (Pixi, uv, source, Docker), see the [Installation Guide](docs/en/installation.md).
+For other installation methods (Pixi, uv, source, Docker), see the [Installation Guide](docs/installation/guide.md).
 
 ## Quick Start
 
@@ -289,7 +289,7 @@ The `visual` subcommands also read profiles from stdin, so you can pipe typing r
 gmlst typing cgmlst -s vparahaemolyticus_3 *.fna --format tsv | gmlst visual mst --input - --format summary
 ```
 
-See the [Visualization Guide](docs/en/visual_guide.md) for the full set of `visual` commands (`mst`, `matrix`, `heatmap`, `compare`, `locus-diff`).
+See the [Visualization Guide](docs/usage/visualization.md) for the full set of `visual` commands (`mst`, `matrix`, `heatmap`, `compare`, `locus-diff`).
 
 ## Configuration
 
@@ -386,7 +386,7 @@ gmlst typing mlst -s saureus_1 --minscore 50 --format json *.fasta -o qc_passed.
 {"schema_version": "gmlst-typing-v1", "data": [{"file": "sample.fasta", "scheme": "saureus_1", "...": "..."}]}
 ```
 
-The full constant table lives in the [Command Reference](docs/en/commands.md#json-output-envelope).
+The full constant table lives in the [Command Reference](docs/usage/cli/index.md#json-output-envelope).
 
 ## Exit Codes
 
@@ -443,17 +443,17 @@ pixi run ruff check .
 pixi run ruff format .
 ```
 
-See [docs/en/contributing.md](docs/en/contributing.md) for contributor workflow and [docs/en/architecture.md](docs/en/architecture.md) for module boundaries and typing-path contracts.
+See [docs/development/contributing.md](docs/development/contributing.md) for contributor workflow and [docs/architecture/system.md](docs/architecture/system.md) for module boundaries and typing-path contracts.
 
 ## Documentation Index
 
-- [docs/README.md](docs/README.md) for the full documentation map
-- [docs/en/installation.md](docs/en/installation.md) for installation details
-- [docs/en/quickstart.md](docs/en/quickstart.md) for a guided first run
-- [docs/en/commands.md](docs/en/commands.md) for the CLI reference
-- [docs/en/configuration.md](docs/en/configuration.md) for configuration reference
-- [docs/en/pipelines.md](docs/en/pipelines.md) for Docker, Nextflow, and Snakemake integration
-- [README_ZH.md](README_ZH.md) for the Chinese root guide
+- [docs/index.md](docs/index.md) for the full documentation map
+- [docs/installation/guide.md](docs/installation/guide.md) for installation details
+- [docs/installation/quick-start.md](docs/installation/quick-start.md) for a guided first run
+- [docs/usage/cli/index.md](docs/usage/cli/index.md) for the CLI reference
+- [docs/installation/configuration.md](docs/installation/configuration.md) for configuration reference
+- [docs/installation/pipelines.md](docs/installation/pipelines.md) for Docker, Nextflow, and Snakemake integration
+- [README.zh.md](README.zh.md) for the Chinese root guide
 
 ## License
 

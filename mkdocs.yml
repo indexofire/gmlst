@@ -1,89 +1,115 @@
 site_name: gmlst
 site_description: Fast bacterial genome typing with MLST, cgMLST, and scheme-free discovery
+site_author: indexofire
 site_url: https://indexofire.github.io/gmlst/
+
 repo_name: indexofire/gmlst
 repo_url: https://github.com/indexofire/gmlst
-edit_uri: edit/main/docs/
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      # mkdocs-static-i18n configures Material's header language selector
+      # (extra.alternate) and the per-language search stemmer automatically.
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 简体中文
+          build: true
+          nav_translations:
+            Home: 首页
+            Installation: 安装
+            Quick Start: 快速开始
+            Installation Guide: 安装指南
+            Configuration: 配置参考
+            Pipelines: 流水线集成
+            Usage: 使用
+            CLI Reference: CLI 参考
+            Typing: 分型
+            Scheme: Scheme
+            Utils: 工具
+            Visual: 可视化命令
+            Alignment Backends: 比对后端
+            Data Providers: 数据源
+            cgMLST Guide: cgMLST 指南
+            Novel Workflow: Novel 工作流
+            Visualization: 可视化
+            Fingerprint Database: 指纹数据库
+            Architecture: 架构
+            System Architecture: 系统架构
+            Reference: 参考
+            FAQ: 常见问题
+            Development: 开发
+            Contributing: 贡献指南
 
 theme:
   name: material
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: teal
-      accent: teal
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: teal
-      accent: teal
-      toggle:
-        icon: material/weather-night
-        name: Switch to light mode
+  language: en
+  # Desktop: top tabs + section landing pages + right-hand TOC. The primary
+  # sidebar is hidden by stylesheets/extra.css; tablet/mobile keep the drawer.
   features:
     - navigation.tabs
-    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.path
     - navigation.sections
-    - navigation.expand
     - navigation.top
     - search.suggest
     - search.highlight
     - content.code.copy
-
-extra:
-  version:
-    provider: mike
+  palette:
+    - scheme: default
+      primary: teal
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - scheme: slate
+      primary: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  icon:
+    repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - English:
-    - Getting Started:
-      - Installation: en/installation.md
-      - Quick Start: en/quickstart.md
-      - Configuration: en/configuration.md
-    - User Guide:
-      - Command Reference: en/commands.md
-      - Typing: en/commands/typing.md
-      - Scheme: en/commands/scheme.md
-      - Utils: en/commands/utils.md
-      - Visual: en/commands/visual.md
-      - Alignment Backends: en/backends.md
-      - Data Providers: en/providers.md
-      - Fingerprint Database: en/fingerprint_database.md
-      - cgMLST Guide: en/cgmlst_guide.md
-      - Novel Workflow: en/novel_workflow.md
-      - Visualization: en/visual_guide.md
-      - Pipeline Integration: en/pipelines.md
-    - FAQ: en/faq.md
-    - Development:
-      - Architecture: en/architecture.md
-      - Contributing: en/contributing.md
-  - 简体中文:
-    - 快速入门:
-      - 安装: zh/installation.md
-      - 快速开始: zh/quickstart.md
-      - 配置参考: zh/configuration.md
-    - 用户指南:
-      - 命令参考: zh/commands.md
-      - Typing 命令: zh/commands/typing.md
-      - Scheme 命令: zh/commands/scheme.md
-      - Utils 命令: zh/commands/utils.md
-      - Visual 命令: zh/commands/visual.md
-      - 比对后端: zh/backends.md
-      - 数据源: zh/providers.md
-      - 指纹数据库: zh/fingerprint_database.md
-      - cgMLST 指南: zh/cgmlst_guide.md
-      - Novel 工作流: zh/novel_workflow.md
-      - 可视化: zh/visual_guide.md
-      - 流水线集成: zh/pipelines.md
-    - FAQ: zh/faq.md
-    - 开发:
-      - 架构: zh/architecture.md
-      - 贡献: zh/contributing.md
+  - Installation:
+    - installation/index.md
+    - Quick Start: installation/quick-start.md
+    - Installation Guide: installation/guide.md
+    - Configuration: installation/configuration.md
+    - Pipelines: installation/pipelines.md
+  - Usage:
+    - usage/index.md
+    - CLI Reference:
+      - usage/cli/index.md
+      - Typing: usage/cli/typing.md
+      - Scheme: usage/cli/scheme.md
+      - Utils: usage/cli/utils.md
+      - Visual: usage/cli/visual.md
+    - Alignment Backends: usage/backends.md
+    - Data Providers: usage/providers.md
+    - cgMLST Guide: usage/cgmlst.md
+    - Novel Workflow: usage/novel-workflow.md
+    - Visualization: usage/visualization.md
+    - Fingerprint Database: usage/fingerprint-database.md
+  - Architecture:
+    - architecture/index.md
+    - System Architecture: architecture/system.md
+  - Reference:
+    - reference/index.md
+    - FAQ: reference/faq.md
+  - Development:
+    - development/index.md
+    - Contributing: development/contributing.md
 
 markdown_extensions:
+  - md_in_html
   - admonition
   - pymdownx.details
   - pymdownx.superfences
@@ -96,9 +122,5 @@ markdown_extensions:
         kwds:
           case: lower
 
-plugins:
-  - search
-  - exclude:
-      glob:
-        - internal/**
-        - README.md
+extra_css:
+  - stylesheets/extra.css

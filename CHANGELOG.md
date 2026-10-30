@@ -59,6 +59,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Documentation reorganized to match the `gside` layout: docs now use topic
+  sections (`installation/`, `usage/`, `architecture/`, `reference/`,
+  `development/`) with an `index.md` landing page per section and bilingual
+  pages as `foo.md` / `foo.zh.md` siblings instead of separate `docs/en/` and
+  `docs/zh/` trees.
+- MkDocs site now uses `mkdocs-static-i18n` (`docs_structure: suffix`) with
+  Material's header language selector, top-tab navigation, section index
+  pages, grid cards, and the same desktop layout as `gside` (primary sidebar
+  hidden, right-hand TOC kept).
+- `README_ZH.md` renamed to `README.zh.md` to match the `.zh.md` convention.
+- Docs build is strict (`mkdocs build --strict`) in the deploy workflow.
+
 ### Added
 - `environment.yml` at the repository root: creates a conda environment with
   Python 3.12, every external tool gmlst can drive (BLAST+, minimap2,

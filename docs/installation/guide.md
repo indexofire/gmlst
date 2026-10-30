@@ -1,0 +1,522 @@
+# Installation
+
+This guide covers the supported ways to install `gmlst` and verify that the CLI and backend tools are ready to use.
+
+`gmlst` is a Python 3.12 command line tool for MLST, cgMLST, and wgMLST style bacterial genome typing. The recommended setup uses [Pixi](https://pixi.sh/), because Pixi installs both the Python package and the external bioinformatics tools needed by the alignment backends.
+
+## System Requirements
+
+| Requirement | Minimum | Recommended | Notes |
+|---|---:|---:|---|
+| Operating system | Linux, macOS | Linux, macOS | Supported Pixi platforms are `linux-64`, `osx-arm64`, and `osx-64` |
+| Python | 3.12 | 3.12 | Required for pip or source installs |
+| Memory | 2 GB RAM | 8 GB RAM or more | Larger cgMLST schemes benefit from more memory |
+| Disk space | 1 GB free | 5 GB or more | Includes package, indexes, cached schemes, and temporary files |
+
+## Installation Methods
+
+### Method 1: Install with pip
+
+A conda virtual environment is recommended for installing gmlst.
+
+```bash
+conda create -n gmlst
+conda activate gmlst
+conda install python=3.12
+pip install gmlst
+```
+
+To make gmlst functional, you also need to install bioinformatics alignment tools. Currently, FASTA data supports the `blastn`, `minimap2`, `nucmer`, and `kma` backends. FASTQ data supports the `kma` backend. Install the ones you need based on your data types.
+
+```bash
+# Install all backend dependencies for full functionality
+conda install -c conda-forge -c bioconda blast minimap2 mummer4 kma
+```
+
+### Method 2: Install with the bundled `environment.yml`
+
+The repository ships an `environment.yml` that installs Python 3.12 from conda-forge plus every external tool gmlst can drive (BLAST+, minimap2, MUMmer4, KMA, KMC, samtools, MMseqs2, Prodigal, aria2), then installs the `gmlst` package from PyPI. This is the shortest path to a fully functional environment when working from a checkout:
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+conda env create -f environment.yml
+conda activate gmlst
+```
+
+To install your local checkout instead of the PyPI release, replace the `gmlst` entry in the `pip:` section of `environment.yml` with `- -e .` before creating the environment.
+
+Verify the result:
+
+```bash
+gmlst --version
+gmlst utils check -b blastn
+```
+
+Version constraints follow `pixi.toml` (the project's canonical environment), so all four alignment backends are usable out of the box. If you already have an environment and only need the tools, use Method 1 instead.
+
+### Method 3: Install from source
+
+#### Install with Pixi
+
+If you want the smoothest setup, use Pixi. Pixi manages:
+
+- Python interpreter
+- Python dependencies
+- external tools such as `blastn`, `kma`, `minimap2`, `nucmer`, `samtools`, and `kmc`
+- project tasks such as `pixi run start`, `pixi run test`, and `pixi run check`
+
+##### Step 1: Install Pixi
+
+```bash
+curl -fsSL https://pixi.sh/install.sh | bash
+```
+
+After installation, restart your shell if `pixi` is not immediately available.
+
+##### Step 2: Clone the repository
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+```
+
+##### Step 3: Install the project environment
+
+```bash
+pixi install
+```
+
+This reads `pixi.toml`, creates the environment, and installs both Python and external dependencies.
+
+##### Step 4: Enter the Pixi shell
+
+```bash
+pixi shell
+```
+
+Inside the shell, `gmlst` and all required tools should be on `PATH`.
+
+##### Step 5: Verify the CLI
+
+```bash
+gmlst --version
+gmlst --help
+gmlst utils check -b blastn
+```
+
+You can also run commands without entering a shell:
+
+```bash
+pixi run gmlst --help
+pixi run gmlst utils check -b blastn
+```
+
+#### Install with uv
+
+If you prefer a standard Python virtual environment, you can also use pip. However, this method requires you to install the backend tools separately.
+
+##### Step 1: Install uv
+
+uv is recommended with a user-level installation.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+##### Step 2: Clone the repository
+
+```bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+```
+
+##### Step 3: Create and activate a virtual environment
+
+This installs the project based on `pyproject.toml` and generates the `gmlst` CLI entry point locally.
+
+```bash
+uv venv .venv
+pip install -e .
+```
+
+##### Step 4: Install external bioinformatics tools separately
+
+If you use pip, the Python package will be installed, but backend tools such as `blastn`, `kma`, `minimap2`, and `nucmer` must be installed separately.
+
+See [External Dependencies](#external-dependencies) below for the full tool matrix and install commands.
+
+### Step 5: Verify the install
+
+```bash
+gmlst --version
+gmlst --help
+gmlst utils check -b blastn
+```
+
+### Method 4: Install with Docker
+
+Use this method if you want a self-contained environment with all tools pre-installed, no Python or conda setup needed. The image includes gmlst plus all external alignment tools (blastn, minimap2, nucmer, kma, mmseqs2, prodigal, samtools).
+
+#### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [docker-buildx](https://github.com/docker/buildx) plugin (usually bundled with Docker Desktop; on Linux install via package manager, e.g. `pacman -S docker-buildx` on Arch)
+
+#### Pull the image
+
+```bash
+docker pull indexofire/gmlst:latest
+```
+
+#### Verify the image
+
+```bash
+docker run --rm indexofire/gmlst:latest --version
+```
+
+#### Data and cache management
+
+Container data is **ephemeral** — anything written inside a `docker run --rm` container is lost when the container exits. You must mount host directories for data persistence.
+
+| Path in container | Purpose | How to persist |
+|---|---|---|
+| `/data` | Input FASTA/FASTQ files, output results | `-v /host/path:/data` |
+| `/opt/conda/share/gmlst` | Scheme cache (downloaded databases, indexes) | Docker named volume or `-v` mount |
+
+The cache directory uses `$CONDA_PREFIX/share/gmlst` inside the container (see [Configuration](configuration.md) for the environment-aware resolution logic).
+
+#### Run typing
+
+Mount your working directory to `/data`:
+
+```bash
+# Download a scheme (cache persists in named volume)
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
+  scheme download -s saureus_1
+
+# Type a sample
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
+  typing mlst -s saureus_1 sample.fasta -o results.tsv
+
+# Batch processing
+docker run --rm -v $(pwd):/data indexofire/gmlst:latest \
+  typing mlst -s saureus_1 --max-workers 4 /data/samples/*.fasta -o results.tsv
+```
+
+#### Run web visualization
+
+```bash
+docker run --rm -p 8787:8787 -v $(pwd):/data indexofire/gmlst:latest \
+  visual web --host 0.0.0.0 --port 8787
+```
+
+Then open http://localhost:8787 in your browser. Press `Ctrl+C` to stop.
+
+#### Using docker compose
+
+`docker compose` manages the container and persistent cache automatically:
+
+```bash
+# Start the web visualization service
+docker compose up web
+
+# Run a typing command
+docker compose run --rm gmlst typing mlst -s saureus_1 /data/sample.fasta
+
+# Download a scheme
+docker compose run --rm gmlst scheme download -s saureus_1
+```
+
+The `docker-compose.yml` mounts a named volume (`gmlst-cache`) for the scheme cache, so downloaded schemes and indexes persist across runs without repeating downloads.
+
+#### Interactive shell (debugging)
+
+To enter the container for inspection:
+
+```bash
+docker run --rm -it --entrypoint="" indexofire/gmlst:latest bash
+```
+
+Inside the container you can check tools:
+
+```bash
+gmlst --version
+blastn -version
+minimap2 --version
+echo $CONDA_PREFIX
+```
+
+#### Build locally
+
+If you want to build the image yourself (e.g., for a development version):
+
+```bash
+docker buildx build --load -t gmlst:latest .
+```
+
+## Verify Installation
+
+Use the checks below after any installation method.
+
+### Check the version
+
+```bash
+gmlst --version
+```
+
+Example output:
+
+```text
+gmlst, version 0.2.0
+```
+
+### Check top level help
+
+```bash
+gmlst --help
+```
+
+You should see the main command groups:
+
+```text
+Commands:
+  typing
+  scheme
+  utils
+  visual
+```
+
+### Check backend availability
+
+```bash
+gmlst utils check -b blastn
+gmlst utils check -b minimap2
+gmlst utils check -b kma
+gmlst utils check -b nucmer
+```
+
+Example output:
+
+```text
+[OK] backend=blastn is available
+```
+
+### Run a simple scheme query
+
+```bash
+gmlst scheme list -p pubmlst -t mlst
+```
+
+If your network access is working, you can also download a scheme and inspect it:
+
+```bash
+gmlst scheme download -s saureus_1
+gmlst scheme show -s saureus_1
+```
+
+## Platform-Specific Notes
+
+### Linux
+
+- Linux is the simplest target for both Pixi and manual backend installation.
+- `linux-64` is an official Pixi platform for this project.
+- If you use clusters or shared servers, prefer Pixi or Conda to avoid tool version drift.
+
+### macOS
+
+### Apple Silicon (ARM64)
+
+- `osx-arm64` is supported by the Pixi configuration.
+- Pixi is the easiest choice on Apple Silicon because it resolves compatible binaries automatically.
+- If you install tools manually with Homebrew, make sure your shell is using the ARM64 Homebrew prefix.
+
+### Intel macOS
+
+- `osx-64` is also supported by Pixi.
+- Homebrew and Conda both work for manual installs.
+
+### Rosetta 2
+
+- Some third party bioinformatics tools may behave differently across ARM64 and x86_64 builds.
+- If a tool is only available or more stable under x86_64, you may need to start a Rosetta shell and use an x86_64 toolchain.
+- Try native ARM64 first. Only use Rosetta if a specific tool fails.
+
+### Windows
+
+- Native Windows is not the main target for this repository.
+- The practical setup is **WSL2** with Ubuntu or another Linux distribution.
+- Install Pixi, Python, and backend tools inside WSL2, not in PowerShell.
+
+Example WSL2 workflow:
+
+```bash
+sudo apt update
+sudo apt install -y curl git
+curl -fsSL https://pixi.sh/install.sh | bash
+git clone https://github.com/indexofire/gmlst.git
+cd gmlst
+pixi install
+pixi shell
+gmlst --version
+```
+
+## External Dependencies
+
+If you install with Pixi, these tools are handled for you. The bundled [`environment.yml`](https://github.com/indexofire/gmlst/blob/main/environment.yml) installs all of them at once. If you install with pip or from source, install the ones required by the backends you plan to use.
+
+| Tool | Used for | Needed by backend or feature | Conda install | Homebrew install |
+|---|---|---|---|---|
+| `blastn`, `makeblastdb` | nucleotide alignment and index building | `blastn` backend | `conda install -c bioconda blast` | `brew install blast` |
+| `minimap2` | assembly and read alignment | `minimap2` backend | `conda install -c bioconda minimap2` | `brew install minimap2` |
+| `nucmer`, `show-coords` | whole genome alignment | `nucmer` backend via MUMmer4 | `conda install -c bioconda mummer4` | `brew install mummer` |
+| `kma` | k-mer based mapping and typing | `kma` backend | `conda install -c bioconda kma` | not commonly packaged, use Conda |
+| `kmc` | optional k-mer counting acceleration | `minimap2` k-mer engine when configured | `conda install -c bioconda kmc` | not commonly packaged, use Conda |
+| `samtools` | BAM handling for targeted validation | `minimap2` targeted validation path | `conda install -c bioconda samtools` | `brew install samtools` |
+| `mmseqs` | project dependency managed by Pixi | internal workflows and future extensions | `conda install -c bioconda mmseqs2` | `brew install mmseqs2` |
+| `prodigal` | gene prediction support | scheme-free and CDS-related workflows | `conda install -c bioconda prodigal` | `brew install prodigal` |
+
+### Manual install example with Conda
+
+```bash
+conda install -c conda-forge -c bioconda \
+  blast minimap2 mummer4 kma kmc samtools mmseqs2 prodigal
+```
+
+### Manual install example with Homebrew
+
+```bash
+brew install blast minimap2 mummer samtools mmseqs2 prodigal
+```
+
+For `kma` and `kmc`, Conda is usually the simpler option.
+
+## Python Dependencies
+
+The project depends on these Python packages:
+
+- `click`
+- `flask`
+- `requests`
+- `rich`
+- `xxhash`
+- `pyyaml`
+- `pyrodigal`
+
+These are installed automatically by Pixi, `pip install gmlst`, or `pip install -e .`.
+
+## Troubleshooting
+
+### `pixi: command not found`
+
+Cause:
+
+- Pixi is not installed, or
+- its install directory is not on `PATH`
+
+Fix:
+
+```bash
+curl -fsSL https://pixi.sh/install.sh | bash
+```
+
+Then restart your shell and confirm:
+
+```bash
+pixi --version
+```
+
+If needed, add Pixi's bin directory to your shell profile.
+
+### `blastn: command not found`
+
+Cause:
+
+- BLAST+ is not installed, or
+- you are outside the Pixi environment, or
+- your manual install is not on `PATH`
+
+Fix:
+
+```bash
+gmlst utils check -b blastn
+which blastn
+```
+
+If you installed with Pixi, enter the environment:
+
+```bash
+pixi shell
+```
+
+If you installed manually, install BLAST+ with Conda or Homebrew:
+
+```bash
+conda install -c bioconda blast
+```
+
+### Permission errors during install
+
+Common cases:
+
+- system Python blocks package writes
+- global `pip install` needs elevated permissions
+- shared filesystem has restricted cache directories
+
+Fix:
+
+- prefer a virtual environment (cache auto-detected from `$CONDA_PREFIX` or `$VIRTUAL_ENV`)
+- avoid `sudo pip install`
+- if needed, set a writable cache directory
+
+Example:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install gmlst
+# Cache is auto-detected at .venv/.cache/gmlst
+```
+
+### Unsupported Python version
+
+`gmlst` requires Python 3.12.
+
+Check your interpreter:
+
+```bash
+python --version
+```
+
+If you do not see Python 3.12, install Python 3.12 or use Pixi, which manages the interpreter for you.
+
+### Network or proxy issues when downloading schemes
+
+Symptoms:
+
+- `gmlst scheme download` fails
+- provider catalogs do not refresh
+- HTTPS requests time out behind a proxy
+
+Things to try:
+
+```bash
+gmlst scheme update
+gmlst scheme download -s saureus_1 --download-tool curl
+gmlst scheme download -s saureus_1 --download-tool requests
+```
+
+If you are behind a corporate proxy, export standard proxy variables before running the command:
+
+```bash
+export HTTPS_PROXY=http://proxy.example.org:8080
+export HTTP_PROXY=http://proxy.example.org:8080
+```
+
+If a provider requires authentication for a specific dataset, use the documented `--token` option where appropriate.
+
+## Next Steps
+
+- Follow the [Quick Start](quick-start.md) guide to run your first MLST call
+- Browse the full [Command Reference](../usage/cli/index.md)
+- See the [repository overview](https://github.com/indexofire/gmlst#readme)

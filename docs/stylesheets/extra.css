@@ -1,0 +1,10 @@
+/*
+ * Horizontal-navigation layout: the top tab bar carries the primary sections,
+ * each section landing page lists its children, and the right-hand TOC remains.
+ * Keep the drawer on tablet/mobile widths, where the tab bar is hidden.
+ */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary {
+    display: none;
+  }
+}
