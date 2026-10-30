@@ -81,12 +81,12 @@ theme:
     - content.code.copy
   palette:
     - scheme: default
-      primary: teal
+      primary: green
       toggle:
         icon: material/weather-night
         name: Dark mode
     - scheme: slate
-      primary: teal
+      primary: green
       toggle:
         icon: material/weather-sunny
         name: Light mode
