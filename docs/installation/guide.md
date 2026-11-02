@@ -397,6 +397,7 @@ The project depends on these Python packages:
 
 - `click`
 - `flask`
+- `gseek` (default alignment engine)
 - `requests`
 - `rich`
 - `xxhash`

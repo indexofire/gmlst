@@ -35,6 +35,7 @@ classifiers = [
 dependencies = [
     "click>=8.1",
     "flask>=3.0",
+    "gseek>=0.10.2",
     "pyrodigal>=3.4",
     "pyyaml>=6.0",
     "requests>=2.31",
@@ -43,6 +44,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Kept for backwards compatibility: gseek is a core dependency since it is the
+# default alignment engine, but `pip install "gmlst[gseek]"` remains valid.
 gseek = ["gseek>=0.10.2"]
 dev = [
     "pytest>=8.0",

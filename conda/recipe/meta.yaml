@@ -1,6 +1,11 @@
 {% set name = "gmlst" %}
 {% set version = "0.5.5" %}
 
+# NOTE: gmlst defaults to the gseek alignment engine. gseek is currently
+# distributed on PyPI only, so this recipe keeps the conda run dependencies
+# unchanged; install it with `pip install gseek` inside the environment.
+# Without gseek, gmlst logs a warning and falls back to the legacy engine.
+
 package:
   name: {{ name|lower }}
   version: {{ version }}

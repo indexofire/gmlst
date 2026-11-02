@@ -1078,10 +1078,11 @@ packages:
 - pypi: ./
   name: gmlst
   version: 0.6.1
-  sha256: 4d492ecaa8a92aa5d03b6645d3d8b48d161b0952319734994ba2eb052bd9d8d6
+  sha256: acfc2bbebd5c37160f691bca455ea1bf91586476a206ebfcb0576adbd141cc17
   requires_dist:
   - click>=8.1
   - flask>=3.0
+  - gseek>=0.10.2
   - pyrodigal>=3.4
   - pyyaml>=6.0
   - requests>=2.31

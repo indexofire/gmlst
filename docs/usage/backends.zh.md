@@ -25,18 +25,27 @@
 | 快速跑完后再做复核 | `blastn` | 很适合作为第二遍确认后端 |
 
 
-## 可选 gseek 引擎
+## 比对引擎（默认 gseek）
 
-`GMLST_ENGINE=legacy|gseek|shadow` 选择比对实现。默认 `legacy`；`gseek` 将四种后端
-（`blastn`、`kma`、`minimap2`、`nucmer`）全部切到
-[gseek](https://github.com/indexofire/gseek)，`shadow` 同时跑两套、比较 allele calls 并返回 legacy。
+`GMLST_ENGINE=gseek|legacy|shadow` 选择比对实现。默认 `gseek`，四种后端
+（`blastn`、`kma`、`minimap2`、`nucmer`）全部通过
+[gseek](https://github.com/indexofire/gseek) 运行。`legacy` 使用原有的内置比对器，
+`shadow` 同时跑两套、比较 allele calls 并返回 legacy 结果。
 
 ```bash
-GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+# 默认即 gseek
+gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+
+# 退回内置比对器
+GMLST_ENGINE=legacy gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+
+# 两套都跑并返回 legacy 结果
+GMLST_ENGINE=shadow gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
 ```
 
-gseek 要求 Python >= 3.12。用 `pip install "gmlst[gseek]"` 安装；pixi 开发环境已包含。
-legacy 安装不会 import gseek。
+gseek 是核心依赖（`gseek>=0.10.2`），要求 Python >= 3.12。如果它缺失且未显式设置
+模式，gmlst 会记录警告并回退到 legacy 引擎；显式设置 `GMLST_ENGINE=gseek` 或
+`shadow` 时则直接报错。
 
 JSON 输出可能只在 runtime 元数据，以及同一 exact allele 出现在多个 contig 时报告的
 contig/strand 上不同；allele calls、ST、identity、coverage 完全一致。TSV 输出不变。

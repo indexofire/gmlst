@@ -25,19 +25,29 @@ In short, use `blastn` for classic MLST on assemblies, `kma` for FASTQ typing, `
 | Result confirmation after a fast pass | `blastn` | Useful as a slower second pass on flagged samples |
 
 
-## Optional gseek engine
+## Alignment engine (gseek by default)
 
-`GMLST_ENGINE=legacy|gseek|shadow` selects the alignment implementation. The
-default is `legacy`; `gseek` routes all four backends (`blastn`, `kma`,
-`minimap2`, `nucmer`) through [gseek](https://github.com/indexofire/gseek), and
-`shadow` runs both, compares the allele calls, and returns legacy.
+`GMLST_ENGINE=gseek|legacy|shadow` selects the alignment implementation. The
+default is `gseek`, which routes all four backends (`blastn`, `kma`,
+`minimap2`, `nucmer`) through [gseek](https://github.com/indexofire/gseek).
+`legacy` keeps the original built-in aligners, and `shadow` runs both,
+compares the allele calls, and returns legacy.
 
 ```bash
-GMLST_ENGINE=gseek gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+# gseek is the default engine
+gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+
+# opt out and use the built-in aligners
+GMLST_ENGINE=legacy gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
+
+# compare both engines and return the legacy result
+GMLST_ENGINE=shadow gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
 ```
 
-gseek requires Python >= 3.12. Install it with `pip install "gmlst[gseek]"`; the
-pixi dev environment includes it. Legacy installs do not import gseek.
+gseek is a core dependency (`gseek>=0.10.2`) and requires Python >= 3.12. If it
+is missing and the mode was not set explicitly, gmlst logs a warning and falls
+back to the legacy engine; an explicit `GMLST_ENGINE=gseek` or `shadow` raises
+instead.
 
 Pure-JSON output can differ only in runtime metadata and in the reported
 contig/strand when the same exact allele occurs on multiple contigs; the allele

@@ -70,8 +70,8 @@ CONFIG_REGISTRY: list[ConfigEntry] = [
     ConfigEntry("ENTEROBASE_TOKEN", "Enterobase API auth token", "", "Auth"),
     ConfigEntry(
         "GMLST_ENGINE",
-        "Alignment engine: legacy/gseek/shadow",
-        "legacy",
+        "Alignment engine: gseek/legacy/shadow",
+        "gseek",
         "Alignment",
     ),
     ConfigEntry(

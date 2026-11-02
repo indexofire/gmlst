@@ -178,6 +178,7 @@ Use `--format pretty` for human-readable terminal output and `--format json` for
 
 ### Backend notes
 
+- All four backends run through [gseek](https://github.com/indexofire/gseek) by default. Set `GMLST_ENGINE=legacy` to use the built-in aligners, or `GMLST_ENGINE=shadow` to run both and compare the calls.
 - `typing mlst` and `typing cgmlst` auto-detect common paired FASTQ naming patterns such as `_R1/_R2`, `_1/_2`, and `.1/.2`.
 - `typing cgmlst` uses `minimap2` by default for FASTA assemblies.
 - For FASTQ cgMLST, the CLI follows a KMA-first policy. Use `gmlst typing cgmlst` with KMA for raw reads.
@@ -298,6 +299,7 @@ Key environment variables:
 | Variable | Purpose |
 | --- | --- |
 | `GMLST_CACHE_DIR` | Override the cache root (auto-detected: `$CONDA_PREFIX/share/gmlst` in conda, `$VIRTUAL_ENV/.cache/gmlst` in venv, or `~/.cache/gmlst` by default) |
+| `GMLST_ENGINE` | Alignment engine: `gseek` (default), `legacy` (built-in aligners), or `shadow` (run both, compare, return legacy) |
 | `GMLST_TMPDIR` | Override temporary working directory used during typing and refinement |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | Emit CIGAR in minimap2 FASTA alignments (1/0) |
 | `GMLST_PUBMLST_BASE_URL` | Override PubMLST API base URL |

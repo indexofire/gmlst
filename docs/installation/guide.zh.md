@@ -397,6 +397,7 @@ brew install blast minimap2 mummer samtools mmseqs2 prodigal
 
 - `click`
 - `flask`
+- `gseek`（默认比对引擎）
 - `requests`
 - `rich`
 - `xxhash`

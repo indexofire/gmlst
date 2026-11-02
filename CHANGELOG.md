@@ -60,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The default alignment engine is now `gseek` (`GMLST_ENGINE=gseek`).
+  `gseek>=0.10.2` is a core dependency, `legacy` remains available as an
+  explicit opt-out, and `shadow` still compares both engines. If gseek is
+  missing and no mode was requested, gmlst warns and falls back to legacy.
+  Docs, `environment.yml`, the Docker smoke test, and the conda recipe notes
+  were updated accordingly.
 - Long documentation pages split by topic, with extra examples:
   - `architecture/` → overview, modules, CLI, typing pipeline, backends,
     providers, cache, workflows, visualization

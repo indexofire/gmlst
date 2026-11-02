@@ -38,6 +38,7 @@ gmlst config env                          # 可直接 source 的 export 行
 
 | 变量 | 默认值 | 适用场景 |
 | --- | --- | --- |
+| `GMLST_ENGINE` | `gseek` | 切换为 `legacy`（内置比对器）或 `shadow`（两套都跑并比较） |
 | `GMLST_CACHE_DIR` | 与环境相关的目录 | 跨环境共享同一缓存 |
 | `GMLST_TMPDIR` | 系统临时目录 | 大批量任务使用独立 scratch 盘 |
 | `GMLST_PUBMLST_API_KEY` | 未设置 | 访问 2024 年后的 PubMLST 数据 |

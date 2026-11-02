@@ -167,6 +167,7 @@ sample2.fasta   saureus_1   -   1     ~2    3?    -    1    1    1
 
 ### 后端说明
 
+- 四种后端默认全部通过 [gseek](https://github.com/indexofire/gseek) 运行。设置 `GMLST_ENGINE=legacy` 可退回内置比对器，设置 `GMLST_ENGINE=shadow` 则两套都跑并比较调用结果。
 - `typing mlst` 和 `typing cgmlst` 会自动识别常见双端 FASTQ 命名模式，例如 `_R1/_R2`、`_1/_2`、`.1/.2`。
 - `typing cgmlst` 在 FASTA 组装输入时默认使用 `minimap2`。
 - 对于 FASTQ cgMLST，CLI 采用 KMA-first 策略，chew 风格 cgMLST 模式主要面向 FASTA 场景。

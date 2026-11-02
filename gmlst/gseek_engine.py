@@ -1,12 +1,14 @@
-"""Optional gseek bridge for gmlst alignment backends.
+"""Alignment engine switch for gmlst backends.
 
 ``GMLST_ENGINE`` selects the implementation:
 
-- ``legacy`` (default): the aligner classes in :mod:`gmlst.aligners`;
-- ``gseek``: gseek plans/parses the alignment;
+- ``gseek`` (default): gseek plans/parses the alignment;
+- ``legacy``: the original aligner classes in :mod:`gmlst.aligners`;
 - ``shadow``: run both, compare, log, and return legacy.
 
-The switch uses :mod:`gseek.compat`; legacy mode never imports gseek.
+The switch uses :mod:`gseek.compat`. When gseek is not installed and the mode
+was not requested explicitly, gmlst logs a warning and falls back to legacy so
+that existing installations keep working.
 """
 
 from __future__ import annotations
@@ -43,6 +45,7 @@ def _resolver() -> Any:
 
 
 _VALID_MODES = frozenset({"legacy", "gseek", "shadow"})
+_DEFAULT_MODE = "gseek"
 T = TypeVar("T")
 
 
@@ -64,22 +67,30 @@ class _LegacyEngine:
 
 
 def engine() -> Any:
-    """Return the engine switch, importing gseek only for gseek/shadow."""
-    raw = os.environ.get(_ENGINE_ENV, "legacy").strip().lower() or "legacy"
-    if raw not in _VALID_MODES:
+    """Return the engine switch, importing gseek for gseek/shadow modes."""
+    raw = os.environ.get(_ENGINE_ENV, "").strip().lower()
+    mode = raw or _DEFAULT_MODE
+    if mode not in _VALID_MODES:
         raise RuntimeError(
-            f"unknown GMLST_ENGINE={raw!r}; expected one of {sorted(_VALID_MODES)}"
+            f"unknown GMLST_ENGINE={mode!r}; expected one of {sorted(_VALID_MODES)}"
         )
-    if raw == "legacy":
+    if mode == "legacy":
         return _LegacyEngine()
     try:
         compat = importlib.import_module("gseek.compat")
     except ImportError as exc:
-        raise RuntimeError(
-            "GMLST_ENGINE=gseek requires the optional gseek package "
-            "(install gmlst[gseek])"
-        ) from exc
-    return compat.Engine.from_env(_ENGINE_ENV, logger=logger)
+        if raw:
+            raise RuntimeError(
+                f"GMLST_ENGINE={raw} requires the gseek package "
+                "(install it with `pip install gseek`)"
+            ) from exc
+        logger.warning(
+            "gseek is not installed; falling back to the legacy alignment "
+            "engine. Install it with `pip install gseek` to use the default "
+            "gseek engine."
+        )
+        return _LegacyEngine()
+    return compat.Engine.from_env(_ENGINE_ENV, default=_DEFAULT_MODE, logger=logger)
 
 
 def engine_mode() -> str:

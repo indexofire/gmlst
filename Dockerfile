@@ -35,6 +35,7 @@ RUN set -eux; \
     && ln -s /opt/conda/bin/gmlst /usr/local/bin/gmlst
 
 RUN gmlst --version \
+    && python -c "import gseek" \
     && blastn -version \
     && minimap2 --version \
     && kma -v

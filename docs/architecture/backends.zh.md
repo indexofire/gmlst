@@ -108,3 +108,27 @@ class MyToolAligner:
 - 只有后端能够提取序列时才填充 `sequence`。
 - `failed_loci` 列出完全没有命中的 locus，避免调用方从空列表推断缺失。
 - 后端能报告时填充 `copy_count` 与 contig 坐标；下游按可选字段处理。
+
+## 引擎切换
+
+`gmlst/gseek_engine.py` 会把注册表中的每个后端包装成 `GseekAligner`。
+`get_aligner()` 在每次调用时读取 `GMLST_ENGINE`：
+
+| 模式 | 行为 |
+| --- | --- |
+| `gseek`（默认） | 规划与解析交给 gseek |
+| `legacy` | 返回内置比对器实现 |
+| `shadow` | 两套都跑，比较 allele calls、记录差异并返回 legacy |
+
+由于包装层位于 `get_aligner()` 之后，命令层与流水线代码不需要判断引擎。包装层复用
+同一份 allele FASTA 物化结果建立索引，因此切换引擎不会使已有索引失效。
+
+```python
+from gmlst.aligners import get_aligner
+
+aligner = get_aligner("blastn")          # 默认返回 GseekAligner
+legacy = get_aligner("blastn")           # 在 GMLST_ENGINE=legacy 下
+```
+
+如果 gseek 缺失且未设置 `GMLST_ENGINE`，gmlst 会记录警告并回退到 legacy；显式设置
+`GMLST_ENGINE=gseek` 或 `shadow` 时则直接报错。

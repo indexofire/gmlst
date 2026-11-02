@@ -112,3 +112,28 @@ defaults are applied.
   missingness from an empty match list.
 - `copy_count` and contig coordinates are filled when the backend can report
   them; downstream code treats them as optional.
+
+## Engine switch
+
+`gmlst/gseek_engine.py` wraps every registered backend in `GseekAligner`.
+`get_aligner()` reads `GMLST_ENGINE` once per call:
+
+| Mode | Behaviour |
+| --- | --- |
+| `gseek` (default) | delegate planning/parsing to gseek |
+| `legacy` | return the built-in aligner implementation |
+| `shadow` | run both, compare allele calls, log differences, return legacy |
+
+Because the wrapper sits behind `get_aligner()`, command and pipeline code never
+branches on the engine. The wrapper reuses the same allele FASTA materialization
+for indexing, so switching engines never invalidates an existing index.
+
+```python
+from gmlst.aligners import get_aligner
+
+aligner = get_aligner("blastn")          # GseekAligner by default
+legacy = get_aligner("blastn")           # with GMLST_ENGINE=legacy
+```
+
+If gseek is missing and `GMLST_ENGINE` is unset, gmlst logs a warning and falls
+back to legacy; an explicit `GMLST_ENGINE=gseek` or `shadow` raises instead.

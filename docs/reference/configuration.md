@@ -38,6 +38,7 @@ gmlst config env                          # sourceable export lines
 
 | Variable | Default | Use it when |
 | --- | --- | --- |
+| `GMLST_ENGINE` | `gseek` | switch to `legacy` (built-in aligners) or `shadow` (compare both) |
 | `GMLST_CACHE_DIR` | environment-specific dir | sharing one cache across environments |
 | `GMLST_TMPDIR` | system temp | large batches on a scratch disk |
 | `GMLST_PUBMLST_API_KEY` | unset | accessing post-2024 PubMLST data |
