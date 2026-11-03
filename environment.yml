@@ -41,4 +41,4 @@ dependencies:
   - pip:
       - gmlst>=0.6.1
       # Default alignment engine (required by gmlst).
-      - gseek>=0.10.2
+      - gseek>=0.10.3

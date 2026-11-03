@@ -44,7 +44,7 @@ GMLST_ENGINE=legacy gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fn
 GMLST_ENGINE=shadow gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
 ```
 
-gseek is a core dependency (`gseek>=0.10.2`) and requires Python >= 3.12. If it
+gseek is a core dependency (`gseek>=0.10.3`) and requires Python >= 3.12. If it
 is missing and the mode was not set explicitly, gmlst logs a warning and falls
 back to the legacy engine; an explicit `GMLST_ENGINE=gseek` or `shadow` raises
 instead.

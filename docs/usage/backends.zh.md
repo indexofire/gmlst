@@ -43,7 +43,7 @@ GMLST_ENGINE=legacy gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fn
 GMLST_ENGINE=shadow gmlst typing mlst -s vparahaemolyticus_1 -b blastn sample.fna
 ```
 
-gseek 是核心依赖（`gseek>=0.10.2`），要求 Python >= 3.12。如果它缺失且未显式设置
+gseek 是核心依赖（`gseek>=0.10.3`），要求 Python >= 3.12。如果它缺失且未显式设置
 模式，gmlst 会记录警告并回退到 legacy 引擎；显式设置 `GMLST_ENGINE=gseek` 或
 `shadow` 时则直接报错。
 
