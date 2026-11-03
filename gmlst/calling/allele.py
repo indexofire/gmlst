@@ -233,10 +233,15 @@ def call_all_loci(
 
 
 def _rank_matches(matches: list[AlleleMatch]) -> list[AlleleMatch]:
-    """Sort matches best-first by (identity, coverage, depth)."""
+    """Sort matches best-first by identity, coverage, then score/depth.
+
+    Identity leads so that a full-length exact match cannot be displaced by a
+    longer, slightly imperfect allele whose extra aligned bases give it a
+    higher BLAST bitscore.
+    """
     return sorted(
         matches,
-        key=lambda m: (m.score, m.coverage, m.identity, m.depth or 0.0),
+        key=lambda m: (m.identity, m.coverage, m.score, m.depth or 0.0),
         reverse=True,
     )
 

@@ -93,6 +93,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   functional install. Tool constraints mirror `pixi.toml`.
 
 ### Fixed
+- Allele calling no longer lets a longer, slightly imperfect match outrank a
+  full-length exact match on BLAST bitscore. Exact matches now win before
+  score/coverage tie-breaking, fixing cases such as Campylobacter
+  `gltA_901` (477 bp, 95.8% identity) shadowing exact `gltA_291` (402 bp) and
+  forcing `~901` plus missing ST calls.
 - Version metadata realigned across the repository: `pyproject.toml`,
   `gmlst/__init__.py` (`gmlst --version`), and `pixi.toml` now report 0.5.4,
   matching the `v0.5.4` git tag and `CITATION.cff`. Conda recipes
