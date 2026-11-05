@@ -447,7 +447,7 @@ def cmd_show(
 
     cache = DatabaseCache(cache_dir)
 
-    _, scheme_info = resolve_scheme_or_exit(cache, scheme)
+    _, scheme_info = resolve_scheme_or_exit(cache, scheme, include_local=True)
 
     is_downloaded = cache.is_downloaded(scheme, scheme_info.provider)
     scheme_dir = (

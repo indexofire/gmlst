@@ -158,9 +158,14 @@ class DatabaseCache:
         """
         from gmlst.database.providers import AVAILABLE_PROVIDERS
 
+        # "local" schemes (scheme create) participate in download/catalog
+        # detection after the registered providers, so typing can resolve
+        # custom schemes without an explicit provider flag.
+        providers = [*AVAILABLE_PROVIDERS, "local"]
+
         if prefer_type is not None:
             wanted = prefer_type.strip().lower()
-            for provider in AVAILABLE_PROVIDERS:
+            for provider in providers:
                 catalog = self.load_catalog(provider)
                 if catalog and any(
                     item.get("scheme_name") == name
@@ -169,11 +174,11 @@ class DatabaseCache:
                 ):
                     return provider
 
-        for provider in AVAILABLE_PROVIDERS:
+        for provider in providers:
             if self.is_downloaded(name, provider):
                 return provider
 
-        for provider in AVAILABLE_PROVIDERS:
+        for provider in providers:
             catalog = self.load_catalog(provider)
             if catalog and any(item.get("scheme_name") == name for item in catalog):
                 return provider

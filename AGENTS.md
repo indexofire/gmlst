@@ -307,3 +307,11 @@ addopts = "-v"
 8. **Frontend: do not add npm dependencies** without explicit approval
 9. **Frontend: all styles go to `style.css`** — keep App.vue `<style>` tag empty
 10. **Do not modify `visualSelection.js` or `visualSelection.test.js`** unless explicitly asked
+11. **Custom schemes (`scheme create`, local installs) are not done until provenance is written
+    into `.meta.json`**: `description` must carry the literature citation + source
+    software/database + version + accessions + build date, and `license` must state the upstream
+    license as declared (`unspecified` when the source states none). Whenever the content derives
+    from a publication or third-party tool without explicit redistribution rights, append the
+    objection clause to `description`: "如原始作者或版权方对本方案内容的使用或再分发有异议，
+    请发邮件至 indexofire@gmail.com，我们将在核实后及时移除或调整相应内容。" Verify with
+    `gmlst scheme show <name>`.

@@ -100,7 +100,7 @@ def cmd_update(
             )
             refresh_all_catalogs(cache, token=token)
 
-        provider, match_info = resolve_scheme_or_exit(cache, scheme)
+        provider, match_info = resolve_scheme_or_exit(cache, scheme, include_local=True)
         scheme_type = match_info.scheme_type or "mlst"
 
         status_console.print(

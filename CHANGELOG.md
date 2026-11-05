@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Local/custom schemes are now resolvable by `typing` commands.**
+  `DatabaseCache.detect_provider` never checked the `local` provider, so
+  schemes created with `gmlst scheme create` could not be loaded by
+  `gmlst typing mlst/cgmlst -s custom_N` without a provider flag. The
+  provider scan now includes `local` after the registered providers, and
+  `scheme show`/`scheme update` resolve local schemes too (include_local).
+
+### Added
+
+- **Custom-scheme provenance rule (AGENTS.md).** Local schemes must carry
+  citation, source software/version, accessions, build date and license in
+  `.meta.json`, plus the author-objection contact clause when redistribution
+  rights are unclear.
+
 ## [0.6.1] - 2026-10-27
 
 ### Fixed
