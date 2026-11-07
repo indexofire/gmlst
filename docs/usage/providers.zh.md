@@ -78,7 +78,7 @@ PubMLST 通过 `gmlst/database/providers/bigsdb.py` 中的 `BigSdbProvider` 访�
 
 ### Scheme 覆盖范围
 
-PubMLST 是经典 MLST 最主要的来源，同时也包含不少 cgMLST 与 wgMLST 项目。`gmlst/database/providers/bigsdb.py` 会根据 BIGSdb 的描述文字和 locus 数量来推断 scheme type。
+PubMLST 是经典 MLST 最主要的来源，同时也包含不少 cgMLST 与 wgMLST 项目。`gmlst/database/providers/bigsdb.py` 会根据 BIGSdb 的描述文字推断展示类型；只针对某个/某些基因型或谱系的 MLST-like 方案为 `other` + `compute_type: mlst`，非分型面板为 `other` 且没有 compute type。
 
 ### 命名行为
 
@@ -418,7 +418,7 @@ blocked scheme 由 `gmlst/data/blocked_schemes.json` 控制，由 `gmlst/command
 }
 ```
 
-元数据记录下载/更新时间戳、每个 locus 的 allele 数量、profile 数量，以及用于增量更新检测的远端更新时间戳。
+元数据记录下载/更新时间戳、每个 locus 的 allele 数量、profile 数量，以及用于增量更新检测的远端更新时间戳。这里的 `scheme_type` 是 `typing` 使用的**计算**类型（谱系限定的 MLST-like 方案这里是 `mlst`，即使 catalog 的展示类型是 `other`）。
 
 ## 增量更新机制
 

@@ -183,6 +183,7 @@ def cmd_list(
             "scheme_name": s.scheme_name,
             "organism": s.organism,
             "scheme_type": s.scheme_type,
+            "compute_type": s.compute_type,
             "n_loci": s.n_loci,
             "provider": s.provider,
             "display_name": s.display_name,
@@ -328,6 +329,7 @@ def cmd_search(
             "scheme_name": s.scheme_name,
             "organism": s.organism,
             "scheme_type": s.scheme_type,
+            "compute_type": s.compute_type,
             "n_loci": s.n_loci,
             "provider": s.provider,
             "display_name": s.display_name,
@@ -467,6 +469,7 @@ def cmd_show(
         "scheme_name": scheme_info.scheme_name,
         "organism": scheme_info.organism,
         "scheme_type": scheme_info.scheme_type,
+        "compute_type": scheme_info.compute_type,
         "n_loci": scheme_info.n_loci,
         "n_profiles": n_profiles,
         "provider": scheme_info.provider,
@@ -584,7 +587,7 @@ def cmd_download(
         _exit_scheme_not_found(scheme)
 
     detected_provider, match_info = matches[0]
-    detected_type = match_info.scheme_type or "mlst"
+    detected_type = match_info.compute_type or match_info.scheme_type or "mlst"
 
     _reject_if_blocked(scheme, match_info, detected_provider)
 

@@ -12,15 +12,20 @@ def resolve_scheme_type(
     scheme: str,
     provider: str | None,
 ) -> str | None:
-    """Look up the scheme's declared type (mlst/cgmlst/wgmlst) from the catalog.
+    """Look up the scheme's typing engine (mlst/cgmlst/wgmlst) from the catalog.
 
-    Considers local schemes; the first match honoring *provider* wins.
-    Returns None when the scheme or its type is unknown.
+    ``compute_type`` wins when present (lineage-scoped MLST schemes are display
+    type ``other`` but compute type ``mlst``); otherwise the display type is
+    returned so non-typeable schemes still get a clear error.  Considers local
+    schemes; the first match honoring *provider* wins.
     """
     matches = _find_catalog_scheme_matches(cache, scheme, include_local=True)
     for prov, info in matches:
-        if (provider is None or prov == provider) and info.scheme_type:
-            return info.scheme_type.lower()
+        if provider is not None and prov != provider:
+            continue
+        value = info.compute_type or info.scheme_type
+        if value:
+            return value.lower()
     return None
 
 
@@ -38,6 +43,17 @@ def validate_scheme_mode(
     """
     if scheme_type is None:
         return
+
+    if scheme_type == "other":
+        err_console.print(
+            f"[red]Error:[/red] Scheme '[cyan]{scheme}[/cyan]' is catalogued "
+            "as 'other' and has no MLST/cgMLST typing engine."
+        )
+        err_console.print(
+            "Use [bold]gmlst scheme show -s "
+            f"{scheme}[/bold] to inspect its description."
+        )
+        sys.exit(1)
 
     if mode == "mlst" and scheme_type != "mlst":
         err_console.print(

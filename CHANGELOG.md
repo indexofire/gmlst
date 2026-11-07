@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Scheme type vs typing engine.** `scheme_type` is now the search/display
+  category, and a new `compute_type` records the typing engine. Standard
+  species-wide MLST stays `scheme_type: mlst`; lineage/genotype-scoped
+  MLST-like schemes (e.g. Blastocystis ST3/ST4, *V. cholerae* O1/O139) are
+  `scheme_type: other` with `compute_type: mlst`, so `scheme list -t mlst`
+  shows only standard MLST while `gmlst typing mlst -s <scheme>` still works.
+  Non-typing panels (virulence, resistance, serogroup PCR, etc.) are
+  `scheme_type: other` with no compute type. Pasteur panels previously
+  mislabelled as MLST are corrected. Cached catalogs are reclassified on
+  load, so existing installs see the fix without a full catalog refresh.
+
 ### Fixed
 
 - **Local/custom schemes are now resolvable by `typing` commands.**

@@ -1,7 +1,7 @@
 {
   "provider": "pubmlst",
-  "scheme_type": "mlst",
-  "updated_at": "2026-03-13T13:33:19Z",
+  "scheme_type": "mixed",
+  "updated_at": "2026-11-07T01:46:22Z",
   "count": 232,
   "schemes": [
     {
@@ -14,7 +14,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_achromobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_achromobacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "abaumannii_1",
@@ -26,7 +27,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "abaumannii_2",
@@ -38,7 +40,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "abaumannii_3",
@@ -50,7 +53,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_abaumannii_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "actinobacillus_1",
@@ -62,7 +66,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_actinobacillus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_actinobacillus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "aeromonas_1",
@@ -74,7 +79,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aeromonas_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aeromonas_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "aactinomycetemcomitans_1",
@@ -86,7 +92,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aactinomycetemcomitans_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aactinomycetemcomitans_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "aphagocytophilum_1",
@@ -98,7 +105,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aphagocytophilum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aphagocytophilum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "arcobacter_1",
@@ -110,7 +118,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_arcobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_arcobacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "afumigatus_1",
@@ -122,7 +131,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_afumigatus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_afumigatus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "aparagallinarum_1",
@@ -134,7 +144,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "aparagallinarum_2",
@@ -146,7 +157,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_aparagallinarum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bcereus_1",
@@ -158,7 +170,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bcereus_2",
@@ -170,7 +183,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bcereus_3",
@@ -182,7 +196,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcereus_seqdef/schemes/5"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "blicheniformis_1",
@@ -194,7 +209,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blicheniformis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blicheniformis_seqdef/schemes/14"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bsubtilis_1",
@@ -206,19 +222,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bsubtilis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bsubtilis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "llactis_1",
       "display_name": "Lactococcus lactis 936-like bacteriophage MLST",
       "organism": "Lactococcus lactis 936-like bacteriophage",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 5,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_llactis_phage_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_llactis_phage_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bfragilis_1",
@@ -230,7 +248,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bfragilis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bfragilis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bbacilliformis_1",
@@ -242,7 +261,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bbacilliformis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bbacilliformis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bhenselae_1",
@@ -254,7 +274,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bhenselae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bhenselae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bwashoensis_1",
@@ -266,31 +287,34 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bwashoensis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bwashoensis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "blastocystis_1",
       "display_name": "Blastocystis spp. ST3 MLST (mlst)",
       "organism": "Blastocystis spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 5,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "blastocystis_2",
       "display_name": "Blastocystis spp. ST4 MLST (mlst)",
       "organism": "Blastocystis spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 6,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_blastocystis_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "borrelia_1",
@@ -302,7 +326,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "borrelia_2",
@@ -314,7 +339,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_borrelia_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "brachyspira_1",
@@ -326,7 +352,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/5"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brachyspira_2",
@@ -338,7 +365,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brachyspira_3",
@@ -350,7 +378,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brachyspira_4",
@@ -362,7 +391,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brachyspira_5",
@@ -374,7 +404,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brachyspira_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brucella_1",
@@ -386,7 +417,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brucella_2",
@@ -398,7 +430,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "brucella_3",
@@ -410,7 +443,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_brucella_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bcepacia_1",
@@ -422,7 +456,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bcepacia_2",
@@ -434,7 +469,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bcc_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bmallei_1",
@@ -446,7 +482,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bmallei_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bpseudomallei_1",
@@ -458,7 +495,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "bpseudomallei_2",
@@ -470,7 +508,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_bpseudomallei_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "campylobacter_1",
@@ -482,7 +521,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/5"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_2",
@@ -494,7 +534,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/9"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_3",
@@ -506,7 +547,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_4",
@@ -518,7 +560,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/6"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_5",
@@ -530,7 +573,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_6",
@@ -542,7 +586,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/7"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_7",
@@ -554,7 +599,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_8",
@@ -566,7 +612,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/8"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_9",
@@ -578,7 +625,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_nonjejuni_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_10",
@@ -590,7 +638,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "campylobacter_11",
@@ -602,7 +651,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "campylobacter_12",
@@ -614,7 +664,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/8"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "campylobacter_13",
@@ -626,7 +677,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_campylobacter_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "calbicans_1",
@@ -638,7 +690,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_calbicans_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_calbicans_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cglabrata_1",
@@ -650,7 +703,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cglabrata_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cglabrata_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ckrusei_1",
@@ -662,7 +716,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ckrusei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ckrusei_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ctropicalis_1",
@@ -674,7 +729,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ctropicalis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ctropicalis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cmaltaromaticum_1",
@@ -686,7 +742,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cmaltaromaticum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cmaltaromaticum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "chlamydiales_1",
@@ -698,7 +755,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/44"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "chlamydiales_2",
@@ -710,7 +768,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/42"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "chlamydiales_3",
@@ -722,7 +781,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "chlamydiales_4",
@@ -734,7 +794,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/38"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "chlamydiales_5",
@@ -746,19 +807,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/41"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "chlamydiales_6",
       "display_name": "Chlamydiales spp. Plasmid MLST (mlst)",
       "organism": "Chlamydiales spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 8,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_chlamydiales_seqdef/schemes/40"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "citrobacter_1",
@@ -770,7 +833,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cfreundii_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cfreundii_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "csinensis_1",
@@ -782,7 +846,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_csinensis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_csinensis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cdifficile_1",
@@ -794,7 +859,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cdifficile_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cdifficile_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cbotulinum_1",
@@ -806,7 +872,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cbotulinum_2",
@@ -818,19 +885,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cbotulinum_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cchauvoei_1",
       "display_name": "Clostridium chauvoei agMLST (mlst)",
       "organism": "Clostridium chauvoei",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 234,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef/schemes/2"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "cchauvoei_2",
@@ -842,7 +911,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cchauvoei_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cperfringens_1",
@@ -854,7 +924,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cperfringens_2",
@@ -866,7 +937,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cperfringens_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "csepticum_1",
@@ -878,7 +950,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_csepticum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_csepticum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cronobacter_1",
@@ -890,7 +963,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cronobacter_2",
@@ -902,7 +976,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cronobacter_3",
@@ -914,7 +989,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cronobacter_4",
@@ -926,7 +1002,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_cronobacter_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cacnes_1",
@@ -938,7 +1015,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pacnes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pacnes_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "dnodosus_1",
@@ -950,7 +1028,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "dnodosus_2",
@@ -962,7 +1041,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_dnodosus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "edwardsiella_1",
@@ -974,7 +1054,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_edwardsiella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_edwardsiella_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "enterobacter_1",
@@ -986,7 +1067,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ecloacae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ecloacae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "efaecalis_1",
@@ -998,7 +1080,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecalis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecalis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "efaecium_1",
@@ -1010,7 +1093,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "efaecium_2",
@@ -1022,7 +1106,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_efaecium_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "escherichia_1",
@@ -1034,7 +1119,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "escherichia_2",
@@ -1046,7 +1132,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "escherichia_3",
@@ -1058,7 +1145,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_escherichia_seqdef/schemes/6"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "fpsychrophilum_1",
@@ -1070,7 +1158,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_fpsychrophilum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_fpsychrophilum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ganatis_1",
@@ -1082,7 +1171,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_gallibacterium_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_gallibacterium_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "geotrichum_1",
@@ -1094,7 +1184,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_geotrichum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_geotrichum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "gparasuis_1",
@@ -1106,7 +1197,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hparasuis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hparasuis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "hinfluenzae_1",
@@ -1118,7 +1210,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "hinfluenzae_2",
@@ -1130,7 +1223,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/56"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "hinfluenzae_3",
@@ -1142,7 +1236,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hinfluenzae_seqdef/schemes/59"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "hcinaedi_1",
@@ -1154,7 +1249,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hcinaedi_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hcinaedi_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "hpylori_1",
@@ -1166,7 +1262,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_helicobacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_helicobacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "hsuis_1",
@@ -1178,7 +1275,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_hsuis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_hsuis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "kaerogenes_1",
@@ -1190,7 +1288,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_kaerogenes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_kaerogenes_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "koxytoca_1",
@@ -1202,7 +1301,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_koxytoca_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_koxytoca_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "kseptempunctata_1",
@@ -1214,7 +1314,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_kseptempunctata_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_kseptempunctata_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "lsalivarius_1",
@@ -1226,7 +1327,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_lsalivarius_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_lsalivarius_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "lgarvieae_1",
@@ -1238,7 +1340,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_lgarvieae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_lgarvieae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "leptospira_1",
@@ -1250,7 +1353,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "leptospira_2",
@@ -1262,7 +1366,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "leptospira_3",
@@ -1274,7 +1379,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "leptospira_4",
@@ -1286,7 +1392,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_leptospira_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cliberibacter_1",
@@ -1298,7 +1405,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_liberibacter_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_liberibacter_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mcanis_1",
@@ -1310,7 +1418,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mcanis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mcanis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mcaseolyticus_1",
@@ -1322,7 +1431,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mcaseolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mcaseolyticus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "msciuri_1",
@@ -1334,7 +1444,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_msciuri_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_msciuri_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhaemolytica_1",
@@ -1346,7 +1457,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhaemolytica_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhaemolytica_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mplutonius_1",
@@ -1358,7 +1470,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mplutonius_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mplutonius_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mycobacteria_1",
@@ -1370,7 +1483,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mycobacteria_2",
@@ -1382,7 +1496,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mycobacteria_3",
@@ -1394,7 +1509,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mycobacteria_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mabscessus_1",
@@ -1406,7 +1522,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mabscessus_2",
@@ -1418,7 +1535,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mabscessus_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "manserisalpingitidis_1",
@@ -1430,7 +1548,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_manserisalpingitidis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_manserisalpingitidis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mbovis_1",
@@ -1442,7 +1561,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mbovis_2",
@@ -1454,7 +1574,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mbovis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mflocculare_1",
@@ -1466,7 +1587,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mflocculare_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mflocculare_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mgallisepticum_1",
@@ -1478,7 +1600,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mgallisepticum_2",
@@ -1490,7 +1613,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgallisepticum_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mgenitalium_1",
@@ -1502,7 +1626,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mgenitalium_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mgenitalium_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhominis_1",
@@ -1514,7 +1639,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhominis_2",
@@ -1526,7 +1652,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhominis_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhyopneumoniae_1",
@@ -1538,7 +1665,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyopneumoniae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyopneumoniae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhyorhinis_1",
@@ -1550,7 +1678,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyorhinis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyorhinis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mhyosynoviae_1",
@@ -1562,7 +1691,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mhyosynoviae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mhyosynoviae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "miowae_1",
@@ -1574,7 +1704,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_miowae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_miowae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "mpneumoniae_1",
@@ -1586,7 +1717,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_mpneumoniae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_mpneumoniae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "msynoviae_1",
@@ -1598,7 +1730,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_msynoviae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_msynoviae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "neisseria_1",
@@ -1610,7 +1743,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "neisseria_2",
@@ -1622,7 +1756,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "neisseria_3",
@@ -1634,7 +1769,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/12"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "neisseria_4",
@@ -1646,7 +1782,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/72"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_5",
@@ -1658,7 +1795,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/45"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_6",
@@ -1670,31 +1808,34 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/68"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_7",
       "display_name": "Neisseria spp. L44 pgMLST (mlst)",
       "organism": "Neisseria spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 1786,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/69"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "neisseria_8",
       "display_name": "Neisseria spp. N. gonorrhoeae agMLST v1.0 (mlst)",
       "organism": "Neisseria spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 251,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/80"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "neisseria_9",
@@ -1706,7 +1847,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/62"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_10",
@@ -1718,19 +1860,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/89"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_11",
       "display_name": "Neisseria spp. N. gonorrhoeae pgMLST v1.0 (mlst)",
       "organism": "Neisseria spp.",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 1907,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/81"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "neisseria_12",
@@ -1742,7 +1886,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/90"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_13",
@@ -1754,7 +1899,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/47"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_14",
@@ -1766,7 +1912,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/85"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "neisseria_15",
@@ -1778,7 +1925,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_neisseria_seqdef/schemes/88"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "otsutsugamushi_1",
@@ -1790,7 +1938,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_otsutsugamushi_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_otsutsugamushi_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "orhinotracheale_1",
@@ -1802,7 +1951,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_orhinotracheale_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_orhinotracheale_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "plarvae_1",
@@ -1814,7 +1964,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plarvae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plarvae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pmultocida_1",
@@ -1826,7 +1977,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pmultocida_2",
@@ -1838,7 +1990,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pmultocida_3",
@@ -1850,7 +2003,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pmultocida_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ppentosaceus_1",
@@ -1862,7 +2016,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ppentosaceus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ppentosaceus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pdamselae_1",
@@ -1874,7 +2029,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pdamselae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pdamselae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "psalmonis_1",
@@ -1886,67 +2042,73 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_psalmonis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_psalmonis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pmlst_1",
       "display_name": "Plasmid MLST IncA/C cgPMLST (mlst)",
       "organism": "Plasmid MLST",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 28,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/7"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "pmlst_2",
       "display_name": "Plasmid MLST IncA/C PMLST (mlst)",
       "organism": "Plasmid MLST",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 4,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/6"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "pmlst_3",
       "display_name": "Plasmid MLST IncHI1 MLST (mlst)",
       "organism": "Plasmid MLST",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 6,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/5"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "pmlst_4",
       "display_name": "Plasmid MLST IncI1 MLST (mlst)",
       "organism": "Plasmid MLST",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 5,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/1"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "pmlst_5",
       "display_name": "Plasmid MLST IncN MLST (mlst)",
       "organism": "Plasmid MLST",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 3,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_plasmid_seqdef/schemes/4"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "pgingivalis_1",
@@ -1958,7 +2120,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pgingivalis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pgingivalis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "proteus_1",
@@ -1970,7 +2133,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_proteus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_proteus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "providencia_1",
@@ -1982,7 +2146,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "providencia_2",
@@ -1994,7 +2159,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_providencia_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "paeruginosa_1",
@@ -2006,7 +2172,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_paeruginosa_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_paeruginosa_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pfluorescens_1",
@@ -2018,7 +2185,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pfluorescens_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pfluorescens_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "pputida_1",
@@ -2030,7 +2198,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_pputida_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_pputida_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ranatipestifer_1",
@@ -2042,7 +2211,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ranatipestifer_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ranatipestifer_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "rhodococcus_1",
@@ -2054,7 +2224,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_rhodococcus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_rhodococcus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "salmonella_1",
@@ -2066,7 +2237,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/4"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "salmonella_2",
@@ -2078,7 +2250,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "salmonella_3",
@@ -2090,7 +2263,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_salmonella_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "sparasitica_1",
@@ -2102,7 +2276,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sparasitica_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sparasitica_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "serratia_1",
@@ -2114,7 +2289,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "serratia_2",
@@ -2126,7 +2302,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_serratia_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "shewanella_1",
@@ -2138,7 +2315,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shewanella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shewanella_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sinorhizobium_1",
@@ -2150,7 +2328,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sinorhizobium_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sinorhizobium_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "smaltophilia_1",
@@ -2162,7 +2341,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_smaltophilia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_smaltophilia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "saureus_1",
@@ -2174,7 +2354,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "saureus_2",
@@ -2186,7 +2367,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_saureus_seqdef/schemes/20"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "scapitis_1",
@@ -2198,7 +2380,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_scapitis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_scapitis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "schromogenes_1",
@@ -2210,7 +2393,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_schromogenes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_schromogenes_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sepidermidis_1",
@@ -2222,7 +2406,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sepidermidis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sepidermidis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "shaemolyticus_1",
@@ -2234,7 +2419,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shaemolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shaemolyticus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "shominis_1",
@@ -2246,7 +2432,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_shominis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_shominis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "spseudintermedius_1",
@@ -2258,7 +2445,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spseudintermedius_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spseudintermedius_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "oral_1",
@@ -2270,7 +2458,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "oral_2",
@@ -2282,7 +2471,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "oral_3",
@@ -2294,7 +2484,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_oralstrep_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sagalactiae_1",
@@ -2306,7 +2497,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sagalactiae_2",
@@ -2318,7 +2510,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sagalactiae_seqdef/schemes/38"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "streptococcus_1",
@@ -2330,7 +2523,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sbsec_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sbsec_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "scanis_1",
@@ -2342,7 +2536,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_scanis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_scanis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sdysgalactiae_1",
@@ -2354,7 +2549,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sdysgalactiae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sdysgalactiae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sgallolyticus_1",
@@ -2366,7 +2562,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sgallolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sgallolyticus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "siniae_1",
@@ -2378,7 +2575,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_siniae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_siniae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "smitis_1",
@@ -2390,7 +2588,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_smitis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_smitis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "spneumoniae_1",
@@ -2402,7 +2601,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "spneumoniae_2",
@@ -2414,7 +2614,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spneumoniae_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "spyogenes_1",
@@ -2426,7 +2627,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "spyogenes_2",
@@ -2438,7 +2640,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_spyogenes_seqdef/schemes/11"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ssuis_1",
@@ -2450,7 +2653,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ssuis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ssuis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "sthermophilus_1",
@@ -2462,7 +2666,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_sthermophilus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_sthermophilus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "suberis_1",
@@ -2474,7 +2679,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "suberis_2",
@@ -2486,19 +2692,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/8"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "suberis_3",
       "display_name": "Streptococcus uberis vMLST (mlst)",
       "organism": "Streptococcus uberis",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 10,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_suberis_seqdef/schemes/2"
-      }
+      },
+      "compute_type": ""
     },
     {
       "scheme_name": "szooepidemicus_1",
@@ -2510,7 +2718,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_szooepidemicus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_szooepidemicus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "streptomyces_1",
@@ -2522,7 +2731,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_streptomyces_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_streptomyces_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "taylorella_1",
@@ -2534,7 +2744,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_taylorella_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_taylorella_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "tenacibaculum_1",
@@ -2546,7 +2757,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tenacibaculum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tenacibaculum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "tpallidum_1",
@@ -2558,7 +2770,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "tpallidum_2",
@@ -2570,7 +2783,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpallidum_seqdef/schemes/181"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "tvaginalis_1",
@@ -2582,7 +2796,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tvaginalis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tvaginalis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "tpyogenes_1",
@@ -2594,7 +2809,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_tpyogenes_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_tpyogenes_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ureaplasma_1",
@@ -2606,7 +2822,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ureaplasma_2",
@@ -2618,7 +2835,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ureaplasma_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vcholerae_1",
@@ -2630,19 +2848,21 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vcholerae_2",
       "display_name": "Vibrio cholerae MLST (O1 and O139) (mlst)",
       "organism": "Vibrio cholerae",
-      "scheme_type": "mlst",
+      "scheme_type": "other",
       "n_loci": 5,
       "provider": "pubmlst",
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vcholerae_3",
@@ -2654,7 +2874,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vcholerae_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "vibrio_1",
@@ -2666,7 +2887,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vibrio_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vibrio_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vparahaemolyticus_1",
@@ -2678,7 +2900,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vparahaemolyticus_2",
@@ -2690,7 +2913,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/2"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vparahaemolyticus_3",
@@ -2702,7 +2926,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vparahaemolyticus_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "vvulnificus_1",
@@ -2714,7 +2939,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vvulnificus_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vvulnificus_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "wolbachia_1",
@@ -2726,7 +2952,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_wolbachia_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_wolbachia_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "xcitri_1",
@@ -2738,7 +2965,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_xcitri_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_xcitri_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "xfastidiosa_1",
@@ -2750,7 +2978,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_xfastidiosa_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_xfastidiosa_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ypseudotuberculosis_1",
@@ -2762,7 +2991,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_ypseudotuberculosis_achtman_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_ypseudotuberculosis_achtman_seqdef/schemes/3"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "yruckeri_1",
@@ -2774,7 +3004,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_yruckeri_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_yruckeri_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vtapetis_1",
@@ -2786,7 +3017,8 @@
       "extra": {
         "seqdef_url": "https://rest.pubmlst.org/db/pubmlst_vtapetis_seqdef",
         "scheme_url": "https://rest.pubmlst.org/db/pubmlst_vtapetis_seqdef/schemes/1"
-      }
+      },
+      "compute_type": "mlst"
     }
   ]
 }

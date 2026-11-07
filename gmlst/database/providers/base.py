@@ -29,7 +29,16 @@ class SchemeInfo:
     """Organism description, e.g. ``"Staphylococcus aureus"``."""
 
     scheme_type: str
-    """``"mlst"``, ``"cgmlst"``, ``"wgmlst"``, etc."""
+    """Display/search type: ``"mlst"``, ``"cgmlst"``, ``"wgmlst"``, ``"other"``."""
+
+    compute_type: str = ""
+    """Typing mode used to run this scheme (``mlst``/``cgmlst``/``wgmlst``).
+
+    Empty means the scheme is catalogued but not typeable (e.g. a virulence or
+    resistance panel).  Genotype/lineage-specific MLST-like schemes use
+    ``scheme_type="other"`` with ``compute_type="mlst"`` so search stays clean
+    while ``gmlst typing mlst`` keeps working.
+    """
 
     n_loci: int = 0
     """Number of loci (0 = unknown)."""
@@ -48,6 +57,7 @@ class SchemeInfo:
             display_name=str(data.get("display_name", "")),
             organism=str(data.get("organism", "")),
             scheme_type=str(data.get("scheme_type", "")),
+            compute_type=str(data.get("compute_type", "")),
             n_loci=int(data.get("n_loci", 0) or 0),
             provider=str(data.get("provider", "")),
             extra=dict(data.get("extra") or {}),

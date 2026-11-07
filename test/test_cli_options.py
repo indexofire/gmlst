@@ -1539,6 +1539,7 @@ def test_scheme_search_json_output(monkeypatch) -> None:
         "scheme_name",
         "organism",
         "scheme_type",
+        "compute_type",
         "n_loci",
         "provider",
         "display_name",

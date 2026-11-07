@@ -38,15 +38,6 @@
       "note": "B. cereus scheme first; bcereus_2 is the B. anthracis scheme"
     },
     {
-      "organism": "Blastocystis spp.",
-      "type": "mlst",
-      "order": [
-        "blastocystis_2",
-        "blastocystis_1"
-      ],
-      "note": "6-locus over 5-locus"
-    },
-    {
       "organism": "Bordetella pertussis",
       "type": "cgmlst",
       "order": [
@@ -60,16 +51,9 @@
       "organism": "Bordetella pertussis",
       "type": "mlst",
       "order": [
-        "bpertussis_1",
-        "bpertussis_9",
-        "bpertussis_2",
-        "bpertussis_10",
-        "bpertussis_6",
-        "bpertussis_3",
-        "bpertussis_7",
-        "bpertussis_8"
+        "bpertussis_1"
       ],
-      "note": "classic 7-locus first; vaccine-antigen mini schemes last"
+      "note": "classic 7-locus only; vaccine-antigen/typing panels are catalogued as other"
     },
     {
       "organism": "Brachyspira spp.",
@@ -170,8 +154,7 @@
       "order": [
         "chlamydiales_3",
         "chlamydiales_4",
-        "chlamydiales_5",
-        "chlamydiales_6"
+        "chlamydiales_5"
       ],
       "note": "generic Chlamydiales scheme first"
     },
@@ -180,7 +163,6 @@
       "type": "mlst",
       "order": [
         "cbotulinum_1",
-        "cbotulinum_3",
         "cbotulinum_2"
       ],
       "note": "classic 7-locus first; Griffiths second; extended last"
@@ -208,10 +190,7 @@
       "organism": "Corynebacterium diphtheriae",
       "type": "mlst",
       "order": [
-        "cdiphtheriae_1",
-        "cdiphtheriae_4",
-        "cdiphtheriae_5",
-        "cdiphtheriae_6"
+        "cdiphtheriae_1"
       ],
       "note": "classic MLST first; topic schemes last"
     },
@@ -290,25 +269,9 @@
       "order": [
         "kpneumoniae_2",
         "kpneumoniae_23",
-        "kpneumoniae_1",
-        "kpneumoniae_3",
-        "kpneumoniae_4",
-        "kpneumoniae_5",
-        "kpneumoniae_6",
-        "kpneumoniae_8",
-        "kpneumoniae_9",
-        "kpneumoniae_10",
-        "kpneumoniae_11",
-        "kpneumoniae_12",
-        "kpneumoniae_13",
-        "kpneumoniae_17",
-        "kpneumoniae_18",
-        "kpneumoniae_19",
-        "kpneumoniae_20",
-        "kpneumoniae_21",
-        "kpneumoniae_22"
+        "kpneumoniae_1"
       ],
-      "note": "Pasteur 7-gene classic first; enterobase mirror second; topic schemes last"
+      "note": "Pasteur 7-gene classic first; enterobase mirror second; topic panels are catalogued as other"
     },
     {
       "organism": "Leptospira interrogans",
@@ -325,10 +288,7 @@
       "order": [
         "linterrogans_6",
         "linterrogans_7",
-        "linterrogans_8",
-        "linterrogans_1",
-        "linterrogans_4",
-        "linterrogans_5"
+        "linterrogans_8"
       ],
       "note": "7/6-locus MLST variants first; 68-locus VNTR-like linterrogans_1 avoided"
     },
@@ -356,18 +316,7 @@
       "organism": "Listeria monocytogenes",
       "type": "mlst",
       "order": [
-        "lmonocytogenes_1",
-        "lmonocytogenes_3",
-        "lmonocytogenes_4",
-        "lmonocytogenes_5",
-        "lmonocytogenes_6",
-        "lmonocytogenes_7",
-        "lmonocytogenes_8",
-        "lmonocytogenes_9",
-        "lmonocytogenes_10",
-        "lmonocytogenes_11",
-        "lmonocytogenes_12",
-        "lmonocytogenes_14"
+        "lmonocytogenes_1"
       ],
       "note": "classic L. monocytogenes MLST"
     },
@@ -429,10 +378,7 @@
       "order": [
         "neisseria_1",
         "neisseria_2",
-        "neisseria_3",
-        "neisseria_7",
-        "neisseria_8",
-        "neisseria_11"
+        "neisseria_3"
       ],
       "note": "classic 7-gene Neisseria MLST"
     },
@@ -504,8 +450,7 @@
       "organism": "Streptococcus uberis",
       "type": "mlst",
       "order": [
-        "suberis_1",
-        "suberis_3"
+        "suberis_1"
       ],
       "note": "MLST first; vMLST second"
     },
@@ -531,10 +476,9 @@
       "organism": "Vibrio cholerae",
       "type": "mlst",
       "order": [
-        "vcholerae_1",
-        "vcholerae_2"
+        "vcholerae_1"
       ],
-      "note": "7-locus classic (O1/O139 variant second)"
+      "note": "7-locus classic; O1/O139 variant is catalogued as other (compute_type=mlst)"
     },
     {
       "organism": "Vibrio parahaemolyticus",
@@ -549,7 +493,6 @@
       "organism": "Vibrio spp.",
       "type": "mlst",
       "order": [
-        "vibrio_2",
         "vibrio_1"
       ],
       "note": "enterobase 7-locus over legacy 4-locus pubmlst"

@@ -18,7 +18,7 @@ gmlst scheme list [OPTIONS]
 | 选项 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-p, --provider [<registered-provider>\|local\|all]` | 按提供方过滤。 | `all` |
-| `-t, --type [mlst\|cgmlst\|wgmlst\|all]` | 按方案类型过滤。 | `all` |
+| `-t, --type [mlst\|cgmlst\|wgmlst\|rmlst\|other\|all]` | 按方案类型过滤。 | `all` |
 | `-n, --name TEXT` | 按 organism 名称的正则表达式过滤，大小写不敏感。 | 无 |
 | `-f, --format [text\|table\|csv\|tsv\|json]` | 输出格式。 | `table` |
 | `-a, --available` | 只显示已经下载并缓存的方案。 | 关闭 |
@@ -33,6 +33,7 @@ gmlst scheme list -p local -a -f json
 
 ### 注意事项
 - `scheme list` 会按 `gmlst/data/blocked_schemes.json` 过滤被隐藏的方案。
+- `scheme_type` 是搜索/展示分类。标准种级 MLST 为 `mlst`；只针对某个/某些基因型或谱系的 MLST-like 方案（如 ST3/ST4、O1/O139 面板）为 `other` + `compute_type: mlst`，因此 `-t mlst` 只显示标准 MLST，而 `gmlst typing mlst -s <scheme>` 仍可运行。非分型面板（毒力、耐药、血清群 PCR）为 `other`，没有 `compute_type`。
 - `--name` 使用正则表达式，写错表达式会直接报错。
 
 ---

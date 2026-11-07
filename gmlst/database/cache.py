@@ -678,7 +678,36 @@ class DatabaseCache:
             return None
         schemes = data.get("schemes", [])
         self._heal_cross_provider_collisions(provider, schemes)
+        self._reclassify_catalog(provider, schemes)
         return schemes
+
+    @staticmethod
+    def _reclassify_catalog(provider: str, schemes: list[dict[str, Any]]) -> None:
+        """Apply the current display/compute classifier to cached catalogs.
+
+        Cached catalogs can predate classifier fixes (notably Pasteur panels
+        once stored as ``mlst``).  Reclassifying on load keeps ``scheme list
+        -t mlst`` and ``typing`` correct without requiring a full catalog
+        refresh; the next ``scheme update`` persists the values.
+        """
+        if provider in {"pubmlst", "pasteur"}:
+            from gmlst.database.providers.bigsdb import (
+                _classify_scheme_type,
+                _compute_scheme_type,
+            )
+
+            for scheme in schemes:
+                display = str(scheme.get("display_name", "")).strip()
+                if not display:
+                    scheme.setdefault(
+                        "compute_type", str(scheme.get("scheme_type", ""))
+                    )
+                    continue
+                scheme["scheme_type"] = _classify_scheme_type(display)
+                scheme["compute_type"] = _compute_scheme_type(display)
+        else:
+            for scheme in schemes:
+                scheme.setdefault("compute_type", str(scheme.get("scheme_type", "")))
 
     @staticmethod
     def _scheme_identity_keys(schemes: list[dict[str, Any]]) -> list[str]:
@@ -890,6 +919,7 @@ class DatabaseCache:
                 "display_name": s.display_name,
                 "organism": s.organism,
                 "scheme_type": s.scheme_type,
+                "compute_type": s.compute_type,
                 "n_loci": s.n_loci,
                 "provider": s.provider,
                 "extra": s.extra,

@@ -18,7 +18,7 @@ gmlst scheme list [OPTIONS]
 | Option | Description | Default |
 | --- | --- | --- |
 | `-p, --provider [pubmlst\|pasteur\|enterobase\|cgmlst\|local\|all]` | Filter by provider. | `all` |
-| `-t, --type [mlst\|cgmlst\|wgmlst\|all]` | Filter by scheme type. | `all` |
+| `-t, --type [mlst\|cgmlst\|wgmlst\|rmlst\|other\|all]` | Filter by scheme type. | `all` |
 | `-n, --name TEXT` | Filter by scheme name. | - |
 | `-f, --format [text\|table\|csv\|tsv\|json]` | Output format. | `table` |
 | `-a, --available` | Show remotely available schemes, not only cached ones. | `False` |
@@ -37,6 +37,7 @@ gmlst scheme list --available -f json
 - Table output adapts to the terminal and is the normal human-readable view.
 - `--available` refreshes the view toward provider catalogs so you can inspect schemes that are not yet downloaded locally.
 - Listings are filtered through `gmlst/data/blocked_schemes.json`, which hides blocked `scheme_name` values by provider.
+- `scheme_type` is the search/display category. Standard species-wide MLST is `mlst`; lineage/genotype-scoped MLST-like schemes (for example ST3/ST4 or O1/O139 panels) are `other` with `compute_type: mlst`, so `-t mlst` stays clean while `gmlst typing mlst -s <scheme>` still works. Non-typing panels (virulence, resistance, serogroup PCR) are `other` with no `compute_type`.
 
 ---
 

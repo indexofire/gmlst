@@ -21,7 +21,8 @@ Each listed scheme is represented as `SchemeInfo` from `gmlst/database/providers
 - `scheme_name`
 - `display_name`
 - `organism`
-- `scheme_type`
+- `scheme_type` — display/search category (`mlst`/`cgmlst`/`wgmlst`/`rmlst`/`other`)
+- `compute_type` — typing engine (`mlst`/`cgmlst`/`wgmlst`); empty for non-typeable panels
 - `n_loci`
 - `provider`
 - `extra` for provider-specific fields such as URLs or directory names
@@ -91,6 +92,7 @@ After `save_catalog()`, a provider catalog is a JSON array of scheme objects:
     "display_name": "Staphylococcus aureus MLST",
     "organism": "Staphylococcus aureus",
     "scheme_type": "mlst",
+    "compute_type": "mlst",
     "n_loci": 7,
     "provider": "pubmlst",
     "extra": {
@@ -99,6 +101,13 @@ After `save_catalog()`, a provider catalog is a JSON array of scheme objects:
   }
 ]
 ```
+
+`scheme_type` drives `scheme list -t` and search; `compute_type` drives
+`typing`. A lineage-scoped MLST-like scheme (e.g. ST3/ST4 or O1/O139) is
+`scheme_type: other` with `compute_type: mlst`, so it stays out of the default
+MLST listing but still types through `gmlst typing mlst`. Non-typing panels
+(virulence, resistance, serogroup PCR) are `other` with an empty
+`compute_type`.
 
 ## Naming walkthrough
 

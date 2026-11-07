@@ -1,7 +1,7 @@
 {
   "provider": "enterobase",
-  "scheme_type": "mlst",
-  "updated_at": "2026-03-14T00:00:00Z",
+  "scheme_type": "mixed",
+  "updated_at": "2026-11-07T01:46:22Z",
   "count": 24,
   "schemes": [
     {
@@ -13,7 +13,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Salmonella.Achtman7GeneMLST"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "senterica_2",
@@ -24,7 +25,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Salmonella.cgMLSTv2"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "senterica_3",
@@ -35,7 +37,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Salmonella.rMLST"
-      }
+      },
+      "compute_type": "rmlst"
     },
     {
       "scheme_name": "senterica_4",
@@ -46,7 +49,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Salmonella.wgMLST"
-      }
+      },
+      "compute_type": "wgmlst"
     },
     {
       "scheme_name": "ecoli_1",
@@ -57,7 +61,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Escherichia.Achtman7GeneMLST"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "ecoli_2",
@@ -68,7 +73,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Escherichia.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ecoli_3",
@@ -79,7 +85,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Escherichia.wgMLST"
-      }
+      },
+      "compute_type": "wgmlst"
     },
     {
       "scheme_name": "yenterocolitica_1",
@@ -90,7 +97,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Yersinia.Achtman7GeneMLST"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "yenterocolitica_2",
@@ -101,7 +109,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Yersinia.McNally"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "yenterocolitica_3",
@@ -112,7 +121,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Yersinia.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "yenterocolitica_4",
@@ -123,7 +133,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Yersinia.wgMLST"
-      }
+      },
+      "compute_type": "wgmlst"
     },
     {
       "scheme_name": "kpneumoniae_1",
@@ -134,7 +145,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "klebsiella.pasteur7gene"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "kpneumoniae_2",
@@ -145,7 +157,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "klebsiella.pasteurcgmlst"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mcatarrhalis_1",
@@ -156,7 +169,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Moraxella.Achtman7GeneMLST"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cbotulinum_1",
@@ -167,7 +181,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "clostridium.Griffiths"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cbotulinum_2",
@@ -178,7 +193,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "clostridium.Griffiths_MLST"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "cbotulinum_3",
@@ -189,7 +205,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "clostridium.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cbotulinum_4",
@@ -200,7 +217,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "clostridium.wgMLST"
-      }
+      },
+      "compute_type": "wgmlst"
     },
     {
       "scheme_name": "spneumoniae_1",
@@ -211,7 +229,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Streptococcus.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "spneumoniae_2",
@@ -222,7 +241,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Streptococcus.wgMLSTv1"
-      }
+      },
+      "compute_type": "wgmlst"
     },
     {
       "scheme_name": "vibrio_1",
@@ -233,7 +253,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Vibrio.Lan7Gene"
-      }
+      },
+      "compute_type": "mlst"
     },
     {
       "scheme_name": "vibrio_2",
@@ -244,7 +265,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "VIBwgMLST.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "pluminescens_1",
@@ -255,7 +277,8 @@
       "provider": "enterobase",
       "extra": {
         "directory": "Photorhabdus.cgMLSTv1"
-      }
+      },
+      "compute_type": "cgmlst"
     }
   ]
 }

@@ -21,7 +21,8 @@
 - `scheme_name`
 - `display_name`
 - `organism`
-- `scheme_type`
+- `scheme_type`——展示/搜索分类（`mlst`/`cgmlst`/`wgmlst`/`rmlst`/`other`）
+- `compute_type`——实际分型引擎（`mlst`/`cgmlst`/`wgmlst`）；非分型面板为空
 - `n_loci`
 - `provider`
 - `extra`，用于保存 URL、目录名等 provider 特有信息
@@ -91,6 +92,7 @@ class MyProvider:
     "display_name": "Staphylococcus aureus MLST",
     "organism": "Staphylococcus aureus",
     "scheme_type": "mlst",
+    "compute_type": "mlst",
     "n_loci": 7,
     "provider": "pubmlst",
     "extra": {
@@ -99,6 +101,12 @@ class MyProvider:
   }
 ]
 ```
+
+`scheme_type` 决定 `scheme list -t` 与搜索；`compute_type` 决定 `typing`。
+谱系限定的 MLST-like 方案（如 ST3/ST4、O1/O139）是 `scheme_type: other` +
+`compute_type: mlst`，因此不出现在默认 MLST 列表里，但仍可用
+`gmlst typing mlst` 分型。非分型面板（毒力、耐药、血清群 PCR）是 `other`，
+`compute_type` 为空。
 
 ## 命名流程
 

@@ -24,6 +24,7 @@ import contextlib
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -161,10 +162,9 @@ class BigSdbProvider:
                 s_url = scheme_entry.get("scheme", "")
                 s_desc = scheme_entry.get("description", "")
                 s_type = _classify_scheme_type(s_desc)
+                compute_type = _compute_scheme_type(s_desc)
 
                 if scheme_type != "all" and s_type != scheme_type:
-                    continue
-                if scheme_type == "all" and s_type == "other":
                     continue
 
                 raw_schemes.append(
@@ -173,6 +173,7 @@ class BigSdbProvider:
                         "organism_name": organism_name,
                         "s_desc": s_desc,
                         "s_type": s_type,
+                        "compute_type": compute_type,
                         "n_loci": scheme_entry.get("locus_count", 0),
                         "s_url": s_url,
                         "seqdef_url": seqdef_url,
@@ -223,6 +224,7 @@ class BigSdbProvider:
                     display_name=f"{raw['organism_name']} {raw['s_desc']}".strip(),
                     organism=raw["organism_name"],
                     scheme_type=raw["s_type"],
+                    compute_type=raw["compute_type"],
                     n_loci=raw["n_loci"],
                     provider=self._name,
                     extra={
@@ -245,19 +247,37 @@ class BigSdbProvider:
         return 0
 
     def _fetch_scheme_detail(
-        self, scheme_name: str, scheme_type: str
+        self,
+        scheme_name: str,
+        scheme_type: str,
+        extra: dict[str, Any] | None = None,
     ) -> tuple[str, str, dict]:
         """Resolve seqdef/scheme URLs and fetch validated scheme detail.
+
+        Catalog ``extra`` URLs win when present: lineage-scoped schemes are
+        display type ``other`` but compute type ``mlst``, so re-classifying the
+        description by *scheme_type* would miss them.
 
         Returns ``(seqdef_url, scheme_url, scheme_detail)`` where
         *scheme_detail* is guaranteed to be a dict with a non-empty ``loci``
         list.
         """
-        seqdef_url, matched_db = self._resolve_seqdef_url(scheme_name)
-        logger.info("[%s] Resolved seqdef: %s (%s)", self._name, matched_db, seqdef_url)
+        extra = extra or {}
+        seqdef_url = str(extra.get("seqdef_url") or "").strip()
+        if seqdef_url:
+            logger.info("[%s] Using catalog seqdef: %s", self._name, seqdef_url)
+        else:
+            seqdef_url, matched_db = self._resolve_seqdef_url(scheme_name)
+            logger.info(
+                "[%s] Resolved seqdef: %s (%s)", self._name, matched_db, seqdef_url
+            )
 
-        scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
-        logger.info("[%s] Using scheme: %s", self._name, scheme_url)
+        scheme_url = str(extra.get("scheme_url") or "").strip()
+        if scheme_url:
+            logger.info("[%s] Using catalog scheme: %s", self._name, scheme_url)
+        else:
+            scheme_url = _resolve_scheme_url(self, seqdef_url, scheme_name, scheme_type)
+            logger.info("[%s] Using scheme: %s", self._name, scheme_url)
 
         scheme_detail = _get_json(scheme_url, headers=self._auth_headers())
         if not isinstance(scheme_detail, dict):
@@ -282,7 +302,7 @@ class BigSdbProvider:
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         seqdef_url, scheme_url, scheme_detail = self._fetch_scheme_detail(
-            scheme_name, scheme_type
+            scheme_name, scheme_type, extra
         )
         loci_urls: list[str] = scheme_detail.get("loci", [])
 
@@ -399,7 +419,7 @@ class BigSdbProvider:
             local_meta = json.loads(meta_file.read_text())
 
         seqdef_url, scheme_url, scheme_detail = self._fetch_scheme_detail(
-            scheme_name, scheme_type
+            scheme_name, scheme_type, extra
         )
         loci_urls: list[str] = scheme_detail.get("loci", [])
 
@@ -752,21 +772,55 @@ _NON_TYPING_KEYWORDS = [
     "genoser",
 ]
 
+# A standard MLST scheme is species-wide.  Descriptions that scope it to one
+# or a few genotypes/lineages are catalogued as ``other`` (but still typed with
+# the MLST engine via ``compute_type``).
+_LINEAGE_PATTERNS = re.compile(
+    r"\bST\s*\d+"
+    r"|\bCC\s*\d+"
+    r"|\bO1\b"
+    r"|\bO139\b"
+    r"|serovar|serotype|serogroup|ribotype"
+    r"|clonal complex|lineage|genotype|subtype"
+    r"|bacteriophage|phage",
+    re.IGNORECASE,
+)
+
 
 def _classify_scheme_type(description: str) -> str:
-    """Map a scheme description string to a canonical scheme_type.
+    """Map a scheme description to its display/search type.
 
-    Non-typing schemes (virulence, resistance, plasmid, pathogenicity) are
-    filtered to 'other' first. Then specific typing subtypes (cgmlst, wgmlst)
-    are checked before the generic mlst fallback.
+    ``cgmlst``/``wgmlst`` win first; non-typing panels and lineage-scoped MLST
+    schemes become ``other``.  A plain species-wide MLST stays ``mlst``.
     """
     desc_lower = description.lower()
     if any(kw in desc_lower for kw in _NON_TYPING_KEYWORDS):
         return "other"
-    for stype in ("wgmlst", "cgmlst", "mlst"):
+    for stype in ("wgmlst", "cgmlst"):
         if any(kw in desc_lower for kw in _TYPE_KEYWORDS[stype]):
             return stype
+    if any(kw in desc_lower for kw in _TYPE_KEYWORDS["mlst"]):
+        if _LINEAGE_PATTERNS.search(description):
+            return "other"
+        return "mlst"
     return "other"
+
+
+def _compute_scheme_type(description: str) -> str:
+    """Typing engine to use for a scheme (``mlst``/``cgmlst``/``wgmlst``).
+
+    Lineage-scoped MLST schemes are display type ``other`` but compute type
+    ``mlst``.  Non-typing panels return ``""``.
+    """
+    display = _classify_scheme_type(description)
+    if display in {"mlst", "cgmlst", "wgmlst"}:
+        return display
+    desc_lower = description.lower()
+    if any(kw in desc_lower for kw in _NON_TYPING_KEYWORDS):
+        return ""
+    if any(kw in desc_lower for kw in _TYPE_KEYWORDS["mlst"]):
+        return "mlst"
+    return ""
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None) -> dict | list:

@@ -78,7 +78,7 @@ The provider flow is:
 
 ### Scheme coverage
 
-PubMLST is the main source for classic MLST coverage and includes many organism-specific schemes. Scheme types are inferred in `gmlst/database/providers/bigsdb.py` from BIGSdb descriptions and locus counts.
+PubMLST is the main source for classic MLST coverage and includes many organism-specific schemes. Scheme display types are inferred in `gmlst/database/providers/bigsdb.py` from BIGSdb descriptions; lineage/genotype-scoped MLST-like schemes are `other` with `compute_type: mlst`, and non-typing panels are `other` without a compute type.
 
 ### Naming behavior
 
@@ -418,7 +418,7 @@ Each downloaded scheme directory contains a `.meta.json` file with download meta
 }
 ```
 
-The metadata records the download/update timestamp, per-locus allele counts, profile counts, and remote update timestamps for incremental update detection.
+The metadata records the download/update timestamp, per-locus allele counts, profile counts, and remote update timestamps for incremental update detection. `scheme_type` here is the **compute** type used by `typing` (for a lineage-scoped MLST-like scheme this is `mlst`, even when the catalog display type is `other`).
 
 ## Update mechanism (incremental)
 

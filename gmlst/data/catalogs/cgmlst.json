@@ -1,7 +1,7 @@
 {
   "provider": "cgmlst",
   "scheme_type": "cgmlst",
-  "updated_at": "2026-03-17T02:53:53Z",
+  "updated_at": "2026-11-07T01:46:22Z",
   "count": 40,
   "schemes": [
     {
@@ -11,7 +11,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2390,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "banthracis_1",
@@ -20,7 +21,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3803,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bpertussis_1",
@@ -29,7 +31,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2983,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bmelitensis_1",
@@ -38,7 +41,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2704,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "brucella_1",
@@ -47,7 +51,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1764,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bmallei_1",
@@ -56,7 +61,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2838,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bmallei_2",
@@ -65,7 +71,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3328,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "bpseudomallei_1",
@@ -74,7 +81,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 4221,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "campylobacter_1",
@@ -83,7 +91,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 637,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cfreundii_1",
@@ -92,7 +101,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3250,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "citrobacter_1",
@@ -101,7 +111,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2307,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cdifficile_1",
@@ -110,7 +121,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2147,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cperfringens_1",
@@ -119,7 +131,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1431,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cdiphtheriae_1",
@@ -128,7 +141,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1553,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cpseudotuberculosis_1",
@@ -137,7 +151,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1577,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "cronobacter_1",
@@ -146,7 +161,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2831,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ehormaechei_1",
@@ -155,7 +171,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2178,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "efaecalis_1",
@@ -164,7 +181,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1972,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "efaecium_1",
@@ -173,7 +191,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1423,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ecoli_1",
@@ -182,7 +201,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2513,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "ftularensis_1",
@@ -191,7 +211,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1147,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "klebsiella_1",
@@ -200,7 +221,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2536,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "kpneumoniae_1",
@@ -209,7 +231,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2358,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "lpneumophila_1",
@@ -218,7 +241,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1521,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "lmonocytogenes_1",
@@ -227,7 +251,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1701,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mmorganii_1",
@@ -236,7 +261,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2462,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mtuberculosis_1",
@@ -245,7 +271,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2891,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mabscessus_1",
@@ -254,7 +281,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2904,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "mgallisepticum_1",
@@ -263,7 +291,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 425,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "plarvae_1",
@@ -272,7 +301,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2419,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "pmirabilis_1",
@@ -281,7 +311,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2574,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "pstuartii_1",
@@ -290,7 +321,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3079,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "paeruginosa_1",
@@ -299,7 +331,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3867,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "senterica_1",
@@ -308,7 +341,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 3002,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "smarcescens_1",
@@ -317,7 +351,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2692,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "sargenteus_1",
@@ -326,7 +361,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2168,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "saureus_1",
@@ -335,7 +371,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1861,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "scapitis_1",
@@ -344,7 +381,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1492,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "spyogenes_1",
@@ -353,7 +391,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 1095,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     },
     {
       "scheme_name": "yenterocolitica_1",
@@ -362,7 +401,8 @@
       "scheme_type": "cgmlst",
       "n_loci": 2582,
       "provider": "cgmlst",
-      "extra": {}
+      "extra": {},
+      "compute_type": "cgmlst"
     }
   ]
 }
