@@ -48,7 +48,7 @@ All provider implementations follow the `Provider` `Protocol` in `gmlst/database
 Provider catalogs are cached as JSON in:
 
 ```text
-~/.cache/gmlst/_catalog/<provider>.json
+~/.local/share/gmlst/_catalog/<provider>.json
 ```
 
 The cache manager in `gmlst/database/cache.py` also rewrites names if necessary so scheme names remain globally unique across providers.
@@ -291,7 +291,7 @@ The `local` provider is not implemented as a remote provider class. It is a loca
 Custom schemes are created under the cache root, usually:
 
 ```text
-~/.cache/gmlst/local/custom_<n>/
+~/.local/share/gmlst/local/custom_<n>/
 ```
 
 Each local scheme directory contains:

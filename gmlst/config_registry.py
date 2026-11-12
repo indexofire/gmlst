@@ -26,8 +26,37 @@ class ConfigEntry:
 
 
 CONFIG_REGISTRY: list[ConfigEntry] = [
-    ConfigEntry("GMLST_CACHE_DIR", "Cache root directory", "~/.cache/gmlst", "Cache"),
+    ConfigEntry(
+        "GMLST_CACHE_DIR",
+        "Cache root directory",
+        "~/.local/share/gmlst",
+        "Cache",
+    ),
     ConfigEntry("GMLST_TMPDIR", "Temp working directory for typing", "/tmp", "Cache"),
+    ConfigEntry(
+        "GMLST_DOWNLOAD_DELAY",
+        "Minimum delay between provider HTTP requests in seconds (0 = off)",
+        "0",
+        "Provider",
+    ),
+    ConfigEntry(
+        "GMLST_DOWNLOAD_CHUNK_PAUSE",
+        "Pause between 500-file download batches in seconds (0 = off)",
+        "20",
+        "Provider",
+    ),
+    ConfigEntry(
+        "GMLST_DOWNLOAD_RETRY_ROUNDS",
+        "Automatic retry rounds for failed batch downloads (0 = off)",
+        "3",
+        "Provider",
+    ),
+    ConfigEntry(
+        "GMLST_DOWNLOAD_RETRY_PAUSE",
+        "Pause between batch download retry rounds in seconds",
+        "60",
+        "Provider",
+    ),
     ConfigEntry(
         "GMLST_PUBMLST_BASE_URL",
         "PubMLST REST API base URL",

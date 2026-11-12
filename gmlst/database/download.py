@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import contextlib
 import logging
+import os
 import shutil
 import subprocess
 import tempfile
@@ -53,6 +55,92 @@ _CHUNK_SIZE = 1024 * 1024  # 1 MB
 _MAX_RETRIES = 3
 _RETRY_DELAY = 5.0
 
+# Politeness throttling. Sustained request bursts get gmlst IPs rate-limited
+# or banned by provider hosts (PubMLST/Pasteur answer HTTP 429 or drop the
+# connection). Large batch downloads (> _BATCH_SIZE files) pause between
+# chunks; per-request delays are opt-in for stricter hosts. Both are
+# overridable via environment variables.
+_BATCH_SIZE = 500
+_DEFAULT_CHUNK_PAUSE = 20.0
+_DEFAULT_REQUEST_DELAY = 0.0
+_MAX_RETRY_BACKOFF = 120.0
+
+# Batch-level auto-retry. Transient network failures (TLS resets, connection
+# drops) on large scheme downloads used to abort the whole command and force
+# the user to re-run it manually. Failed batches are now retried within the
+# same run after a long pause, re-downloading only the still-missing files.
+_DEFAULT_RETRY_ROUNDS = 3
+_DEFAULT_RETRY_PAUSE = 60.0
+
+
+def _env_seconds(name: str, default: float) -> float:
+    """Read a non-negative float seconds value from env var *name*."""
+    raw = os.environ.get(name, "")
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %.1fs", name, raw, default)
+        return default
+    return max(0.0, value)
+
+
+def _chunk_pause_seconds() -> float:
+    """Pause between large-batch chunks (``GMLST_DOWNLOAD_CHUNK_PAUSE``)."""
+    return _env_seconds("GMLST_DOWNLOAD_CHUNK_PAUSE", _DEFAULT_CHUNK_PAUSE)
+
+
+def _retry_rounds() -> int:
+    """Batch retry rounds (``GMLST_DOWNLOAD_RETRY_ROUNDS``, 0 disables)."""
+    raw = os.environ.get("GMLST_DOWNLOAD_RETRY_ROUNDS", "")
+    if not raw:
+        return _DEFAULT_RETRY_ROUNDS
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        logger.warning(
+            "Invalid GMLST_DOWNLOAD_RETRY_ROUNDS=%r; using %d",
+            raw,
+            _DEFAULT_RETRY_ROUNDS,
+        )
+        return _DEFAULT_RETRY_ROUNDS
+
+
+def _retry_pause_seconds() -> float:
+    """Pause between batch retry rounds (``GMLST_DOWNLOAD_RETRY_PAUSE``)."""
+    return _env_seconds("GMLST_DOWNLOAD_RETRY_PAUSE", _DEFAULT_RETRY_PAUSE)
+
+
+def _throttle_request() -> None:
+    """Sleep ``GMLST_DOWNLOAD_DELAY`` seconds; no-op when unset or zero.
+
+    Called before each provider HTTP request so sequential API walks (e.g.
+    ``scheme update`` checking every locus) cannot hammer the server.
+    """
+    delay = _env_seconds("GMLST_DOWNLOAD_DELAY", _DEFAULT_REQUEST_DELAY)
+    if delay > 0:
+        time.sleep(delay)
+
+
+def _retry_wait_seconds(exc: BaseException, attempt: int, base_delay: float) -> float:
+    """Exponential backoff for retry *attempt*, honoring ``Retry-After``.
+
+    Grows as ``base_delay * 2^(attempt-1)`` and is raised to the server's
+    ``Retry-After`` header (seconds) when present, capped at
+    ``_MAX_RETRY_BACKOFF``.
+    """
+    delay = base_delay * (2 ** (attempt - 1))
+    response = getattr(exc, "response", None)
+    retry_after = None
+    if response is not None:
+        headers = getattr(response, "headers", None) or {}
+        retry_after = headers.get("Retry-After")
+    if retry_after is not None:
+        with contextlib.suppress(ValueError, TypeError):
+            delay = max(delay, float(retry_after))
+    return min(delay, _MAX_RETRY_BACKOFF)
+
 
 # ---------------------------------------------------------------------------
 # External-tool backends (aria2c, curl, wget)
@@ -64,12 +152,14 @@ def _try_aria2c(
     dest: Path,
     *,
     silent: bool = True,
-    connections: int = 4,
     headers: dict[str, str] | None = None,
 ) -> bool:
     if not shutil.which("aria2c"):
         return False
-    per_server = min(connections, 2)
+    # Single connection per server: allele FASTA/profile files are small, so
+    # extra parallel connections only multiply the request rate and trip
+    # provider rate limiters (PubMLST bans bursty IPs).
+    per_server = 1
     cmd = [
         "aria2c",
         "--continue=true",
@@ -229,7 +319,6 @@ def download_file(
 
     dest.parent.mkdir(parents=True, exist_ok=True)
 
-    connections = max_connections if max_connections is not None else 4
     req_headers = headers or {}
 
     # Credential headers must not leak into the process argument list
@@ -245,7 +334,6 @@ def download_file(
                 url,
                 dest,
                 silent=True,
-                connections=connections,
                 headers=req_headers or None,
             ),
         ),
@@ -272,7 +360,7 @@ def download_file(
         if name != "httpx" and not shutil.which(name):
             raise RuntimeError(f"Requested download tool not found in PATH: {name}")
         if name == "aria2c":
-            ok = _try_aria2c(url, dest, silent=False, connections=connections)
+            ok = _try_aria2c(url, dest, silent=False)
         elif name == "curl":
             ok = _try_curl(url, dest, silent=False)
         elif name == "wget":
@@ -354,6 +442,8 @@ def download_file_requests(
 
     dest.parent.mkdir(parents=True, exist_ok=True)
 
+    _throttle_request()
+
     for attempt in range(1, retries + 1):
         try:
             with _public_session() as session:
@@ -379,13 +469,14 @@ def download_file_requests(
                     f"cannot reach {_short_host(url)} after {retries} attempts — {url}"
                 ) from exc
             logger.warning(
-                "retry %d/%d [%s] %s",
+                "retry %d/%d [%s] %s — waiting %.0fs",
                 attempt,
                 retries,
                 _classify_network_error(exc),
                 _short_host(url),
+                _retry_wait_seconds(exc, attempt, retry_delay),
             )
-            time.sleep(retry_delay)
+            time.sleep(_retry_wait_seconds(exc, attempt, retry_delay))
 
 
 def _non_retryable_status(exc: BaseException) -> int | None:
@@ -446,6 +537,7 @@ def fetch_json(
 
     req_headers = headers or {}
 
+    _throttle_request()
     for attempt in range(1, retries + 1):
         try:
             with _public_session() as session:
@@ -464,7 +556,7 @@ def fetch_json(
                     f"cannot reach {_short_host(url)} after {retries} attempts — {url}"
                 ) from exc
             logger.warning(
-                "retry %d/%d [%s] %s — %s",
+                "retry %d/%d [%s] %s — %s — waiting %.0fs",
                 attempt,
                 retries,
                 _classify_network_error(exc),
@@ -472,10 +564,66 @@ def fetch_json(
                 url.split("/loci/")[-1].split("/alleles")[0]
                 if "/loci/" in url
                 else url.rstrip("/").split("/")[-1],
+                _retry_wait_seconds(exc, attempt, retry_delay),
             )
-            time.sleep(retry_delay)
+            time.sleep(_retry_wait_seconds(exc, attempt, retry_delay))
     # unreachable, but satisfies type checkers
     raise RuntimeError(f"JSON fetch failed: {url}")
+
+
+def fetch_with_retry(
+    method: str,
+    url: str,
+    *,
+    timeout: float = 60.0,
+    retries: int = _MAX_RETRIES,
+    retry_delay: float = _RETRY_DELAY,
+    headers: dict[str, str] | None = None,
+) -> requests.Response:
+    """Send one HTTP request with exponential-backoff retry.
+
+    Used for non-JSON endpoints (directory listings, HEAD fingerprints)
+    where a raw transport failure — e.g. a TLS reset mid-connection —
+    must not escape unwrapped or unretried. Honors server ``Retry-After``
+    headers; deterministic client errors (4xx except 429) fail
+    immediately. Raises ``RuntimeError`` with a classified reason when
+    retries are exhausted.
+    """
+    assert_public_url(url)
+
+    req_headers = headers or {}
+
+    _throttle_request()
+
+    for attempt in range(1, retries + 1):
+        try:
+            with _public_session() as session:
+                resp = session.request(
+                    method, url, timeout=timeout, headers=req_headers
+                )
+            resp.raise_for_status()
+            return resp
+        except requests.RequestException as exc:
+            status = _non_retryable_status(exc)
+            if status is not None:
+                raise RuntimeError(f"Request failed (HTTP {status}) for {url}") from exc
+            if attempt == retries:
+                raise RuntimeError(
+                    f"[network:{_classify_network_error(exc)}] "
+                    f"cannot reach {_short_host(url)} after {retries} attempts — {url}"
+                ) from exc
+            wait = _retry_wait_seconds(exc, attempt, retry_delay)
+            logger.warning(
+                "retry %d/%d [%s] %s — waiting %.0fs",
+                attempt,
+                retries,
+                _classify_network_error(exc),
+                _short_host(url),
+                wait,
+            )
+            time.sleep(wait)
+    # unreachable, but satisfies type checkers
+    raise RuntimeError(f"Request failed: {url}")
 
 
 def _download_batch_threadpool(
@@ -512,6 +660,7 @@ def _download_batch_threadpool(
     def _download_one(pair: tuple[str, Path]) -> bool:
         url, dest = pair
         try:
+            _throttle_request()
             download_file(
                 url,
                 dest,
@@ -540,6 +689,58 @@ def _download_batch_threadpool(
     return (success_count, fail_count)
 
 
+def _download_with_chunks(
+    pending: list[tuple[str, Path]],
+    max_concurrent: int,
+    timeout: float,
+    tool: DownloadTool,
+    headers: dict[str, str] | None,
+) -> tuple[int, int]:
+    """One full pass over *pending*, chunked for large batches.
+
+    For large batches (> _BATCH_SIZE files), download in chunks with a
+    pause between them to avoid overwhelming upstream servers
+    (HTTP 429 Too Many Requests / IP bans).
+    """
+    if len(pending) <= _BATCH_SIZE:
+        return _download_single_batch(pending, max_concurrent, timeout, tool, headers)
+
+    total_fail = 0
+    chunks = [pending[i : i + _BATCH_SIZE] for i in range(0, len(pending), _BATCH_SIZE)]
+    for batch_num, chunk in enumerate(chunks, 1):
+        logger.info(
+            "Downloading batch %d/%d (%d files) ...",
+            batch_num,
+            len(chunks),
+            len(chunk),
+        )
+        _successes, f = _download_single_batch(
+            chunk,
+            max_concurrent,
+            timeout,
+            tool,
+            headers,
+        )
+        total_fail += f
+        if f > 0:
+            logger.warning(
+                "Batch %d had %d failures, continuing to next batch",
+                batch_num,
+                f,
+            )
+        if batch_num < len(chunks):
+            pause = _chunk_pause_seconds()
+            if pause > 0:
+                logger.info(
+                    "Pausing %.0fs before next batch "
+                    "(rate-limit protection; override with "
+                    "GMLST_DOWNLOAD_CHUNK_PAUSE) ...",
+                    pause,
+                )
+                time.sleep(pause)
+    return (len(pending) - total_fail, total_fail)
+
+
 def download_files_batch(
     url_dest_pairs: list[tuple[str, Path]],
     *,
@@ -548,7 +749,7 @@ def download_files_batch(
     tool: DownloadTool = "auto",
     headers: dict[str, str] | None = None,
 ) -> tuple[int, int]:
-    """Download multiple files in parallel using aria2c batch mode.
+    """Download multiple files in parallel, retrying transient failures.
 
     Args:
         url_dest_pairs: List of (url, dest_path) tuples
@@ -559,7 +760,12 @@ def download_files_batch(
         Tuple of (success_count, fail_count)
 
     Uses aria2c's -i option for efficient parallel downloads.
-    Falls back to ThreadPoolExecutor if aria2c not available.
+    Falls back to ThreadPoolExecutor if aria2c not available. Transient
+    network failures (TLS resets, dropped connections) are retried inside
+    the same run: after each pass the still-missing files are re-listed
+    and re-downloaded after ``GMLST_DOWNLOAD_RETRY_PAUSE`` seconds, up to
+    ``GMLST_DOWNLOAD_RETRY_ROUNDS`` extra rounds. Files that succeeded
+    are never re-downloaded.
     """
     if not url_dest_pairs:
         return (0, 0)
@@ -578,39 +784,30 @@ def download_files_batch(
     if not pending:
         return (already_done, 0)
 
-    # For large batches (>500 files), download in chunks to avoid
-    # overwhelming upstream servers (HTTP 429 Too Many Requests)
-    _BATCH_SIZE = 500
-    if len(pending) > _BATCH_SIZE:
-        total_fail = 0
-        for i in range(0, len(pending), _BATCH_SIZE):
-            chunk = pending[i : i + _BATCH_SIZE]
-            batch_num = i // _BATCH_SIZE + 1
-            total_batches = (len(pending) + _BATCH_SIZE - 1) // _BATCH_SIZE
-            logger.info(
-                "Downloading batch %d/%d (%d files) ...",
-                batch_num,
-                total_batches,
-                len(chunk),
+    rounds = _retry_rounds()
+    for attempt in range(rounds + 1):
+        if attempt > 0:
+            pause = _retry_pause_seconds()
+            logger.warning(
+                "Retry round %d/%d: %d file(s) still missing — pausing %.0fs "
+                "(override with GMLST_DOWNLOAD_RETRY_PAUSE) ...",
+                attempt,
+                rounds,
+                len(pending),
+                pause,
             )
-            _successes, f = _download_single_batch(
-                chunk,
-                max_concurrent,
-                timeout,
-                tool,
-                headers,
-            )
-            total_fail += f
-            if f > 0:
-                logger.warning(
-                    "Batch %d had %d failures, continuing to next batch",
-                    batch_num,
-                    f,
-                )
-        total_success = already_done + (len(pending) - total_fail)
-        return (total_success, total_fail)
+            time.sleep(pause)
+        _download_with_chunks(pending, max_concurrent, timeout, tool, headers)
+        pending = [
+            (url, dest)
+            for url, dest in pending
+            if not (dest.exists() and dest.stat().st_size > 0)
+        ]
+        if not pending:
+            break
 
-    return _download_single_batch(pending, max_concurrent, timeout, tool, headers)
+    total_success = already_done + (len(url_dest_pairs) - already_done - len(pending))
+    return (total_success, len(pending))
 
 
 def _download_single_batch(
@@ -697,8 +894,12 @@ def _download_single_batch(
             "--dir",
             str(dest_dir),
             "--continue=true",
-            "--max-connection-per-server=2",
-            "--split=2",
+            # Single connection per file: the per-request rate matters far
+            # more than per-file parallelism for small allele FASTAs, and
+            # multi-connection splits multiply the request burst that gets
+            # gmlst IPs banned by provider rate limiters.
+            "--max-connection-per-server=1",
+            "--split=1",
             "--max-concurrent-downloads",
             str(max_concurrent),
             "--max-tries=5",

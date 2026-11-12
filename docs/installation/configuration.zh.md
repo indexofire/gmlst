@@ -2,7 +2,7 @@
 
 `gmlst` 的配置主要分三类，CLI 参数、环境变量、本地缓存。实际使用时，像后端、方案、线程数、输出路径这类单次运行参数，更适合放在 CLI 里。像后端调优、提供方接口地址覆盖、临时文件目录这类跨多次运行都想复用的设置，更适合用环境变量。缓存则负责保存已下载方案和已构建索引，方便重复运行。
 
-本页只记录当前代码中真实实现的配置项。缓存根目录可通过 `GMLST_CACHE_DIR` 环境变量设置，也可由 conda 或 virtualenv 环境自动检测，或通过命令行 `--cache-dir` 单次覆盖。
+本页只记录当前代码中真实实现的配置项。缓存根目录默认使用共享数据目录（`~/.local/share/gmlst`），可通过 `GMLST_CACHE_DIR` 环境变量设置，或通过命令行 `--cache-dir` 单次覆盖。
 
 ## 配置模型概览
 
@@ -68,7 +68,7 @@ gmlst config get GMLST_CACHE_DIR --format json
 
 | 变量 | 默认值 | 说明 | 使用者 |
 | --- | --- | --- | --- |
-| `GMLST_CACHE_DIR` | 自动检测 | 覆盖缓存根目录。未设置时按以下顺序自动检测：`$CONDA_PREFIX/share/gmlst`（conda 环境）、`$VIRTUAL_ENV/.cache/gmlst`（virtualenv）、`~/.cache/gmlst`（默认）。 | 所有 scheme、typing、utils 命令 |
+| `GMLST_CACHE_DIR` | `~/.local/share/gmlst` | 覆盖缓存根目录。未设置时使用共享数据根目录：`$XDG_DATA_HOME/gmlst`，未设置时回退到 `~/.local/share/gmlst`。 | 所有 scheme、typing、utils 命令 |
 
 ### BLASTN
 
@@ -121,6 +121,10 @@ gmlst config get GMLST_CACHE_DIR --format json
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
 | `GMLST_PUBMLST_BASE_URL` | `https://rest.pubmlst.org/db` | 覆盖 PubMLST BIGSdb API 根地址，适合镜像或测试实例。 | `scheme list`、`scheme show`、`scheme download`、`scheme update` |
+| `GMLST_DOWNLOAD_DELAY` | `0`（关闭） | 相邻两次 provider HTTP 请求之间的最小间隔秒数（作用于 `scheme update` 的逐 locus 检查和非 aria2c 下载）。如果被提供方限流或封 IP，请调高此值。 | `scheme download`、`scheme update` |
+| `GMLST_DOWNLOAD_CHUNK_PAUSE` | `20` | 大方案（超过 500 个文件）分批下载时，批次之间的暂停秒数（防限流保护）。设为 `0` 关闭。 | `scheme download`、`scheme update` |
+| `GMLST_DOWNLOAD_RETRY_ROUNDS` | `3` | 批量下载失败后同一运行内的自动重试轮数（应对瞬时 TLS/连接中断）。设为 `0` 立即失败。 | `scheme download`、`scheme update` |
+| `GMLST_DOWNLOAD_RETRY_PAUSE` | `60` | 每轮批量下载重试前的暂停秒数。 | `scheme download`、`scheme update` |
 | `GMLST_PASTEUR_BASE_URL` | `https://bigsdb.pasteur.fr/api/db` | 覆盖 Pasteur BIGSdb API 根地址。 | `scheme list`、`scheme show`、`scheme download`、`scheme update` |
 | `GMLST_PRIVATE_BIGSDB_URL` | unset | 启动时注册一个额外的私有 BIGSdb 提供方。 | 提供方注册、scheme 命令 |
 | `GMLST_PRIVATE_BIGSDB_NAME` | `private` | 私有 BIGSdb 的提供方键名。像 `all`、`local` 这类保留名称会被自动规整。 | 提供方注册 |
@@ -134,16 +138,14 @@ gmlst config get GMLST_CACHE_DIR --format json
 
 1. `--cache-dir` CLI 参数
 2. `GMLST_CACHE_DIR` 环境变量
-3. `$CONDA_PREFIX/share/gmlst`（conda 环境中）
-4. `$VIRTUAL_ENV/.cache/gmlst`（Python virtualenv 中）
-5. `~/.cache/gmlst`（默认）
+3. `$XDG_DATA_HOME/gmlst`，未设置时为 `~/.local/share/gmlst`（默认）
 
-这意味着每个 conda 或 virtualenv 环境默认拥有独立的数据库缓存。如果需要在多个环境间共享缓存，请显式设置 `GMLST_CACHE_DIR`。
+默认位置在所有 conda、pixi、virtualenv 环境之间共享——每个项目和环境复用同一份已下载的方案数据（与 bacmap 等工具一致）。旧版本 gmlst 遗留的缓存（`$CONDA_PREFIX/share/gmlst`、`$VIRTUAL_ENV/.cache/gmlst`、`~/.cache/gmlst`）会在首次运行时自动迁移到共享目录。
 
 典型结构：
 
 ```text
-~/.cache/gmlst/
+~/.local/share/gmlst/
 ├── pubmlst/
 │   └── saureus_1/
 │       ├── *.tfa
@@ -184,10 +186,10 @@ gmlst typing mlst -s saureus_1 sample.fasta
 
 ### 在多个 conda 环境间共享缓存
 
-默认情况下，每个 conda 环境使用 `$CONDA_PREFIX/share/gmlst` 作为缓存，数据库相互隔离。如果需要在所有环境间共享同一缓存：
+缓存默认位于 `~/.local/share/gmlst`，所有 conda 或 pixi 环境自动共享同一份缓存，无需额外配置。只有需要换一个共享位置时（例如放到大容量数据盘）才设置 `GMLST_CACHE_DIR`：
 
 ```bash
-export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
+export GMLST_CACHE_DIR=/data/gmlst-cache
 ```
 
 ### 离线使用

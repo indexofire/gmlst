@@ -48,7 +48,7 @@ provider 是 `gmlst scheme list`、`gmlst scheme download` 和 `gmlst scheme upd
 provider catalog 会被缓存为：
 
 ```text
-~/.cache/gmlst/_catalog/<provider>.json
+~/.local/share/gmlst/_catalog/<provider>.json
 ```
 
 `gmlst/database/cache.py` 还会在写入 catalog 时重写名称，确保不同 provider 之间的 scheme 名称全局唯一。
@@ -291,7 +291,7 @@ Enterobase 使用的认证体系与 PubMLST/Pasteur BIGSdb **完全不同**，�
 自定义 scheme 会创建在缓存根目录下，通常是：
 
 ```text
-~/.cache/gmlst/local/custom_<n>/
+~/.local/share/gmlst/local/custom_<n>/
 ```
 
 每个本地 scheme 目录包含：

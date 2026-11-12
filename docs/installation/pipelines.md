@@ -10,12 +10,12 @@ The image (`indexofire/gmlst` on Docker Hub) bundles gmlst plus all four alignme
 # Pull the release image
 docker pull indexofire/gmlst:latest
 
-# Type one sample (mount the working directory; schemes cache in /home/mambauser/.cache/gmlst)
+# Type one sample (mount the working directory; schemes cache in /home/mambauser/.local/share/gmlst)
 docker run --rm -v "$PWD:/data" indexofire/gmlst:latest \
     typing mlst -s saureus_1 /data/sample.fna -o /data/result.tsv
 
 # Batch with 16 parallel samples and reuse a persistent scheme cache
-docker run --rm -v "$PWD:/data" -v "$PWD/.gmlst-cache:/home/mambauser/.cache/gmlst" \
+docker run --rm -v "$PWD:/data" -v "$PWD/.gmlst-cache:/home/mambauser/.local/share/gmlst" \
     indexofire/gmlst:latest \
     typing mlst -s saureus_1 -t 1 --max-workers 16 /data/assemblies/*.fna -o /data/batch.tsv
 ```
@@ -56,7 +56,7 @@ snakemake -j 16 --use-singularity --config scheme=saureus_1 sample_dir=data/asse
 
 - `--max-workers N` is the main speed lever for **single-host batch runs** (see the measured table in the README).
 - In workflow engines, prefer **task-level fan-out** (one sample per task) — each task then runs gmlst with a single sample and default threading, which keeps resource requests predictable.
-- Mount a persistent cache (`GMLST_CACHE_DIR` or the default `~/.cache/gmlst`) so schemes download once per pipeline instance, not once per task.
+- Mount a persistent cache (`GMLST_CACHE_DIR` or the default `~/.local/share/gmlst`) so schemes download once per pipeline instance, not once per task.
 
 ## Environment variables in containers
 

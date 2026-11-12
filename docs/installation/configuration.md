@@ -2,7 +2,7 @@
 
 `gmlst` is configured in three main ways: CLI flags, environment variables, and the local cache. In practice, use CLI flags for run-specific choices such as backend, scheme, threads, and output path. Use environment variables for backend tuning, provider endpoint overrides, and temporary-file behavior. Use the cache to keep downloaded schemes and built indexes available for repeat runs.
 
-This reference only documents settings that are implemented in the current codebase. The cache root can be set via the `GMLST_CACHE_DIR` environment variable, detected automatically from conda or virtualenv environments, or overridden per-command with `--cache-dir`.
+This reference only documents settings that are implemented in the current codebase. The cache root defaults to the shared data directory (`~/.local/share/gmlst`), can be set via the `GMLST_CACHE_DIR` environment variable, or overridden per-command with `--cache-dir`.
 
 ## General configuration model
 
@@ -65,7 +65,7 @@ The cache stores downloaded schemes, catalogs, and backend-specific indexes. Onc
 
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
-| `GMLST_CACHE_DIR` | auto-detected | Override the cache root directory. When unset, the cache root is resolved automatically: `$CONDA_PREFIX/share/gmlst` in conda environments, `$VIRTUAL_ENV/.cache/gmlst` in virtualenvs, or `~/.cache/gmlst` as final fallback. | All scheme, typing, and utils commands |
+| `GMLST_CACHE_DIR` | `~/.local/share/gmlst` | Override the cache root directory. When unset, the shared data root is used: `$XDG_DATA_HOME/gmlst`, falling back to `~/.local/share/gmlst`. | All scheme, typing, and utils commands |
 
 ### BLASTN
 
@@ -118,6 +118,10 @@ No nucmer-specific environment variables are currently implemented. Choose the b
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
 | `GMLST_PUBMLST_BASE_URL` | `https://rest.pubmlst.org/db` | Overrides the PubMLST BIGSdb API root. Useful for mirrors or test instances. | `scheme list`, `scheme show`, `scheme download`, `scheme update` |
+| `GMLST_DOWNLOAD_DELAY` | `0` (off) | Minimum delay in seconds between provider HTTP requests (applies to `scheme update` locus checks and non-aria2c downloads). Raise this if a provider rate-limits or bans your IP. | `scheme download`, `scheme update` |
+| `GMLST_DOWNLOAD_CHUNK_PAUSE` | `20` | Pause in seconds between consecutive 500-file download batches for large schemes (rate-limit protection). Set `0` to disable. | `scheme download`, `scheme update` |
+| `GMLST_DOWNLOAD_RETRY_ROUNDS` | `3` | Automatic retry rounds for failed batch downloads within one run (transient TLS/connection failures). Set `0` to fail fast. | `scheme download`, `scheme update` |
+| `GMLST_DOWNLOAD_RETRY_PAUSE` | `60` | Pause in seconds before each batch download retry round. | `scheme download`, `scheme update` |
 | `GMLST_PASTEUR_BASE_URL` | `https://bigsdb.pasteur.fr/api/db` | Overrides the Pasteur BIGSdb API root. | `scheme list`, `scheme show`, `scheme download`, `scheme update` |
 | `GMLST_PRIVATE_BIGSDB_URL` | unset | Registers an extra private BIGSdb provider at startup. | Provider registry, scheme commands |
 | `GMLST_PRIVATE_BIGSDB_NAME` | `private` | Provider key for the private BIGSdb instance. Reserved names like `all` and `local` are normalized away. | Provider registry |
@@ -131,20 +135,18 @@ The cache root is resolved in the following order (first match wins):
 
 1. `--cache-dir` CLI flag on the current command
 2. `GMLST_CACHE_DIR` environment variable
-3. `$CONDA_PREFIX/share/gmlst` when inside a conda environment
-4. `$VIRTUAL_ENV/.cache/gmlst` when inside a Python virtualenv
-5. `~/.cache/gmlst` (default)
+3. `$XDG_DATA_HOME/gmlst`, or `~/.local/share/gmlst` when `XDG_DATA_HOME` is unset (default)
 
-This means each conda or virtualenv environment gets its own isolated database cache by default. To share a cache across environments, set `GMLST_CACHE_DIR` explicitly.
+The default location is shared across conda, pixi, and virtualenv environments — every project and environment reuses the same downloaded schemes (consistent with tools like bacmap). Legacy caches from older gmlst versions (`$CONDA_PREFIX/share/gmlst`, `$VIRTUAL_ENV/.cache/gmlst`, `~/.cache/gmlst`) are migrated into the shared root automatically on first run.
 
 ```text
-~/.cache/gmlst/
+~/.local/share/gmlst/
 ```
 
 Typical structure:
 
 ```text
-~/.cache/gmlst/
+~/.local/share/gmlst/
 ├── pubmlst/
 │   └── saureus_1/
 │       ├── *.tfa
@@ -185,10 +187,10 @@ gmlst typing mlst -s saureus_1 sample.fasta
 
 ### Sharing cache across conda environments
 
-By default, each conda environment uses `$CONDA_PREFIX/share/gmlst` as its cache, keeping databases isolated. To share one cache across all environments:
+Since the default cache lives in `~/.local/share/gmlst`, every conda or pixi environment automatically shares one cache — no configuration needed. Set `GMLST_CACHE_DIR` only when you want a different shared location (for example on a large data volume):
 
 ```bash
-export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
+export GMLST_CACHE_DIR=/data/gmlst-cache
 ```
 
 ### Offline use

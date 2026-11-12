@@ -177,7 +177,7 @@ class TestCustomSchemeCreation:
         """Test the internal structure of created custom scheme.
 
         Expected directory structure:
-        ~/.cache/gmlst/local/custom_1/
+        ~/.local/share/gmlst/local/custom_1/
         ├── dnaN.tfa          (merged: original + novel)
         ├── gyrB.tfa          (merged: original + novel)
         ├── ...

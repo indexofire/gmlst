@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Download rate-limit protection for providers.** Sustained request bursts
+  during `scheme download`/`scheme update` could get client IPs rate-limited
+  or temporarily banned by PubMLST/Pasteur. Downloads are now polite by
+  default: large batches (>500 files) pause 20 s between chunks
+  (`GMLST_DOWNLOAD_CHUNK_PAUSE`, default 20), aria2c uses one connection per
+  server instead of two (`--max-connection-per-server=1 --split=1`), retry
+  waits grow exponentially (5 → 10 → 20 s) and honor server `Retry-After`
+  headers, and a per-request throttle is available via
+  `GMLST_DOWNLOAD_DELAY` (default 0 = off) for sequential walks such as
+  `scheme update` locus checks.
+
+- **Cache root now defaults to the shared XDG data directory.** Schemes
+  download to `~/.local/share/gmlst` (or `$XDG_DATA_HOME/gmlst` when set)
+  instead of following `CONDA_PREFIX`/`VIRTUAL_ENV` into each environment.
+  pixi and conda projects previously cached data inside `.pixi/envs/*/share/gmlst`,
+  which was silently wiped whenever the environment was rebuilt. The shared
+  root is reused by every environment (consistent with bacmap and similar
+  tools); legacy caches (`$CONDA_PREFIX/share/gmlst`, `$VIRTUAL_ENV/.cache/gmlst`,
+  `~/.cache/gmlst`) are migrated automatically on first run — directories
+  owned by other users are left untouched, and file conflicts keep the
+  destination copy. `GMLST_CACHE_DIR` and `--cache-dir` overrides are
+  unchanged.
+
 - **Scheme type vs typing engine.** `scheme_type` is now the search/display
   category, and a new `compute_type` records the typing engine. Standard
   species-wide MLST stays `scheme_type: mlst`; lineage/genotype-scoped
@@ -21,6 +44,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   load, so existing installs see the fix without a full catalog refresh.
 
 ### Fixed
+
+- **Enterobase ST profiles conversion now streams instead of loading the
+  whole archive into RAM.** cgMLST `profiles.list.gz` archives reach
+  ~1.5 GB compressed (~14 GB raw, ~750k rows); the previous
+  whole-file decompress + split briefly held several copies in memory
+  (40+ GB peak on a 62 GB machine, at risk of OOM on smaller hosts).
+  Conversion now reads the archive line by line into an atomic
+  ``.tmp`` output with flat memory use, and a failed conversion keeps
+  the downloaded ``.gz`` so retries resume instead of re-downloading.
+
+- **Enterobase scheme downloads resume instead of re-downloading, and no
+  longer stall after the download finishes.**
+  `gmlst scheme download -s senterica_2` (and other Enterobase schemes)
+  listed every locus's `.fasta.gz` on every run. Because the `.gz` is
+  deleted after extraction to `.tfa`, any failure after partial
+  decompression — e.g. one flaky request in the per-locus header walk —
+  caused every extracted locus to be re-downloaded on each retry. Loci
+  with an existing `.tfa` are now skipped. What looked like "slow
+  decompression" after a finished download was actually one sequential
+  HTTP HEAD per locus (3000+ network round trips for a cgMLST scheme);
+  the initial download no longer probes per-locus fingerprints at all —
+  the first `scheme update` records them in one parallel pass while
+  trusting valid local files, halving the request count for a fresh
+  download. Extraction itself is now parallel, HEAD probes honor
+  `GMLST_DOWNLOAD_DELAY`, and re-downloaded loci correctly replace their
+  previous `.tfa`.
 
 - **Local/custom schemes are now resolvable by `typing` commands.**
   `DatabaseCache.detect_provider` never checked the `local` provider, so

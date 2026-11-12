@@ -40,7 +40,7 @@ novel_data/
 ├── glpF_novel.fasta
 └── profiles_novel.txt
 
-~/.cache/gmlst/local/custom_1/
+~/.local/share/gmlst/local/custom_1/
 ├── arcC.tfa
 ├── aroE.tfa
 ├── glpF.tfa
@@ -169,7 +169,7 @@ local     mlst  custom_1   Lab collection 2024
 生成后的目录通常如下：
 
 ```text
-~/.cache/gmlst/local/custom_1/
+~/.local/share/gmlst/local/custom_1/
 ├── arcC.tfa
 ├── aroE.tfa
 ├── glpF.tfa

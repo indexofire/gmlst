@@ -20,7 +20,11 @@ from typing import Any
 import requests
 
 from gmlst.database.atomic import atomic_write_bytes, atomic_write_text
-from gmlst.database.download import DownloadTool, download_file
+from gmlst.database.download import (
+    DownloadTool,
+    download_file,
+    fetch_with_retry,
+)
 from gmlst.database.providers.base import SchemeInfo, download_required_files
 from gmlst.database.url_guard import assert_public_url
 from gmlst.fasta_io import (
@@ -223,40 +227,41 @@ class EnterobaseProvider:
         loci = self._get_loci(dir_name)
         logger.info("[enterobase] %d loci to download", len(loci))
 
-        # Build URL/dest pairs for batch download
+        # Build URL/dest pairs for batch download — only for loci that are
+        # not extracted yet. ``.tfa`` is the final artifact: once it exists
+        # (decompression is atomic) the locus is complete, because the
+        # ``.gz`` intermediate is deleted right after extraction. Listing
+        # extracted loci again would re-download every one of them on each
+        # retry of a large scheme.
         url_dest_pairs = []
+        already_extracted = 0
         for locus in loci:
+            tfa_path = dest_dir / f"{locus}.tfa"
+            if tfa_path.exists():
+                already_extracted += 1
+                continue
             gz_path = dest_dir / f"{locus}.fasta.gz"
             url = f"{_BASE_URL}/{dir_name}/{locus}.fasta.gz"
             url_dest_pairs.append((url, gz_path))
+        if already_extracted:
+            logger.info(
+                "[enterobase] %d/%d loci already extracted — resuming",
+                already_extracted,
+                len(loci),
+            )
 
         # Batch download all .fasta.gz files
-        download_required_files(
-            url_dest_pairs,
-            provider_name=self.name,
-            download_tool=download_tool,
-            max_connections=max_connections or 4,
-        )
-        success = len(url_dest_pairs)
-
-        # Decompress downloaded .fasta.gz to .tfa
-        logger.info("[enterobase] Decompressing %d files …", success)
-        new_locus_meta: dict[str, dict[str, str]] = {}
-        for locus in loci:
-            gz_path = dest_dir / f"{locus}.fasta.gz"
-            tfa_path = dest_dir / f"{locus}.tfa"
-            new_locus_meta[locus] = _head_remote_file(
-                f"{_BASE_URL}/{dir_name}/{locus}.fasta.gz"
+        if url_dest_pairs:
+            download_required_files(
+                url_dest_pairs,
+                provider_name=self.name,
+                download_tool=download_tool,
+                max_connections=max_connections or 4,
             )
-            if gz_path.exists() and not tfa_path.exists():
-                try:
-                    atomic_write_bytes(tfa_path, gzip.decompress(gz_path.read_bytes()))
-                except Exception as exc:
-                    raise RuntimeError(
-                        f"[enterobase] Failed to decompress {locus}: {exc}"
-                    ) from exc
-            # Clean up .gz file
-            gz_path.unlink(missing_ok=True)
+
+        # Decompress downloaded .fasta.gz to .tfa (parallel; also cleans
+        # stale .gz leftovers next to already-extracted .tfa files)
+        self._extract_loci(dest_dir, loci, validate=False)
 
         self._download_profiles(
             dir_name,
@@ -268,6 +273,11 @@ class EnterobaseProvider:
         )
         profiles_headers = _head_remote_file(f"{_BASE_URL}/{dir_name}/profiles.list.gz")
 
+        # Per-locus fingerprints (ETag/Last-Modified) are intentionally NOT
+        # probed here: HEAD-ing every locus right after downloading all of
+        # them doubles the request count for zero benefit. ``locus_remote``
+        # starts empty and the first ``scheme update`` records fresh
+        # fingerprints while trusting valid local files (see update_scheme).
         meta = {
             "scheme": scheme_name,
             "provider": self.name,
@@ -283,10 +293,90 @@ class EnterobaseProvider:
                 "records": count_profile_rows(dest_dir / f"{scheme_name}.txt"),
             },
             "profiles_remote": profiles_headers,
-            "locus_remote": new_locus_meta,
+            "locus_remote": {},
         }
         atomic_write_text(dest_dir / ".meta.json", json.dumps(meta, indent=2))
         logger.info("[enterobase] Done → %s", dest_dir)
+
+    def _fetch_locus_headers(
+        self, dir_name: str, loci: list[str]
+    ) -> dict[str, dict[str, str]]:
+        """HEAD-probe every locus ``.fasta.gz`` in parallel.
+
+        Returns a ``locus -> {etag, last_modified, content_length}`` map
+        used for future ``update_scheme`` change detection. Parallel HEADs
+        keep a 3000-locus scheme from serializing one request per locus.
+        """
+
+        def _fetch(locus: str) -> tuple[str, dict[str, str]]:
+            locus_url = f"{_BASE_URL}/{dir_name}/{locus}.fasta.gz"
+            return (locus, _head_remote_file(locus_url))
+
+        result: dict[str, dict[str, str]] = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = [executor.submit(_fetch, locus) for locus in loci]
+            for future in concurrent.futures.as_completed(futures):
+                locus, headers = future.result()
+                result[locus] = headers
+        return result
+
+    def _extract_loci(
+        self,
+        dest_dir: Path,
+        loci: list[str],
+        *,
+        validate: bool,
+        overwrite: bool = False,
+    ) -> None:
+        """Decompress locus ``.fasta.gz`` files into ``.tfa`` in parallel.
+
+        Each locus is independent (read + gunzip + atomic write + gz
+        cleanup), so a thread pool turns a serial 3000-file walk into a
+        short parallel burst. The atomic write itself (mkstemp + rename,
+        no fsync) is cheap — its purpose is crash safety: a ``.tfa`` that
+        exists is always complete, which the resume logic relies on.
+
+        With *validate*, each extracted ``.tfa`` is also checked as FASTA.
+        With *overwrite*, a present ``.gz`` replaces an existing ``.tfa``
+        (update semantics: fresh data wins); otherwise an existing
+        ``.tfa`` is kept and only stale ``.gz`` leftovers are cleaned
+        (download/resume semantics).
+        All loci are processed even if some fail; the first failure is
+        re-raised after the pool drains (successful files are kept so a
+        re-run resumes instead of restarting).
+        """
+        if not loci:
+            return
+
+        def _extract(locus: str) -> None:
+            gz_path = dest_dir / f"{locus}.fasta.gz"
+            tfa_path = dest_dir / f"{locus}.tfa"
+            if gz_path.exists() and (overwrite or not tfa_path.exists()):
+                try:
+                    atomic_write_bytes(tfa_path, gzip.decompress(gz_path.read_bytes()))
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"[enterobase] Failed to decompress {locus}: {exc}"
+                    ) from exc
+            # Clean up .gz file (also stale leftovers next to an existing .tfa)
+            gz_path.unlink(missing_ok=True)
+            if validate and not is_valid_fasta(tfa_path):
+                raise RuntimeError(
+                    f"[enterobase] Invalid FASTA content after update: {locus}"
+                )
+
+        logger.info("[enterobase] Decompressing %d files …", len(loci))
+        first_error: RuntimeError | None = None
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(_extract, locus): locus for locus in loci}
+            for future in concurrent.futures.as_completed(futures):
+                exc = future.exception()
+                if exc is not None:
+                    logger.error("%s", exc)
+                    if first_error is None and isinstance(exc, RuntimeError):
+                        first_error = exc
+        if first_error is not None:
+            raise first_error
 
     def update_scheme(
         self,
@@ -303,6 +393,9 @@ class EnterobaseProvider:
         requests (ETag / Last-Modified / Content-Length) plus FASTA
         validity, re-downloads and decompresses only the changed or
         missing ones, and rewrites ``.meta.json`` with the fresh headers.
+        Loci without a stored fingerprint (fresh downloads record none)
+        are trusted when their local ``.tfa`` is present and valid; this
+        pass records their fingerprint for exact comparisons later.
         Returns whether any locus, profile, or the locus set changed.
         """
         dir_name = (extra or {}).get("directory")
@@ -329,24 +422,23 @@ class EnterobaseProvider:
 
         old_locus_meta = local_meta.get("locus_remote", {})
         changed_loci: list[str] = []
-        new_locus_meta: dict[str, dict[str, str]] = {}
-
-        def _fetch_locus_headers(locus: str) -> tuple[str, dict[str, str]]:
-            locus_url = f"{_BASE_URL}/{dir_name}/{locus}.fasta.gz"
-            return (locus, _head_remote_file(locus_url))
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-            futures = [executor.submit(_fetch_locus_headers, locus) for locus in loci]
-            for future in concurrent.futures.as_completed(futures):
-                locus, headers = future.result()
-                new_locus_meta[locus] = headers
-                local_tfa = dest_dir / f"{locus}.tfa"
-                if (
-                    _headers_changed(old_locus_meta.get(locus, {}), headers)
-                    or not local_tfa.exists()
-                    or not is_valid_fasta(local_tfa)
-                ):
-                    changed_loci.append(locus)
+        new_locus_meta = self._fetch_locus_headers(dir_name, loci)
+        for locus in loci:
+            headers = new_locus_meta[locus]
+            local_tfa = dest_dir / f"{locus}.tfa"
+            old_headers = old_locus_meta.get(locus, {})
+            # No stored fingerprint (fresh download, or pre-fingerprint
+            # cache): trust a valid local file instead of re-downloading,
+            # and let the fresh headers below seed future comparisons.
+            fingerprint_changed = bool(old_headers) and _headers_changed(
+                old_headers, headers
+            )
+            if (
+                fingerprint_changed
+                or not local_tfa.exists()
+                or not is_valid_fasta(local_tfa)
+            ):
+                changed_loci.append(locus)
 
         if changed_loci:
             logger.info(
@@ -367,16 +459,7 @@ class EnterobaseProvider:
                 download_tool=download_tool,
                 max_connections=max_connections or 4,
             )
-
-            for locus in changed_loci:
-                gz_path = dest_dir / f"{locus}.fasta.gz"
-                tfa_path = dest_dir / f"{locus}.tfa"
-                atomic_write_bytes(tfa_path, gzip.decompress(gz_path.read_bytes()))
-                gz_path.unlink(missing_ok=True)
-                if not is_valid_fasta(tfa_path):
-                    raise RuntimeError(
-                        f"[enterobase] Invalid FASTA content after update: {locus}"
-                    )
+            self._extract_loci(dest_dir, changed_loci, validate=True, overwrite=True)
 
         if profile_changed:
             self._download_profiles(
@@ -415,15 +498,18 @@ class EnterobaseProvider:
     def _get_loci(self, dir_name: str) -> list[str]:
         """Get list of locus names from the scheme HTTP directory listing."""
         url = f"{_BASE_URL}/{dir_name}/"
-        assert_public_url(url)
-        resp = requests.get(url, timeout=30, headers=self._auth_headers())
-        if resp.status_code == 403:
-            raise RuntimeError(
-                f"Enterobase returned 403 Forbidden for '{dir_name}'. "
-                "This scheme may require authentication (--token) or "
-                "be unavailable. Try the same scheme from another provider."
+        try:
+            resp = fetch_with_retry(
+                "GET", url, timeout=30, headers=self._auth_headers()
             )
-        resp.raise_for_status()
+        except RuntimeError as exc:
+            if "HTTP 403" in str(exc):
+                raise RuntimeError(
+                    f"Enterobase returned 403 Forbidden for '{dir_name}'. "
+                    "This scheme may require authentication (--token) or "
+                    "be unavailable. Try the same scheme from another provider."
+                ) from exc
+            raise
 
         loci = []
         for line in resp.text.split("\n"):
@@ -444,7 +530,13 @@ class EnterobaseProvider:
         download_tool: DownloadTool = "auto",
         max_connections: int | None = None,
     ) -> None:
-        """Download and convert ST profiles to MLST format."""
+        """Download and convert ST profiles to MLST format.
+
+        Streams the archive line by line: cgMLST ``profiles.list.gz``
+        archives reach ~1.5 GB compressed (~14 GB raw) and must never be
+        held in memory at once. The ``.gz`` is kept when anything fails so
+        a retry resumes the download instead of restarting it.
+        """
         dest_file = dest_dir / f"{scheme_name}.txt"
         if dest_file.exists():
             logger.debug("Profiles already exist")
@@ -461,35 +553,66 @@ class EnterobaseProvider:
                 tool=download_tool,
                 max_connections=max_connections,
             )
-            profile_data = gzip.decompress(gz_path.read_bytes()).decode("utf-8")
+            rows = _convert_profiles_archive(gz_path, dest_file, loci)
         except Exception as exc:
             raise RuntimeError(
                 f"[enterobase] Failed to download profiles: {exc}"
             ) from exc
-        finally:
-            gz_path.unlink(missing_ok=True)
+        gz_path.unlink(missing_ok=True)
+        logger.info("[enterobase] Profiles converted: %d STs", rows)
 
-        lines = profile_data.strip().split("\n")
-        if not lines:
-            return
 
-        header = lines[0].split("\t")
-        output_lines = ["ST\t" + "\t".join(loci)]
-        for line in lines[1:]:
-            fields = line.split("\t")
-            if len(fields) >= len(header):
-                st = fields[0]
-                allele_map = dict(zip(header[1:], fields[1:], strict=False))
-                allele_values = [allele_map.get(locus, "-") for locus in loci]
-                output_lines.append(st + "\t" + "\t".join(allele_values))
+def _convert_profiles_archive(gz_path: Path, dest_file: Path, loci: list[str]) -> int:
+    """Stream-convert a ``profiles.list.gz`` archive into an MLST TSV.
 
-        atomic_write_text(dest_file, "\n".join(output_lines))
+    Reads the archive line by line and writes the converted TSV to a
+    ``.tmp`` sibling that atomically replaces *dest_file*, so peak memory
+    stays flat regardless of archive size — cgMLST profiles archives reach
+    ~1.5 GB compressed (~14 GB raw, ~750k rows), which the previous
+    whole-file approach loaded into RAM several times over. Returns the
+    number of ST rows written.
+    """
+    tmp_file = dest_file.parent / f"{dest_file.name}.tmp"
+    tmp_file.unlink(missing_ok=True)
+    header: list[str] | None = None
+    indices: list[int] | None = None
+    rows = 0
+    try:
+        with gzip.open(gz_path, "rt") as src, tmp_file.open("w") as out:
+            for line in src:
+                line = line.rstrip("\n")
+                if header is None:
+                    if not line:
+                        continue
+                    header = line.split("\t")
+                    out.write("ST\t" + "\t".join(loci) + "\n")
+                    continue
+                if indices is None:
+                    # Resolve locus -> column once; per-row work stays C-level.
+                    column_of = {name: i for i, name in enumerate(header[1:], 1)}
+                    indices = [column_of.get(locus, -1) for locus in loci]
+                fields = line.split("\t")
+                if len(fields) < len(header):
+                    continue
+                allele_values = [fields[i] if i >= 0 else "-" for i in (indices or [])]
+                out.write(fields[0] + "\t" + "\t".join(allele_values) + "\n")
+                rows += 1
+                if rows % 100_000 == 0:
+                    logger.info("[enterobase] Profiles converted: %d STs …", rows)
+    except BaseException:
+        tmp_file.unlink(missing_ok=True)
+        raise
+    if header is None:
+        tmp_file.unlink(missing_ok=True)
+        raise RuntimeError("[enterobase] profiles archive contained no data")
+    tmp_file.replace(dest_file)
+    return rows
 
 
 def _head_remote_file(url: str) -> dict[str, str]:
-    assert_public_url(url)
-    resp = requests.head(url, timeout=30, allow_redirects=True)
-    resp.raise_for_status()
+    # fetch_with_retry adds exponential backoff (with Retry-After support)
+    # so a mid-connection TLS reset no longer aborts the whole scheme run.
+    resp = fetch_with_retry("HEAD", url, timeout=30)
     return {
         "etag": resp.headers.get("ETag", ""),
         "last_modified": resp.headers.get("Last-Modified", ""),

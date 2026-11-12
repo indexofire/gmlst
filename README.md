@@ -298,11 +298,15 @@ Key environment variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `GMLST_CACHE_DIR` | Override the cache root (auto-detected: `$CONDA_PREFIX/share/gmlst` in conda, `$VIRTUAL_ENV/.cache/gmlst` in venv, or `~/.cache/gmlst` by default) |
+| `GMLST_CACHE_DIR` | Override the cache root (default: shared `$XDG_DATA_HOME/gmlst`, i.e. `~/.local/share/gmlst`, reused across conda/pixi/venv environments; legacy caches migrate automatically) |
 | `GMLST_ENGINE` | Alignment engine: `gseek` (default), `legacy` (built-in aligners), or `shadow` (run both, compare, return legacy) |
 | `GMLST_TMPDIR` | Override temporary working directory used during typing and refinement |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | Emit CIGAR in minimap2 FASTA alignments (1/0) |
 | `GMLST_PUBMLST_BASE_URL` | Override PubMLST API base URL |
+| `GMLST_DOWNLOAD_DELAY` | Minimum seconds between provider HTTP requests (default 0 = off; raise when rate-limited) |
+| `GMLST_DOWNLOAD_CHUNK_PAUSE` | Pause between 500-file download batches in seconds (default 20; 0 = off) |
+| `GMLST_DOWNLOAD_RETRY_ROUNDS` | Automatic retry rounds for failed batch downloads (default 3; 0 = off) |
+| `GMLST_DOWNLOAD_RETRY_PAUSE` | Pause between batch retry rounds in seconds (default 60) |
 | `GMLST_PASTEUR_BASE_URL` | Override Pasteur BIGSdb API base URL |
 | `GMLST_PRIVATE_BIGSDB_URL` | Register a private BIGSdb instance as an extra provider |
 | `GMLST_PRIVATE_BIGSDB_NAME` | Name shown for the private BIGSdb provider |
@@ -337,7 +341,7 @@ In `config get --format json` output, `source` tells you where the value comes f
 Example:
 
 ```bash
-export GMLST_CACHE_DIR="$HOME/.cache/gmlst"
+export GMLST_CACHE_DIR="$HOME/.local/share/gmlst"
 export GMLST_TMPDIR="$PWD/.tmp/gmlst"
 export GMLST_PUBMLST_BASE_URL="https://rest.pubmlst.org/db"
 export GMLST_PASTEUR_BASE_URL="https://bigsdb.pasteur.fr/api/db"

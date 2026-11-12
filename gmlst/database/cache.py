@@ -11,13 +11,19 @@ Catalogs are stored under ``<cache_root>/_catalog/<provider>.json``.
 Cache root resolution order (first match wins):
   1. Explicit ``root`` parameter passed to :class:`DatabaseCache`
   2. ``GMLST_CACHE_DIR`` environment variable
-  3. ``$CONDA_PREFIX/share/gmlst`` when running inside a conda environment
-  4. ``$VIRTUAL_ENV/.cache/gmlst`` when running inside a Python virtualenv
-  5. ``~/.cache/gmlst`` (default)
+  3. ``$XDG_DATA_HOME/gmlst`` or ``~/.local/share/gmlst`` (default, shared
+     across conda/pixi/virtualenv environments — consistent with tools like
+     bacmap)
+
+Legacy caches written by older versions (``$CONDA_PREFIX/share/gmlst``,
+``$VIRTUAL_ENV/.cache/gmlst``, ``~/.cache/gmlst``) are migrated into the
+shared root automatically the first time the default root is resolved and it
+is still empty.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -57,21 +63,106 @@ def _load_blocked_schemes() -> dict[str, set[str]]:
     return {}
 
 
+def _default_data_root() -> Path:
+    """Return the shared XDG data root: ``$XDG_DATA_HOME/gmlst``.
+
+    Falls back to ``~/.local/share/gmlst`` when ``XDG_DATA_HOME`` is unset,
+    matching the XDG Base Directory specification and tools like bacmap.
+    """
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return Path(xdg) / "gmlst"
+    return Path.home() / ".local" / "share" / "gmlst"
+
+
+def _legacy_cache_roots() -> list[Path]:
+    """Return env-local cache roots used by gmlst <= 0.5.4, priority order.
+
+    ``$CONDA_PREFIX/share/gmlst`` first (the most recently used location,
+    including pixi environments), then ``$VIRTUAL_ENV/.cache/gmlst``, then
+    the old user-wide ``~/.cache/gmlst``.
+    """
+    roots: list[Path] = []
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if conda_prefix:
+        roots.append(Path(conda_prefix) / "share" / "gmlst")
+    venv = os.environ.get("VIRTUAL_ENV")
+    if venv:
+        roots.append(Path(venv) / ".cache" / "gmlst")
+    roots.append(Path.home() / ".cache" / "gmlst")
+    return roots
+
+
+def _dir_has_data(path: Path) -> bool:
+    """Return True when *path* exists and contains at least one entry."""
+    try:
+        return any(path.iterdir())
+    except OSError:
+        return False
+
+
+def _merge_move(src: Path, dest: Path) -> None:
+    """Move *src* to *dest*, merging directories; existing files win.
+
+    File conflicts keep the destination copy and leave the source in place
+    so no data is ever deleted by a migration.
+    """
+    if not dest.exists():
+        shutil.move(str(src), str(dest))
+        return
+    if src.is_dir() and dest.is_dir():
+        for child in sorted(src.iterdir()):
+            _merge_move(child, dest / child.name)
+    else:
+        logger.debug("Migration conflict: keeping %s, leaving %s", dest, src)
+
+
+def _migrate_legacy_cache(default_root: Path) -> None:
+    """Move legacy env-local caches into the shared data root (one-time).
+
+    Only runs when *default_root* holds no data yet, so it happens at most
+    once per machine. Legacy roots owned by another user (e.g. a shared
+    system conda install) are skipped for safety. The empty legacy
+    directories are removed when possible.
+    """
+    if _dir_has_data(default_root):
+        return
+    try:
+        euid = os.geteuid()
+    except AttributeError:  # pragma: no cover - non-POSIX platforms
+        euid = None
+    for legacy in _legacy_cache_roots():
+        if legacy == default_root or not _dir_has_data(legacy):
+            continue
+        try:
+            if euid is not None and legacy.stat().st_uid != euid:
+                logger.warning(
+                    "Skipping legacy cache %s: owned by another user", legacy
+                )
+                continue
+        except OSError:
+            continue
+        default_root.mkdir(parents=True, exist_ok=True)
+        for entry in sorted(legacy.iterdir()):
+            _merge_move(entry, default_root / entry.name)
+        logger.info("Migrated legacy gmlst cache %s -> %s", legacy, default_root)
+        with contextlib.suppress(OSError):
+            legacy.rmdir()  # remove the now-empty legacy dir when possible
+
+
 def _resolve_cache_root() -> Path:
-    """Resolve the default cache root using environment-aware fallbacks."""
+    """Resolve the default cache root.
+
+    ``GMLST_CACHE_DIR`` wins when set; otherwise the shared XDG data root
+    is used, migrating any legacy env-local cache into it first.
+    """
     env_dir = os.environ.get("GMLST_CACHE_DIR")
     if env_dir:
         return Path(env_dir)
 
-    conda_prefix = os.environ.get("CONDA_PREFIX")
-    if conda_prefix:
-        return Path(conda_prefix) / "share" / "gmlst"
-
-    venv = os.environ.get("VIRTUAL_ENV")
-    if venv:
-        return Path(venv) / ".cache" / "gmlst"
-
-    return Path.home() / ".cache" / "gmlst"
+    default_root = _default_data_root()
+    _migrate_legacy_cache(default_root)
+    return default_root
 
 
 # Strict whitelist for path-component identifiers (scheme names, providers,
@@ -124,8 +215,9 @@ class DatabaseCache:
     ----------
     root:
         Root cache directory.  When *None*, the cache root is resolved
-        from environment variables (``GMLST_CACHE_DIR``, ``CONDA_PREFIX``,
-        ``VIRTUAL_ENV``) with a final fallback to ``~/.cache/gmlst``.
+        from the ``GMLST_CACHE_DIR`` environment variable with a fallback
+        to the shared XDG data root (``$XDG_DATA_HOME/gmlst`` or
+        ``~/.local/share/gmlst``).
     """
 
     def __init__(self, root: Path | None = None) -> None:

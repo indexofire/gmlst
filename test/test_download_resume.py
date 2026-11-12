@@ -64,6 +64,7 @@ def test_download_files_batch_treats_nonzero_aria2c_exit_as_failure(
     dest1 = tmp_path / "scheme1.txt"
     dest2 = tmp_path / "scheme2.txt"
 
+    monkeypatch.setenv("GMLST_DOWNLOAD_RETRY_ROUNDS", "0")  # skip batch retries
     monkeypatch.setattr(dl.shutil, "which", lambda _name: "/usr/bin/aria2c")
 
     def _fake_run(*_args, **_kwargs):
