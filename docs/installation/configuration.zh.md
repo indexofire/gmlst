@@ -88,7 +88,7 @@ gmlst config get GMLST_CACHE_DIR --format json
 | --- | --- | --- | --- |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | `default` | minimap2 FASTA 路径的速度档位。可选值：`default`、`fast`、`ultrafast`。 | minimap2 FASTA、cgMLST FASTA 流程 |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | `1` | 在 minimap2 的 FASTA 组装比对中输出 CIGAR。设为 `0` 可以减少速度导向流程中的额外工作。 | minimap2 FASTA |
-| `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | 在 minimap2 主比对前启用哈希优先的候选缩减。 | cgMLST FASTA、minimap2 prefilter 路径 |
+| `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | 模式预设 | 在 minimap2 主比对前启用哈希优先的候选缩减。显式设置（`0` 或 `1`）会覆盖 `--cgmlst-mode` 预设。minimap2 代表序列预过滤不受 `GMLST_CGMLST_PREFILTER_MAX_LOCI` 限制。 | cgMLST FASTA、minimap2 prefilter 路径 |
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | `0` | 在工作流模式没有覆盖时，控制送入 minimap2 精修阶段的缺失位点上限。`0` 表示关闭。 | cgMLST FASTA、minimap2 refinement |
 | `GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N` | `0` | 限制哈希阶段保留下来的位点数量。`0` 表示保持默认行为。 | cgMLST FASTA、minimap2 prefilter 路径 |
 | `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | ultrafast 第二遍的预算。可用 `adaptive`、`auto`、空值，或者非负整数。 | cgMLST FASTA、minimap2 ultrafast 路径 |
@@ -102,8 +102,8 @@ gmlst config get GMLST_CACHE_DIR --format json
 
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
-| `GMLST_CGMLST_PREFILTER_MAX_LOCI` | `3000` | cgMLST 预过滤自动跳过阈值。如果方案位点数超过这个值，系统可以自动跳过预过滤。设为 `0` 表示关闭这个阈值。 | cgMLST prefilter 控制 |
-| `GMLST_CGMLST_EXACT_HASH_PREFILTER` | `0` | 在比对前启用 chew 风格的 DNA 精确匹配预判。 | cgMLST FASTA exact-hash 路径 |
+| `GMLST_CGMLST_PREFILTER_MAX_LOCI` | `3000` | cgMLST k-mer 预过滤（blastn/nucmer）的自动跳过阈值。方案位点数超过该值时自动跳过 k-mer 预过滤；设为 `0` 关闭阈值。minimap2 代表序列预过滤每个位点只保留一条序列，不受此限制——此前大方案（如 3002 位点的 Enterobase cgMLST）因该限制回退到每样本全库扫描。 | cgMLST prefilter 控制 |
+| `GMLST_CGMLST_EXACT_HASH_PREFILTER` | 模式预设 | 在比对前启用 chew 风格的 DNA 精确匹配预判。所有 `--cgmlst-mode` 预设都开启它；设为 `0` 可跳过整个等位基因库的加载与哈希——对合并后达 GB 级的方案至关重要（走代表序列快速路径）。显式值覆盖模式预设。 | cgMLST FASTA exact-hash 路径 |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_BACKEND` | `none` | 对低置信度位点使用定向回退后端。可选值：`none`、`blastn`、`kma`、`nucmer`。 | cgMLST evidence fallback |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI` | `300` | 限制能被送去回退确认的位点数量。`0` 表示不显式限制。 | cgMLST evidence fallback |
 

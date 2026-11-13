@@ -37,6 +37,9 @@ from gmlst.core.config import (
     _exact_hash_prefilter_enabled as _exact_hash_prefilter_enabled,
 )
 from gmlst.core.config import (
+    _exact_hash_prefilter_flag as _exact_hash_prefilter_flag,
+)
+from gmlst.core.config import (
     _kma_fastq_mem_confirm_max_loci as _kma_fastq_mem_confirm_max_loci,
 )
 from gmlst.core.config import _kma_fastq_mem_mode_enabled as _kma_fastq_mem_mode_enabled
@@ -52,6 +55,9 @@ from gmlst.core.config import (
 from gmlst.core.config import _minimap2_hash_locus_top_n as _minimap2_hash_locus_top_n
 from gmlst.core.config import (
     _minimap2_hash_prefilter_enabled as _minimap2_hash_prefilter_enabled,
+)
+from gmlst.core.config import (
+    _minimap2_hash_prefilter_flag as _minimap2_hash_prefilter_flag,
 )
 from gmlst.core.config import (
     _minimap2_hash_refine_max_loci as _minimap2_hash_refine_max_loci,

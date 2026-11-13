@@ -132,7 +132,13 @@ class GseekAligner:
 
         def gseek() -> AlignmentResult:
             return _gseek_align(
-                self._name, sample, index_path, loci, input_type, self._legacy
+                self._name,
+                sample,
+                index_path,
+                loci,
+                input_type,
+                self._legacy,
+                threads=getattr(self._legacy, "threads", 1),
             )
 
         return engine().run(
@@ -171,15 +177,19 @@ def _gseek_align(
     loci: list[str],
     input_type: Literal["fasta", "fastq"],
     legacy: Aligner,
+    *,
+    threads: int = 1,
 ) -> AlignmentResult:
     if backend == "blastn":
-        return _gseek_blastn(sample, index_path, loci, input_type)
+        return _gseek_blastn(sample, index_path, loci, input_type, threads=threads)
     if backend == "minimap2":
-        return _gseek_minimap2(sample, index_path, loci, input_type, legacy)
+        return _gseek_minimap2(
+            sample, index_path, loci, input_type, legacy, threads=threads
+        )
     if backend == "nucmer":
-        return _gseek_nucmer(sample, index_path, loci, input_type)
+        return _gseek_nucmer(sample, index_path, loci, input_type, threads=threads)
     if backend == "kma":
-        return _gseek_kma(sample, index_path, loci, input_type, legacy)
+        return _gseek_kma(sample, index_path, loci, input_type, legacy, threads=threads)
     raise RuntimeError(f"unknown gmlst backend {backend!r}")
 
 
@@ -188,6 +198,8 @@ def _gseek_blastn(
     index_path: Path,
     loci: list[str],
     input_type: Literal["fasta", "fastq"],
+    *,
+    threads: int = 1,
 ) -> AlignmentResult:
     if isinstance(sample, tuple):
         raise ValueError("BlastnAligner does not support paired input")
@@ -213,6 +225,7 @@ def _gseek_blastn(
         index="none",
         resolver=_resolver(),
         record_manifest=False,
+        threads=threads,
     )
     fragments = _blast_fragments(result.records, loci)
     allele_order = {
@@ -298,6 +311,8 @@ def _gseek_minimap2(
     loci: list[str],
     input_type: Literal["fasta", "fastq"],
     legacy: Aligner,
+    *,
+    threads: int = 1,
 ) -> AlignmentResult:
     if isinstance(sample, tuple):
         raise ValueError("Minimap2Aligner does not support paired input")
@@ -332,6 +347,7 @@ def _gseek_minimap2(
         index="none",
         resolver=_resolver(),
         record_manifest=False,
+        threads=threads,
     )
     fragments: list[AlleleMatch] = []
     for record in result.records:
@@ -414,6 +430,8 @@ def _gseek_nucmer(
     index_path: Path,
     loci: list[str],
     input_type: Literal["fasta", "fastq"],
+    *,
+    threads: int = 1,
 ) -> AlignmentResult:
     if isinstance(sample, tuple):
         raise ValueError("NucmerAligner does not support paired input")
@@ -429,6 +447,7 @@ def _gseek_nucmer(
         index="none",
         resolver=_resolver(),
         record_manifest=False,
+        threads=threads,
     )
     best: dict[tuple[str, str], AlleleMatch] = {}
     for record in result.records:
@@ -469,6 +488,8 @@ def _gseek_kma(
     loci: list[str],
     input_type: Literal["fasta", "fastq"],
     legacy: Aligner,
+    *,
+    threads: int = 1,
 ) -> AlignmentResult:
     from gmlst.readers.sample import SampleInput
 
@@ -489,6 +510,7 @@ def _gseek_kma(
         index="auto",
         resolver=_resolver(),
         record_manifest=False,
+        threads=threads,
     )
     matches: list[AlleleMatch] = []
     for record in result.records:

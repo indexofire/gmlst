@@ -85,7 +85,7 @@ No BLASTN-specific environment variables are currently implemented. Control BLAS
 | --- | --- | --- | --- |
 | `GMLST_MINIMAP2_FASTA_SPEED_PROFILE` | `default` | FASTA speed tuning for minimap2. Valid values: `default`, `fast`, `ultrafast`. | minimap2 FASTA, cgMLST FASTA workflows |
 | `GMLST_MINIMAP2_FASTA_EMIT_CIGAR` | `1` | Emits FASTA CIGAR output during minimap2 assembly alignment. Set `0` to reduce work in speed-oriented paths. | minimap2 FASTA |
-| `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | `0` | Enables hash-first candidate reduction before minimap2 main alignment. | cgMLST FASTA, minimap2 prefilter path |
+| `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` | mode preset | Enables hash-first candidate reduction before minimap2 main alignment. An explicitly set value (either `0` or `1`) overrides the `--cgmlst-mode` preset. The minimap2 representative prefilter is not subject to `GMLST_CGMLST_PREFILTER_MAX_LOCI`. | cgMLST FASTA, minimap2 prefilter path |
 | `GMLST_CGMLST_MINIMAP2_HASH_REFINE_MAX_LOCI` | `0` | Max missing loci sent to a minimap2 refinement pass when not overridden by a workflow mode. `0` disables this pass. | cgMLST FASTA, minimap2 refinement |
 | `GMLST_CGMLST_MINIMAP2_HASH_LOCI_TOP_N` | `0` | Limits how many loci survive the hash stage before main alignment. `0` keeps default behavior. | cgMLST FASTA, minimap2 prefilter path |
 | `GMLST_CGMLST_MINIMAP2_ULTRA_SECOND_PASS_MAX_LOCI` | `adaptive` | Budget for the ultrafast second pass. Use `adaptive`, `auto`, empty value, or a non-negative integer. | cgMLST FASTA, minimap2 ultrafast path |
@@ -99,8 +99,8 @@ No nucmer-specific environment variables are currently implemented. Choose the b
 
 | Name | Default | Description | Used By |
 | --- | --- | --- | --- |
-| `GMLST_CGMLST_PREFILTER_MAX_LOCI` | `3000` | Auto-skip threshold for cgMLST prefiltering. If the scheme exceeds this locus count, prefilter can be skipped automatically. `0` disables the auto-skip threshold. | cgMLST prefilter control |
-| `GMLST_CGMLST_EXACT_HASH_PREFILTER` | `0` | Enables chew-style DNA exact-match pre-resolution before alignment. | cgMLST FASTA exact-hash path |
+| `GMLST_CGMLST_PREFILTER_MAX_LOCI` | `3000` | Auto-skip threshold for the cgMLST k-mer prefilter (blastn/nucmer). If the scheme exceeds this locus count, the k-mer prefilter is skipped automatically. `0` disables the threshold. The minimap2 representative prefilter keeps one sequence per locus and is never gated by this limit — large schemes (e.g. 3002-locus Enterobase cgMLST) previously fell back to a full-database scan per sample because of it. | cgMLST prefilter control |
+| `GMLST_CGMLST_EXACT_HASH_PREFILTER` | mode preset | Enables chew-style DNA exact-match pre-resolution before alignment. All `--cgmlst-mode` presets enable it; set `0` to skip loading and hashing the full allele database — essential for schemes whose merged alleles reach gigabytes (representatives-only fast path). An explicit value overrides the mode preset. | cgMLST FASTA exact-hash path |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_BACKEND` | `none` | Targeted fallback backend for low-confidence loci. Valid values: `none`, `blastn`, `kma`, `nucmer`. | cgMLST evidence fallback |
 | `GMLST_CGMLST_EVIDENCE_FALLBACK_MAX_LOCI` | `300` | Limits how many loci can be sent to evidence fallback. `0` means no explicit limit. | cgMLST evidence fallback |
 

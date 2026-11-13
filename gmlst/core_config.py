@@ -15,6 +15,20 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_PREFILTER_MAX_LOCI = 3000
 _TRUTHY = {"1", "true", "yes", "on"}
+_FALSY = {"0", "false", "no", "off"}
+
+
+def _env_flag(env_var: str) -> bool | None:
+    """Return the explicit boolean setting for *env_var* (None when unset)."""
+    raw = os.getenv(env_var, "").strip().lower()
+    if not raw:
+        return None
+    if raw in _TRUTHY:
+        return True
+    if raw in _FALSY:
+        return False
+    logger.warning("Invalid %s=%r; ignoring", env_var, raw)
+    return None
 
 
 def _env_int(env_var: str, default: int) -> int:
@@ -48,6 +62,27 @@ def minimap2_hash_prefilter_enabled() -> bool:
     """Whether the minimap2 representative prefilter is on."""
     raw = os.getenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "0").strip().lower()
     return raw in _TRUTHY
+
+
+def minimap2_hash_prefilter_flag() -> bool | None:
+    """Explicit ``GMLST_CGMLST_MINIMAP2_HASH_PREFILTER`` value (None = unset).
+
+    An explicitly set value (either way) overrides the ``--cgmlst-mode``
+    preset, so users can force the representative-only fast path with
+    ``GMLST_CGMLST_MINIMAP2_HASH_PREFILTER=1`` or opt out with ``=0``.
+    """
+    return _env_flag("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER")
+
+
+def exact_hash_prefilter_flag() -> bool | None:
+    """Explicit ``GMLST_CGMLST_EXACT_HASH_PREFILTER`` value (None = unset).
+
+    Overrides the ``--cgmlst-mode`` preset the same way as
+    :func:`minimap2_hash_prefilter_flag`. Setting ``=0`` skips loading and
+    hashing the full allele database — essential for schemes whose merged
+    alleles reach gigabytes.
+    """
+    return _env_flag("GMLST_CGMLST_EXACT_HASH_PREFILTER")
 
 
 def minimap2_fasta_emit_cigar_enabled() -> bool:

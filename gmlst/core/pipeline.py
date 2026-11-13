@@ -577,12 +577,16 @@ def _setup_typing_config(
 
     index_dir = cache.index_dir(scheme_name, backend, provider=provider)
     allele_fastas = list(scheme.allele_files.values())
+    # Explicitly set environment flags override the --cgmlst-mode preset so
+    # users can force a faster (or stricter) prefilter combination than the
+    # mode default; unset flags fall back to the mode preset.
+    mm2_flag = core._minimap2_hash_prefilter_flag()
     minimap2_hash_prefilter_enabled = (
-        core._minimap2_hash_prefilter_enabled()
-        or mode_overrides.minimap2_hash_prefilter
+        mm2_flag if mm2_flag is not None else mode_overrides.minimap2_hash_prefilter
     )
+    eh_flag = core._exact_hash_prefilter_flag()
     exact_hash_prefilter_enabled = (
-        core._exact_hash_prefilter_enabled() or mode_overrides.exact_hash_prefilter
+        eh_flag if eh_flag is not None else mode_overrides.exact_hash_prefilter
     )
     use_prefilter = (
         prefilter_enabled
@@ -614,6 +618,12 @@ def _setup_typing_config(
         use_prefilter
         and prefilter_max_loci > 0
         and len(scheme.loci) > prefilter_max_loci
+        # The cap bounds the k-mer prefilter (blastn/nucmer), which loads
+        # every allele sequence into memory. The minimap2 representative
+        # prefilter keeps only one representative per locus, so gating it
+        # here pushed the largest schemes — which need the prefilter most —
+        # onto the slow full-database scan path.
+        and backend != "minimap2"
     ):
         core.logger.info(
             "Skipping cgMLST prefilter for scheme '%s': %d loci exceed limit %d",

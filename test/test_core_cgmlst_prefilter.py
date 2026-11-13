@@ -719,6 +719,223 @@ def test_run_typing_cgmlst_prefilter_auto_disables_for_large_scheme(
     assert len(indexed_paths) == 2
 
 
+def test_run_typing_cgmlst_minimap2_prefilter_not_capped_by_max_loci(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Large schemes must keep the minimap2 representative prefilter.
+
+    The GMLST_CGMLST_PREFILTER_MAX_LOCI cap only bounds the k-mer
+    prefilter (blastn/nucmer loads every allele); the minimap2
+    representative prefilter loads one sequence per locus, so capping it
+    pushed schemes like senterica_2 (3002 loci) onto the slow full-scan
+    path.
+    """
+    sample = tmp_path / "s1.fna"
+    sample.write_text(">contig1\nATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA\n")
+
+    a = tmp_path / "a.tfa"
+    a.write_text(">a_1\nATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA\n")
+    b = tmp_path / "b.tfa"
+    b.write_text(">b_1\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n")
+
+    class DummyScheme:
+        name = "dummy"
+        loci = ["a", "b"]
+        allele_files = {"a": a, "b": b}
+
+    class DummyCache:
+        def __init__(self, _root):
+            pass
+
+        def ensure_scheme(self, _scheme_name, provider, scheme_type):
+            assert scheme_type == "cgmlst"
+            return DummyScheme()
+
+        def index_dir(self, _scheme_name, _backend, provider):
+            out = tmp_path / "idx" / _backend
+            out.mkdir(parents=True, exist_ok=True)
+            return out
+
+    captured: dict[str, object] = {"prefilter_called": False}
+
+    class DummyAligner:
+        supports_fastq = True
+
+        def check_dependencies(self):
+            return None
+
+        def index(self, _allele_fastas, index_dir):
+            return index_dir
+
+        def align(self, _sample_path, _index_path, _loci, _input_type):
+            class _Aln:
+                runtime_seconds = 0.1
+                fragments: list = []
+
+                @staticmethod
+                def matches_for(_locus):
+                    return []
+
+            return _Aln()
+
+    class DummySample:
+        sample_id = "s1"
+        input_type = "fasta"
+        path = sample
+        mate_path = None
+
+    monkeypatch.setenv("GMLST_CGMLST_PREFILTER_MAX_LOCI", "1")
+    monkeypatch.setenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "1")
+    monkeypatch.setattr(core, "DatabaseCache", DummyCache)
+    monkeypatch.setattr(core, "get_aligner", lambda *_a, **_k: DummyAligner())
+    monkeypatch.setattr(core, "detect_sample", lambda _p: DummySample())
+    monkeypatch.setattr(core, "call_all_loci", lambda *_a, **_k: {})
+    monkeypatch.setattr(core, "lookup_st", lambda *args, **kwargs: _DummyResult("s1"))
+
+    def fake_prefilter(**_kwargs):
+        captured["prefilter_called"] = True
+        return {"a": [("1", 8.0)], "b": [("1", 8.0)]}, None
+
+    monkeypatch.setattr(
+        core,
+        "_minimap2_representative_prefilter_candidates",
+        lambda **kwargs: fake_prefilter(**kwargs),
+    )
+
+    results = core.run_typing(
+        [sample],
+        "dummy",
+        "minimap2",
+        provider="pubmlst",
+        scheme_type="cgmlst",
+        threads=1,
+    )
+
+    assert len(results) == 1
+    assert captured["prefilter_called"] is True, (
+        "minimap2 representative prefilter must not be disabled by the loci-count cap"
+    )
+
+
+def test_run_typing_cgmlst_exact_hash_off_skips_full_allele_load(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Explicit env flags override the --cgmlst-mode preset.
+
+    cgMLST modes force exact_hash_prefilter=True, which loads and hashes
+    the whole allele database (gigabytes for schemes like senterica_2).
+    GMLST_CGMLST_EXACT_HASH_PREFILTER=0 must skip that load and take the
+    representative-only path.
+    """
+    sample = tmp_path / "s1.fna"
+    sample.write_text(">contig1\nATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA\n")
+
+    a = tmp_path / "a.tfa"
+    a.write_text(">a_1\nATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA\n")
+
+    class DummyScheme:
+        name = "dummy"
+        loci = ["a"]
+        allele_files = {"a": a}
+
+    class DummyCache:
+        def __init__(self, _root):
+            pass
+
+        def ensure_scheme(self, _scheme_name, provider, scheme_type):
+            assert scheme_type == "cgmlst"
+            return DummyScheme()
+
+        def index_dir(self, _scheme_name, _backend, provider):
+            out = tmp_path / "idx" / _backend
+            out.mkdir(parents=True, exist_ok=True)
+            return out
+
+    class DummyAligner:
+        supports_fastq = True
+
+        def check_dependencies(self):
+            return None
+
+        def index(self, _allele_fastas, index_dir):
+            return index_dir
+
+        def align(self, _sample_path, _index_path, _loci, _input_type):
+            class _Aln:
+                runtime_seconds = 0.1
+                fragments: list = []
+
+                @staticmethod
+                def matches_for(_locus):
+                    return []
+
+            return _Aln()
+
+    class DummySample:
+        sample_id = "s1"
+        input_type = "fasta"
+        path = sample
+        mate_path = None
+
+    monkeypatch.setenv("GMLST_CGMLST_EXACT_HASH_PREFILTER", "0")
+    monkeypatch.setenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "1")
+    monkeypatch.setattr(core, "DatabaseCache", DummyCache)
+    monkeypatch.setattr(core, "get_aligner", lambda *_a, **_k: DummyAligner())
+    monkeypatch.setattr(core, "detect_sample", lambda _p: DummySample())
+    monkeypatch.setattr(core, "call_all_loci", lambda *_a, **_k: {})
+    monkeypatch.setattr(core, "lookup_st", lambda *args, **kwargs: _DummyResult("s1"))
+
+    def fail_full_load(*_args, **_kwargs):
+        raise AssertionError("full allele load must be skipped when exact-hash is off")
+
+    monkeypatch.setattr(core, "_load_scheme_allele_sequences", fail_full_load)
+    monkeypatch.setattr(
+        core,
+        "_load_representative_allele_sequences",
+        lambda *_a, **_k: {("a", "a_1"): "ATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA"},
+    )
+    monkeypatch.setattr(
+        core,
+        "_minimap2_representative_prefilter_candidates",
+        lambda **kwargs: ({"a": [("1", 8.0)]}, None),
+    )
+
+    results = core.run_typing(
+        [sample],
+        "dummy",
+        "minimap2",
+        provider="pubmlst",
+        scheme_type="cgmlst",
+        threads=1,
+    )
+
+    assert len(results) == 1
+
+
+def test_minimap2_hash_prefilter_flag_explicit_values(monkeypatch) -> None:
+    from gmlst.core_config import minimap2_hash_prefilter_flag
+
+    monkeypatch.delenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", raising=False)
+    assert minimap2_hash_prefilter_flag() is None
+    monkeypatch.setenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "1")
+    assert minimap2_hash_prefilter_flag() is True
+    monkeypatch.setenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "0")
+    assert minimap2_hash_prefilter_flag() is False
+    monkeypatch.setenv("GMLST_CGMLST_MINIMAP2_HASH_PREFILTER", "junk")
+    assert minimap2_hash_prefilter_flag() is None
+
+
+def test_exact_hash_prefilter_flag_explicit_values(monkeypatch) -> None:
+    from gmlst.core_config import exact_hash_prefilter_flag
+
+    monkeypatch.delenv("GMLST_CGMLST_EXACT_HASH_PREFILTER", raising=False)
+    assert exact_hash_prefilter_flag() is None
+    monkeypatch.setenv("GMLST_CGMLST_EXACT_HASH_PREFILTER", "true")
+    assert exact_hash_prefilter_flag() is True
+    monkeypatch.setenv("GMLST_CGMLST_EXACT_HASH_PREFILTER", "off")
+    assert exact_hash_prefilter_flag() is False
+
+
 def test_cgmlst_prefilter_max_loci_default(monkeypatch) -> None:
     monkeypatch.delenv("GMLST_CGMLST_PREFILTER_MAX_LOCI", raising=False)
     assert core._cgmlst_prefilter_max_loci() == 3000

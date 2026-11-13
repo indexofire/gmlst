@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -115,3 +116,65 @@ assert type(get_aligner("blastn")).__name__ == "BlastnAligner"
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_gseek_align_passes_threads_to_gseek(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """-t/--threads must reach gseek.align (regression: it was dropped).
+
+    With threads silently defaulting to 1 in gseek, the gseek engine ran
+    minimap2 single-cored while the legacy path honored -t (3m48s vs
+    1m20s on a 3002-locus scheme with -t 16).
+    """
+    import types
+
+    from gmlst import gseek_engine
+
+    captured: dict[str, object] = {}
+
+    class _FakeRecords:
+        records: list = []
+
+    def _fake_gseek_align(**kwargs):
+        captured.update(kwargs)
+        return _FakeRecords()
+
+    fake_gseek = types.SimpleNamespace(align=_fake_gseek_align)
+    fake_execution = types.SimpleNamespace(ToolResolver=lambda: object())
+
+    def _fake_import(name: str):
+        if name == "gseek.execution":
+            return fake_execution
+        return fake_gseek
+
+    class _FakeLegacy:
+        name = "minimap2"
+        fasta_emit_cigar = False
+        fasta_speed_profile = "default"
+        threads = 16
+
+    gseek_engine._resolver.cache_clear()
+    monkeypatch.setattr(gseek_engine.importlib, "import_module", _fake_import)
+    monkeypatch.setattr(
+        "gmlst.readers.sample.SampleInput.from_path",
+        lambda _p: types.SimpleNamespace(sample_id="s1"),
+    )
+
+    sample_fna = tmp_path / "s1.fna"
+    sample_fna.write_text(">contig1\nATGCGTACGTTAGCTAGCTAATGCGTACGTTAGCTA\n")
+    index_dir = tmp_path / "idx"
+    index_dir.mkdir()
+    (index_dir / "alleles.fasta").write_text(">abc_1\nATGC\n")
+
+    gseek_engine._gseek_minimap2(
+        sample_fna,
+        index_dir,
+        ["abc"],
+        "fasta",
+        _FakeLegacy(),  # type: ignore[arg-type]
+        threads=16,
+    )
+
+    assert captured.get("threads") == 16
+    gseek_engine._resolver.cache_clear()

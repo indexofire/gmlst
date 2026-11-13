@@ -45,6 +45,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The gseek engine now honors `-t/--threads`.** gmlst never forwarded
+  the thread count to `gseek.align()`, whose default is 1, so the default
+  gseek engine silently ran minimap2 single-cored while the legacy engine
+  used all requested threads — `typing cgmlst -t 16` on a 3002-locus
+  scheme took ~3m48s under gseek vs ~1m20s under legacy with otherwise
+  99.93% identical calls (2/3002 ambiguous loci differ). Threads are now
+  threaded through all four gseek backends (minimap2, blastn, nucmer,
+  kma).
+
+- **Large cgMLST schemes no longer fall back to a full-database scan per
+  sample.** `GMLST_CGMLST_PREFILTER_MAX_LOCI` (default 3000) silently
+  disabled the prefilter for schemes with more loci — e.g. Enterobase
+  `senterica_2` (3002 loci, 13.9 GB merged alleles) typed one assembly in
+  ~24 minutes. The cap only bounds the k-mer prefilter (which loads every
+  allele); the minimap2 representative prefilter keeps one sequence per
+  locus and is now exempt, cutting that run to ~4 minutes. Additionally,
+  explicitly set `GMLST_CGMLST_MINIMAP2_HASH_PREFILTER` /
+  `GMLST_CGMLST_EXACT_HASH_PREFILTER` values now override the
+  `--cgmlst-mode` preset (previously the preset could not be turned off),
+  so `GMLST_CGMLST_EXACT_HASH_PREFILTER=0` skips loading and hashing the
+  full allele database entirely via the representatives-only path.
+  Typing results are unchanged (verified identical on the 24-minute and
+  fast runs).
+
 - **Enterobase ST profiles conversion now streams instead of loading the
   whole archive into RAM.** cgMLST `profiles.list.gz` archives reach
   ~1.5 GB compressed (~14 GB raw, ~750k rows); the previous
