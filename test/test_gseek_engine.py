@@ -155,10 +155,17 @@ def test_gseek_align_passes_threads_to_gseek(
         threads = 16
 
     gseek_engine._resolver.cache_clear()
-    monkeypatch.setattr(gseek_engine.importlib, "import_module", _fake_import)
+    # Resolve string targets BEFORE swapping gseek_engine's importlib, so
+    # pytest's own monkeypatch path resolution uses the real import system.
     monkeypatch.setattr(
         "gmlst.readers.sample.SampleInput.from_path",
         lambda _p: types.SimpleNamespace(sample_id="s1"),
+    )
+    # Scope the fake import_module to gseek_engine's own reference only —
+    # patching the global importlib would hijack every import in the
+    # process (including pytest's monkeypatch machinery).
+    monkeypatch.setattr(
+        gseek_engine, "importlib", types.SimpleNamespace(import_module=_fake_import)
     )
 
     sample_fna = tmp_path / "s1.fna"
