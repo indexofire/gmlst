@@ -20,8 +20,11 @@ export default {
       const ratio = (Number(value) || 0) / this.maxValue;
       return {
         backgroundColor: `rgba(30, 93, 168, ${Number(value) === 0 ? 0.06 : Math.max(0.1, ratio * 0.62)})`,
-        color: ratio > 0.62 ? "#f8fafc" : "#1e293b",
       };
+    },
+    cellClass(value) {
+      const ratio = (Number(value) || 0) / this.maxValue;
+      return ratio > 0.62 ? "matrix-cell-strong" : "";
     },
   },
 };
@@ -44,6 +47,7 @@ export default {
           <td v-for="(value, colIndex) in row" :key="`${rowIndex}-${colIndex}`">
             <div
               class="matrix-cell"
+              :class="cellClass(value)"
               :style="cellStyle(value)"
               :title="cellTitle(labels[rowIndex], labels[colIndex], value)"
               @click="$emit('compare-pair', labels[rowIndex], labels[colIndex])"

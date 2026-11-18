@@ -65,6 +65,7 @@ import {
 } from "./tableExport.js";
 
 import EmptyState from "./components/EmptyState.vue";
+import BuildPrompt from "./components/BuildPrompt.vue";
 import DistanceMatrix from "./components/DistanceMatrix.vue";
 import CompareTable from "./components/CompareTable.vue";
 import AlleleHeatmap from "./components/AlleleHeatmap.vue";
@@ -73,12 +74,25 @@ import { fetchMst, fetchDistanceMatrix, fetchAlleleHeatmap, fetchCompareResults,
 import { parseSessionState } from "./sessionPersistence.js";
 import { buildGraphStats } from "./mstStats.js";
 
+const VISUAL_TITLE_FALLBACK = "gmlst visual web";
+
+const VIEW_TITLES = {
+  graph: "Minimum spanning tree",
+  matrix: "Distance matrix",
+  heatmap: "Allele heatmap",
+  stats: "Statistics",
+  summary: "Analysis summary",
+  compare: "Result comparison",
+};
+
 export default {
   name: "VisualApp",
-  components: { EmptyState, DistanceMatrix, CompareTable, AlleleHeatmap, LegendBar },
+  components: { EmptyState, BuildPrompt, DistanceMatrix, CompareTable, AlleleHeatmap, LegendBar },
   data() {
     return {
-      title: window.GMLST_VISUAL_TITLE || "gmlst visual web",
+      title:
+        document.querySelector('meta[name="gmlst-visual-title"]')?.content ||
+        VISUAL_TITLE_FALLBACK,
       _building: false,
       sidebarCollapsed: false,
       isFullscreen: false,
@@ -119,7 +133,8 @@ export default {
       aggregateNodes: false,
       correctnessOverlay: true,
       viewFilterMode: "all",
-      statusMessage: "Waiting for input",
+      statusMessage: "Load a profile TSV to begin",
+      buildError: "",
       statusKind: "",
       metadataFields: [],
       tableRows: [],
@@ -189,6 +204,107 @@ export default {
   computed: {
     hasProfileInput() {
       return this.tsvText.trim().length > 0;
+    },
+    profilePreview() {
+      const text = this.tsvText.trim();
+      if (!text) return "";
+      const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+      if (lines.length === 0) return "";
+      const header = lines[0];
+      const delimiter = header.includes("\t") ? "\t" : ",";
+      const columns = header.split(delimiter).length;
+      const samples = Math.max(lines.length - 1, 0);
+      const sampleLabel = samples === 1 ? "sample" : "samples";
+      const columnLabel = columns === 1 ? "column" : "columns";
+      return `Detected ${samples} ${sampleLabel} · ${columns} ${columnLabel}`;
+    },
+    hasGraphData() {
+      return Boolean(this.lastData?.nodes?.length);
+    },
+    hasMatrixData() {
+      return this.distanceMatrix.length > 0;
+    },
+    hasHeatmapData() {
+      return this.heatmapLoci.length > 0;
+    },
+    hasCompareData() {
+      return Boolean(this.compareResultsSummary);
+    },
+    canCompare() {
+      return Boolean(this.compareLeftTsv.trim() && this.compareRightTsv.trim());
+    },
+    vizTitle() {
+      return VIEW_TITLES[this.analysisView] || "Analysis";
+    },
+    viewSubtitle() {
+      if (this.statsLine.startsWith("Error:")) {
+        return this.statsLine;
+      }
+      switch (this.analysisView) {
+        case "matrix":
+          return this.hasMatrixData
+            ? `Rendered ${this.matrixLabels.length} × ${this.matrixLabels.length} distance matrix.`
+            : "No distance matrix yet — build one from your profile table.";
+        case "heatmap":
+          return this.hasHeatmapData
+            ? `Rendered ${this.matrixLabels.length} × ${this.heatmapLoci.length} allele heatmap.`
+            : "No allele heatmap yet — build one from your profile table.";
+        case "compare":
+          return this.hasCompareData
+            ? `Compared ${this.compareResultRows.length} samples across two result sets.`
+            : "No comparison yet — compare two result TSVs to see differences.";
+        case "summary":
+          return this.summaryData
+            ? `${this.summaryData.sample_count} samples · ${this.summaryData.mst_summary.edges} edges · ${this.summaryData.cluster_count} clusters`
+            : "Build an MST first to see the analysis summary.";
+        case "stats":
+          return this.statsData
+            ? `${this.statsData.nodeCount} samples · ${this.statsData.edgeCount} edges · median weight ${this.statsData.weightMedian}`
+            : "Build an MST first to see statistics.";
+        default:
+          return this.hasGraphData
+            ? this.statsLine
+            : "No graph rendered yet — build an MST to see sample relationships.";
+      }
+    },
+    overviewMetrics() {
+      const metaFields = this.metadataFields.length;
+      switch (this.analysisView) {
+        case "matrix":
+          return [
+            { label: "Samples", value: this.matrixLabels.length || "-" },
+            { label: "Cells", value: this.hasMatrixData ? this.matrixLabels.length ** 2 : "-" },
+            { label: "Meta", value: metaFields },
+          ];
+        case "heatmap":
+          return [
+            { label: "Samples", value: this.matrixLabels.length || "-" },
+            { label: "Loci", value: this.heatmapLoci.length || "-" },
+            { label: "Meta", value: metaFields },
+          ];
+        case "compare":
+          return [
+            { label: "Matched", value: this.compareResultsSummary?.matched_samples ?? "-" },
+            { label: "Different ST", value: this.compareResultsSummary?.different_st ?? "-" },
+            {
+              label: "Locus diff",
+              value: this.compareResultsSummary?.samples_with_locus_differences ?? "-",
+            },
+          ];
+        case "summary":
+        case "stats":
+          return [
+            { label: "Samples", value: this.statsData?.nodeCount ?? "-" },
+            { label: "Edges", value: this.statsData?.edgeCount ?? "-" },
+            { label: "Meta", value: metaFields },
+          ];
+        default:
+          return [
+            { label: "Nodes", value: this.summary.nodes },
+            { label: "Edges", value: this.summary.edges },
+            { label: "Meta", value: this.summary.metaFields },
+          ];
+      }
     },
     statusKindClass() {
       return {
@@ -759,7 +875,33 @@ export default {
         }
         return;
       }
+      if (!mod && event.key === "/") {
+        if (editable) {
+          return;
+        }
+        event.preventDefault();
+        const searchInput = document.getElementById("node-search");
+        if (this.analysisView === "graph" && this.hasGraphData && searchInput) {
+          if (this.sidebarCollapsed) {
+            this.sidebarCollapsed = false;
+          }
+          searchInput.focus();
+        } else {
+          document.getElementById("tsv-input")?.focus();
+        }
+        return;
+      }
+      if (!mod && String(event.key || "").toLowerCase() === "f" && !event.altKey) {
+        if (!editable && this.analysisView === "graph" && this.hasGraphData) {
+          event.preventDefault();
+          this.fitView();
+        }
+        return;
+      }
       if (!mod && event.key === "Escape") {
+        if (this.buildError) {
+          this.buildError = "";
+        }
         if (this._legendSelectValue || this.nodeSearchActive) {
           this.clearNodeSearch();
         }
@@ -816,6 +958,58 @@ export default {
         }
       });
     },
+    viewAvailable(viewId) {
+      switch (viewId) {
+        case "summary":
+        case "stats":
+          return this.hasGraphData;
+        default:
+          return true;
+      }
+    },
+    isViewBuilt(viewId) {
+      switch (viewId) {
+        case "matrix":
+          return this.hasMatrixData;
+        case "heatmap":
+          return this.hasHeatmapData;
+        case "compare":
+          return this.hasCompareData;
+        case "summary":
+        case "stats":
+        case "graph":
+          return this.hasGraphData;
+        default:
+          return true;
+      }
+    },
+    viewBuildHint(viewId) {
+      switch (viewId) {
+        case "matrix":
+          return this.hasMatrixData
+            ? "Distance matrix"
+            : "Not built yet — click to build the distance matrix";
+        case "heatmap":
+          return this.hasHeatmapData
+            ? "Allele heatmap"
+            : "Not built yet — click to build the allele heatmap";
+        case "compare":
+          if (this.hasCompareData) return "Result comparison";
+          return this.canCompare
+            ? "Ready to compare — click to run the comparison"
+            : "Not compared yet — paste two result TSVs in the sidebar, then compare";
+        case "summary":
+          return this.hasGraphData
+            ? "Analysis summary"
+            : "Build an MST first to see the analysis summary";
+        case "stats":
+          return this.hasGraphData
+            ? "Statistics"
+            : "Build an MST first to see statistics";
+        default:
+          return VIEW_TITLES[viewId] || viewId;
+      }
+    },
     switchAnalysisView(viewId) {
       this.analysisView = viewId;
     },
@@ -855,6 +1049,13 @@ export default {
       } catch (error) {
         this.setStatus("error", `Failed to load session: ${error.message}`);
       }
+    },
+    formatNumber(value) {
+      if (value === null || value === undefined || value === "") {
+        return "–";
+      }
+      const num = Number(value);
+      return Number.isFinite(num) ? num.toLocaleString() : String(value);
     },
     setStatus(kind, message) {
       this.statusKind = kind;
@@ -2596,12 +2797,14 @@ export default {
         this.fitView();
         await this.$nextTick();
         this.redrawFromLastData();
+        this.buildError = "";
         this.setStatus(
           "ok",
           this.aggregateProfiles ? "Profile MST rendered" : "Sample MST rendered",
         );
       } catch (error) {
         this.statsLine = `Error: ${error.message}`;
+        this.buildError = error.message || "Failed to build MST";
         this.setStatus("error", error.message || "Failed to build MST");
         this.clearSvg();
       } finally {
@@ -2629,9 +2832,11 @@ export default {
         this.clearSvg();
         this.updateSummary(this.matrixLabels.length, "-", this.matrixLabels.length);
         this.statsLine = `Rendered ${this.matrixLabels.length} × ${this.matrixLabels.length} distance matrix.`;
+        this.buildError = "";
         this.setStatus("ok", "Distance matrix rendered");
       } catch (error) {
         this.statsLine = `Error: ${error.message}`;
+        this.buildError = error.message || "Failed to build distance matrix";
         this.setStatus("error", error.message || "Failed to build distance matrix");
         this.clearSvg();
       } finally {
@@ -2657,16 +2862,59 @@ export default {
         this.heatmapCells = data.cells || [];
         this.heatmapLocusQuery = "";
         this.clearSvg();
-        this.updateSummary(this.matrixLabels.length, this.heatmapLoci.length, this.matrixLabels.length);
+        this.updateSummary(this.matrixLabels.length, "-", this.matrixLabels.length);
         this.statsLine = `Rendered ${this.matrixLabels.length} × ${this.heatmapLoci.length} allele heatmap.`;
+        this.buildError = "";
         this.setStatus("ok", "Allele heatmap rendered");
       } catch (error) {
         this.statsLine = `Error: ${error.message}`;
+        this.buildError = error.message || "Failed to build allele heatmap";
         this.setStatus("error", error.message || "Failed to build allele heatmap");
         this.clearSvg();
       } finally {
         this._building = false;
       }
+    },
+    resetSession() {
+      if (!window.confirm("Clear the loaded data and the current analysis result?")) {
+        return;
+      }
+      this.tsvText = "";
+      this.metadataText = "";
+      this.compareLeftTsv = "";
+      this.compareRightTsv = "";
+      this.lastData = null;
+      this.distanceMatrix = [];
+      this.matrixLabels = [];
+      this.heatmapLoci = [];
+      this.heatmapCells = [];
+      this.compareResultsSummary = null;
+      this.compareResultRows = [];
+      this.compareStatusFilter = "";
+      this.clusterSummary = [];
+      this.buildError = "";
+      this.analysisView = "graph";
+      this.statsLine = "";
+      this.updateSummary(0, 0, 0);
+      this.setStatus("idle", "Load a profile TSV to begin");
+      this.clearSvg();
+      const fileInput = document.getElementById("file-input");
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    },
+    openCompareWorkflow() {
+      const details = this.$refs.compareWorkflow;
+      if (details) {
+        details.open = true;
+        details.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      this.$nextTick(() => {
+        const leftInput = document.getElementById("compare-left-tsv");
+        if (leftInput) {
+          leftInput.focus();
+        }
+      });
     },
     async compareResults() {
       if (this._building) return;
@@ -2687,9 +2935,12 @@ export default {
         this.compareStatusFilter = "";
         this.clearSvg();
         this.statsLine = `Compared ${data.rows.length} samples across two result sets.`;
+        this.buildError = "";
+        this.buildError = "";
         this.setStatus("ok", "Comparison summary rendered");
       } catch (error) {
         this.statsLine = `Error: ${error.message}`;
+        this.buildError = error.message || "Failed to compare result sets";
         this.setStatus("error", error.message || "Failed to compare result sets");
       } finally {
         this._building = false;
@@ -2871,6 +3122,7 @@ export default {
       const raw = new XMLSerializer().serializeToString(svg);
       const content = `<?xml version="1.0" encoding="UTF-8"?>\n${raw}`;
       this._downloadBlob("gmlst_mst.svg", new Blob([content], { type: "image/svg+xml;charset=utf-8" }));
+      this.setStatus("ok", "SVG exported");
     },
     async exportPng(scale = 2) {
       const svg = this.$refs.svg;
@@ -2899,7 +3151,10 @@ export default {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob((blob) => {
-        if (blob) this._downloadBlob("gmlst_mst.png", blob);
+        if (blob) {
+          this._downloadBlob("gmlst_mst.png", blob);
+          this.setStatus("ok", "PNG exported");
+        }
       }, "image/png");
     },
     downloadJson(filename, payload) {
@@ -3077,10 +3332,14 @@ export default {
           v-for="tab in viewTabs"
           :key="tab.id"
           class="view-tab"
-          :class="{ active: analysisView === tab.id }"
+          :class="{
+            active: analysisView === tab.id,
+            'is-unbuilt': !viewAvailable(tab.id) || !isViewBuilt(tab.id),
+          }"
           :aria-label="tab.label"
           :aria-pressed="String(analysisView === tab.id)"
-          :title="tab.label"
+          :disabled="!viewAvailable(tab.id)"
+          :title="viewBuildHint(tab.id)"
           type="button"
           @click="switchAnalysisView(tab.id)"
         >
@@ -3211,6 +3470,9 @@ export default {
             placeholder="Paste cgMLST TSV or #Strain profile here"
             aria-label="TSV profile data input"
           ></textarea>
+          <p v-if="profilePreview" class="tip compact-tip profile-preview">
+            {{ profilePreview }}
+          </p>
 
           <details class="foldout">
             <summary>Optional metadata and saved session</summary>
@@ -3229,7 +3491,7 @@ export default {
             </div>
           </details>
 
-          <details class="foldout">
+          <details ref="compareWorkflow" class="foldout">
             <summary>Alternate workflow: compare two result TSV files</summary>
             <div class="foldout-body">
               <label class="field-label" for="compare-left-tsv">Left result TSV</label>
@@ -3249,6 +3511,14 @@ export default {
               </button>
             </div>
           </details>
+
+          <button
+            v-if="hasProfileInput || lastData"
+            class="btn btn-secondary btn-chip reset-session"
+            @click="resetSession"
+          >
+            Start over
+          </button>
         </section>
 
         <section class="workflow-section">
@@ -3281,15 +3551,13 @@ export default {
         <section v-if="lastData" class="workflow-section">
           <p class="section-title">3. Result overview</p>
           <div class="metrics">
-            <div class="metric"><span>Nodes</span><strong>{{ summary.nodes }}</strong></div>
-            <div class="metric"><span>Edges</span><strong>{{ summary.edges }}</strong></div>
-            <div class="metric">
-              <span>Meta</span><strong>{{ summary.metaFields }}</strong>
+            <div v-for="metric in overviewMetrics" :key="metric.label" class="metric">
+              <span>{{ metric.label }}</span><strong>{{ metric.value }}</strong>
             </div>
           </div>
           <div class="summary-note">
             <strong>Current view</strong>
-            <span>{{ statsLine }}</span>
+            <span>{{ viewSubtitle }}</span>
           </div>
           <p class="tip compact-tip">
             View controls below affect only the rendered result, not the uploaded TSV itself.
@@ -3322,10 +3590,12 @@ export default {
             <div v-if="longBranchMode !== 'normal'" class="threshold-slider-row">
               <span class="threshold-bound">Min</span>
               <input
+                id="long-branch-threshold"
                 type="range"
                 min="1"
                 :max="edgeWeightMax || 1"
                 step="1"
+                aria-label="Long-branch threshold"
                 v-model.number="longBranchThreshold"
                 @input="debouncedRedraw"
               />
@@ -3424,6 +3694,7 @@ export default {
                 :min="0"
                 :max="edgeWeightMax"
                 step="1"
+                aria-label="Edge weight threshold"
                 v-model.number="edgeWeightThreshold"
                 @input="onThresholdChange"
               />
@@ -3467,10 +3738,12 @@ export default {
             <div class="threshold-slider-row">
               <span class="threshold-bound">Off</span>
               <input
+                id="collapse-threshold"
                 type="range"
                 min="0"
                 :max="edgeWeightMax || 1"
                 step="1"
+                aria-label="Collapse threshold"
                 v-model.number="collapseThreshold"
                 @input="debouncedRedraw"
               />
@@ -3678,9 +3951,21 @@ export default {
                   <th
                     v-for="column in tableColumns"
                     :key="column.key"
+                    class="sortable"
+                    :class="{ sorted: tableSortKey === column.key }"
+                    :aria-sort="
+                      tableSortKey === column.key
+                        ? (tableSortDirection === 'asc' ? 'ascending' : 'descending')
+                        : 'none'
+                    "
                     @click="toggleTableSort(column.key)"
                   >
                     {{ column.label }}
+                    <span
+                      v-if="tableSortKey === column.key"
+                      class="sort-arrow"
+                      aria-hidden="true"
+                    >{{ tableSortDirection === 'asc' ? '▲' : '▼' }}</span>
                   </th>
                 </tr>
               </thead>
@@ -3724,20 +4009,11 @@ export default {
       </aside>
 
       <section class="viz card">
+        <div class="viz-top">
         <div class="viz-header">
           <div class="viz-title-block">
-            <h2 class="viz-title">
-              {{
-                analysisView === 'matrix'
-                  ? 'Distance matrix'
-                  : analysisView === 'heatmap'
-                    ? 'Allele heatmap'
-                    : analysisView === 'compare'
-                      ? 'Result comparison'
-                    : 'Minimum spanning tree'
-              }}
-            </h2>
-            <p class="viz-stats">{{ statsLine }}</p>
+            <h2 class="viz-title">{{ vizTitle }}</h2>
+            <p class="viz-stats">{{ viewSubtitle }}</p>
           </div>
           <LegendBar
             :items="legendItems"
@@ -3749,6 +4025,14 @@ export default {
             @select-by-value="selectNodesByLegendValue"
             @update:hovered-value="hoveredLegendValue = $event"
           />
+        </div>
+        <div v-if="buildError" class="viz-alert" role="alert">
+          <strong>Build failed</strong>
+          <span class="viz-alert-message">{{ buildError }}</span>
+          <button class="btn btn-secondary btn-chip" @click="buildError = ''">
+            Dismiss
+          </button>
+        </div>
         </div>
         <div v-if="analysisView === 'graph' && timelineFieldOptions().length" class="timeline-bar">
           <select v-model="timelineField" class="timeline-select" aria-label="Timeline field">
@@ -3777,7 +4061,7 @@ export default {
             <div class="loading-spinner"></div>
             <span class="loading-text">Processing...</span>
           </div>
-          <template v-if="lastData">
+          <template v-if="hasGraphData">
             <svg ref="svg" id="graph" viewBox="0 0 1400 900" role="img" aria-label="Minimum spanning tree graph"></svg>
             <div
               class="tooltip"
@@ -3794,38 +4078,61 @@ export default {
             @build-mst="buildMst"
             @build-distance-matrix="buildDistanceMatrix"
             @build-allele-heatmap="buildAlleleHeatmap"
+            @compare-results="openCompareWorkflow"
           />
         </div>
-        <DistanceMatrix
-          v-else-if="analysisView === 'matrix'"
-          :labels="filteredDistanceMatrixView.labels"
-          :matrix="filteredDistanceMatrixView.matrix"
-          :max-value="matrixMaxValue"
-          :truncated="matrixTruncated"
-          :render-limit="matrixRenderLimit"
-          :truncated-count="matrixTruncatedCount"
-          @compare-pair="triggerCompareFromPair"
-        />
-        <AlleleHeatmap
-          v-else-if="analysisView === 'heatmap'"
-          :locus-query="heatmapLocusQuery"
-          :loci="filteredHeatmapLociView.loci"
-          :cells="filteredHeatmapLociView.cells"
-          :labels="filteredHeatmapView.labels"
-          :annotation-rows="heatmapAnnotationRows"
-          :color-by="colorBy"
-          :truncated="heatmapTruncated"
-          :render-limit="matrixRenderLimit"
-          :truncated-count="matrixTruncatedCount"
-          :loci-truncated="heatmapLociTruncated"
-          :loci-render-limit="lociRenderLimit"
-          :loci-truncated-count="heatmapLociTruncatedCount"
-          @update:locus-query="heatmapLocusQuery = $event"
-          @export-tsv="exportHeatmapTsv"
-          @export-json="exportHeatmapJson"
-          @fill-compare="fillCompareFromPair($event, compareRightLabel || $event)"
-          @trigger-compare="triggerCompareFromPair(compareLeftLabel || $event, $event)"
-        />
+        <template v-else-if="analysisView === 'matrix'">
+          <BuildPrompt
+            v-if="!hasMatrixData"
+            title="Build the distance matrix"
+            description="A pairwise sample-by-sample distance table will appear here. It uses the same profile TSV you loaded for the MST."
+            action-label="Build distance matrix"
+            :has-input="hasProfileInput"
+            input-hint="Load or paste a profile TSV in the sidebar first."
+            @action="buildDistanceMatrix"
+          />
+          <DistanceMatrix
+            v-else
+            :labels="filteredDistanceMatrixView.labels"
+            :matrix="filteredDistanceMatrixView.matrix"
+            :max-value="matrixMaxValue"
+            :truncated="matrixTruncated"
+            :render-limit="matrixRenderLimit"
+            :truncated-count="matrixTruncatedCount"
+            @compare-pair="triggerCompareFromPair"
+          />
+        </template>
+        <template v-else-if="analysisView === 'heatmap'">
+          <BuildPrompt
+            v-if="!hasHeatmapData"
+            title="Build the allele heatmap"
+            description="A sample × locus grid will appear here, one cell per called allele, so you can scan locus-level variation across samples."
+            action-label="Build allele heatmap"
+            :has-input="hasProfileInput"
+            input-hint="Load or paste a profile TSV in the sidebar first."
+            @action="buildAlleleHeatmap"
+          />
+          <AlleleHeatmap
+            v-else
+            :locus-query="heatmapLocusQuery"
+            :loci="filteredHeatmapLociView.loci"
+            :cells="filteredHeatmapLociView.cells"
+            :labels="filteredHeatmapView.labels"
+            :annotation-rows="heatmapAnnotationRows"
+            :color-by="colorBy"
+            :truncated="heatmapTruncated"
+            :render-limit="matrixRenderLimit"
+            :truncated-count="matrixTruncatedCount"
+            :loci-truncated="heatmapLociTruncated"
+            :loci-render-limit="lociRenderLimit"
+            :loci-truncated-count="heatmapLociTruncatedCount"
+            @update:locus-query="heatmapLocusQuery = $event"
+            @export-tsv="exportHeatmapTsv"
+            @export-json="exportHeatmapJson"
+            @fill-compare="fillCompareFromPair($event, compareRightLabel || $event)"
+            @trigger-compare="triggerCompareFromPair(compareLeftLabel || $event, $event)"
+          />
+        </template>
         <div v-else-if="analysisView === 'summary'" class="stats-view">
           <div v-if="!summaryData" class="stats-empty">
             <p>Build a graph first to see the analysis summary.</p>
@@ -3833,19 +4140,19 @@ export default {
           <div v-else class="summary-container">
             <div class="summary-hero">
               <div class="summary-hero-metric">
-                <strong>{{ summaryData.sample_count }}</strong>
+                <strong>{{ formatNumber(summaryData.sample_count) }}</strong>
                 <span>samples</span>
               </div>
               <div class="summary-hero-metric">
-                <strong>{{ summaryData.mst_summary.edges }}</strong>
+                <strong>{{ formatNumber(summaryData.mst_summary.edges) }}</strong>
                 <span>edges</span>
               </div>
               <div class="summary-hero-metric">
-                <strong>{{ summaryData.mst_summary.weight_median }}</strong>
+                <strong>{{ formatNumber(summaryData.mst_summary.weight_median) }}</strong>
                 <span>median weight</span>
               </div>
               <div class="summary-hero-metric">
-                <strong>{{ summaryData.cluster_count }}</strong>
+                <strong>{{ formatNumber(summaryData.cluster_count) }}</strong>
                 <span>clusters</span>
               </div>
             </div>
@@ -3881,10 +4188,10 @@ export default {
             <div class="stats-card">
               <h3>Overview</h3>
               <div class="stats-metrics">
-                <div class="stats-metric"><span>Samples</span><strong>{{ statsData.nodeCount }}</strong></div>
-                <div class="stats-metric"><span>Edges</span><strong>{{ statsData.edgeCount }}</strong></div>
-                <div class="stats-metric"><span>Clusters</span><strong>{{ statsData.clusterCount }}</strong></div>
-                <div class="stats-metric"><span>Zero-weight pairs</span><strong>{{ statsData.zeroWeightCount }}</strong></div>
+                <div class="stats-metric"><span>Samples</span><strong>{{ formatNumber(statsData.nodeCount) }}</strong></div>
+                <div class="stats-metric"><span>Edges</span><strong>{{ formatNumber(statsData.edgeCount) }}</strong></div>
+                <div class="stats-metric"><span>Clusters</span><strong>{{ formatNumber(statsData.clusterCount) }}</strong></div>
+                <div class="stats-metric"><span>Zero-weight pairs</span><strong>{{ formatNumber(statsData.zeroWeightCount) }}</strong></div>
               </div>
             </div>
             <div class="stats-card">
@@ -3919,7 +4226,7 @@ export default {
                 <tbody>
                   <tr v-for="nd in statsData.topDegree" :key="nd.label">
                     <td>{{ nd.label }}</td>
-                    <td class="stats-num">{{ nd.degree }}</td>
+                    <td class="stats-num">{{ formatNumber(nd.degree) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -3933,14 +4240,25 @@ export default {
             </div>
           </div>
         </div>
-        <CompareTable
-          v-else
-          :summary="compareResultsSummary"
-          :rows="filteredCompareRows"
-          :status-options="compareStatusOptions"
-          :status-filter="compareStatusFilter"
-          @update:status-filter="compareStatusFilter = $event"
-        />
+        <template v-else>
+          <BuildPrompt
+            v-if="!hasCompareData"
+            title="Compare two result sets"
+            description="Side-by-side sample matching with ST and locus differences. Open “Alternate workflow: compare two result TSV files” in the sidebar, paste both result tables, then run the comparison."
+            action-label="Compare result sets"
+            :has-input="canCompare"
+            input-hint="Paste both the left and right result TSVs in the sidebar first."
+            @action="compareResults"
+          />
+          <CompareTable
+            v-else
+            :summary="compareResultsSummary"
+            :rows="filteredCompareRows"
+            :status-options="compareStatusOptions"
+            :status-filter="compareStatusFilter"
+            @update:status-filter="compareStatusFilter = $event"
+          />
+        </template>
       </section>
     </main>
             </div>

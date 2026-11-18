@@ -134,6 +134,9 @@
   --heat-3: #2563eb;
   --heat-4: #1e3a8a;
 
+  /* Overlays */
+  --overlay-scrim: rgba(248, 251, 255, 0.82);
+
   /* Scrollbar */
   --scrollbar-track: #f1f5f9;
   --scrollbar-thumb: #cbd5e1;
@@ -224,6 +227,9 @@
   --heat-3: #3b82f6;
   --heat-4: #93c5fd;
 
+  /* Overlays */
+  --overlay-scrim: rgba(15, 23, 42, 0.82);
+
   /* Scrollbar */
   --scrollbar-track: #1e293b;
   --scrollbar-thumb: #475569;
@@ -293,6 +299,7 @@
     --heat-2: #2563eb;
     --heat-3: #3b82f6;
     --heat-4: #93c5fd;
+    --overlay-scrim: rgba(15, 23, 42, 0.82);
     --scrollbar-track: #1e293b;
     --scrollbar-thumb: #475569;
     --scrollbar-thumb-hover: #64748b;

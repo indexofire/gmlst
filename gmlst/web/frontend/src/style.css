@@ -11,6 +11,8 @@
   --text-body: var(--text-2);
   --text-muted: var(--text-3);
   --text-dimmed: var(--text-4);
+  --text: var(--text-1);
+  --muted: var(--text-3);
   --blue-50: var(--info-subtle);
   --blue-100: var(--primary-subtle);
   --blue-200: var(--data-1);
@@ -79,7 +81,7 @@ body {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sidebar-text-muted);
+  color: var(--text-2);
 }
 
 .view-tabs {
@@ -98,7 +100,7 @@ body {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-3);
+  color: var(--text-2);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -107,8 +109,24 @@ body {
 }
 
 .view-tab:hover {
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--surface);
   color: var(--text-body);
+}
+
+.view-tab.is-unbuilt {
+  color: var(--text-2);
+}
+
+.view-tab.is-unbuilt:not(:disabled) {
+  border: 1px dashed var(--border-strong);
+  padding: 5px 11px;
+}
+
+.view-tab:disabled {
+  color: var(--text-4);
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .view-tab.active {
@@ -134,14 +152,14 @@ body {
 }
 
 .status-pill.ok {
-  color: var(--success);
-  border-color: var(--success-subtle);
+  color: var(--text-1);
+  border-color: var(--success);
   background: var(--success-subtle);
 }
 
 .status-pill.error {
-  color: var(--danger);
-  border-color: var(--danger-subtle);
+  color: var(--text-1);
+  border-color: var(--danger);
   background: var(--danger-subtle);
 }
 
@@ -341,7 +359,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
   padding: 1px 7px;
   border-radius: 8px;
   background: var(--sidebar-soft);
-  color: var(--gray-200);
+  color: var(--sidebar-text);
   margin-left: 6px;
   font-weight: 500;
 }
@@ -489,7 +507,7 @@ input:focus-visible {
 }
 
 .btn-primary {
-  color: var(--surface);
+  color: var(--on-primary);
   background: var(--brand);
 }
 
@@ -550,7 +568,7 @@ input:focus-visible {
   display: block;
   margin-top: 4px;
   font-size: 16px;
-  color: var(--primary-subtle);
+  color: var(--sidebar-text);
 }
 
 .tip {
@@ -562,6 +580,36 @@ input:focus-visible {
 
 .compact-tip {
   margin-top: 8px;
+}
+
+/* Build failure alert: visible in the main surface, not only the status pill */
+.viz-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 18px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--danger-subtle);
+  border-radius: 10px;
+  background: var(--danger-subtle);
+  color: var(--text-1);
+  font-size: var(--text-sm);
+}
+
+.viz-alert strong {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.viz-alert-message {
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reset-session {
+  margin-top: 12px;
 }
 
 .summary-note {
@@ -576,7 +624,7 @@ input:focus-visible {
 
 .summary-note strong {
   font-size: 12px;
-  color: var(--border-strong);
+  color: var(--sidebar-text);
 }
 
 .summary-note span {
@@ -599,7 +647,7 @@ input:focus-visible {
   padding: 9px 11px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--border-strong);
+  color: var(--sidebar-text);
   background: var(--sidebar-surface);
 }
 
@@ -697,6 +745,8 @@ input:focus-visible {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
   gap: 8px;
 }
 
@@ -793,6 +843,11 @@ input:focus-visible {
   background: linear-gradient(165deg, var(--surface) 0%, var(--surface-2) 52%, var(--surface-2) 100%);
 }
 
+.viz-top {
+  display: block;
+  min-width: 0;
+}
+
 .matrix-panel {
   overflow: auto;
   padding: 16px;
@@ -825,15 +880,16 @@ input:focus-visible {
 
 .empty-state-entry-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 14px;
-  max-width: 1080px;
+  max-width: 1180px;
 }
 
 .empty-state-entry {
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface);
+  color: var(--text-2);
   padding: 16px;
   display: grid;
   gap: 8px;
@@ -844,13 +900,16 @@ input:focus-visible {
 
 .empty-state-entry:hover:not(:disabled) {
   border-color: var(--ring);
-  background: var(--surface);
+  background: var(--surface-2);
   transform: translateY(-1px);
 }
 
 .empty-state-entry:disabled {
   cursor: not-allowed;
-  opacity: 0.68;
+  background: var(--surface-2);
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
 }
 
 .empty-state-entry-primary {
@@ -859,11 +918,17 @@ input:focus-visible {
   box-shadow: 0 8px 18px rgba(24, 74, 130, 0.14);
 }
 
+.empty-state-entry-primary:disabled {
+  border-color: var(--border);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
 .empty-state-entry-label {
   font-size: 11px;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-weight: 700;
 }
 
@@ -876,7 +941,7 @@ input:focus-visible {
 .empty-state-entry span:last-child {
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-muted);
+  color: var(--text-2);
 }
 
 .empty-state-help-grid {
@@ -889,7 +954,8 @@ input:focus-visible {
 .empty-state-help-card {
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface);
+  color: var(--text-2);
   padding: 14px 16px;
   display: grid;
   gap: 10px;
@@ -897,23 +963,24 @@ input:focus-visible {
 
 .empty-state-help-card strong {
   font-size: 13px;
-  color: var(--text-body);
+  color: var(--text-1);
 }
 
 .empty-state-badge {
   border-radius: 999px;
   padding: 6px 10px;
-  background: var(--data-1);
-  color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
   font-size: 12px;
   font-weight: 700;
   width: fit-content;
 }
 
-.empty-state h3 {
+.empty-state h2 {
   margin: 0;
   font-size: 26px;
   line-height: 1.2;
+  color: var(--text-1);
 }
 
 .empty-state p {
@@ -921,7 +988,7 @@ input:focus-visible {
   max-width: 720px;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-muted);
+  color: var(--text-2);
 }
 
 .empty-state-list {
@@ -934,6 +1001,81 @@ input:focus-visible {
 
 .empty-state-list li + li {
   margin-top: 4px;
+}
+
+/* ── Guided empty state for views that have not been built yet ── */
+.build-prompt {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 12px;
+  padding: 40px 32px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  color: var(--text-2);
+}
+
+.build-prompt-badge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--primary-subtle);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.build-prompt h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text-1);
+}
+
+.build-prompt-copy {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.build-prompt-hint {
+  margin: 0;
+  max-width: 60ch;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--warning-subtle);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.build-prompt-action {
+  min-width: 210px;
+}
+
+/* Main content controls must not use the dark sidebar palette. */
+.viz select,
+.viz textarea,
+.viz input[type="file"],
+.viz input[type="text"],
+.viz input[type="number"] {
+  background: var(--surface);
+  color: var(--text-1);
+  border-color: var(--border-strong);
+}
+
+.viz select option {
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+.viz input::placeholder,
+.viz textarea::placeholder {
+  color: var(--text-3);
 }
 
 .matrix-table {
@@ -974,19 +1116,51 @@ input:focus-visible {
   background: var(--surface-3);
 }
 
-.heatmap-cell-present_allele {
+/* Sortable table headers: pointer affordance + explicit sort indicator */
+.isolate-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.isolate-table th.sortable:hover {
+  background: var(--surface-3);
+}
+
+.isolate-table th.sorted {
+  color: var(--primary);
+}
+
+.sort-arrow {
+  margin-left: 4px;
+  font-size: 9px;
+  vertical-align: middle;
+}
+
+.profile-preview {
+  margin: 2px 0 0;
+  color: var(--text-2);
+}
+
+.heatmap-cell-present_allele,
+.matrix-cell.heatmap-cell-present_allele {
   background: var(--data-1);
+  color: var(--on-primary);
 }
 
-.heatmap-cell-missing_token {
+.heatmap-cell-missing_token,
+.matrix-cell.heatmap-cell-missing_token {
   background: var(--danger-subtle);
+  color: var(--text-1);
 }
 
-.heatmap-cell-unknown {
+.heatmap-cell-unknown,
+.matrix-cell.heatmap-cell-unknown {
   background: var(--surface-2);
+  color: var(--text-1);
 }
 
-.annotation-cell {
+.annotation-cell,
+.matrix-cell.annotation-cell {
   font-weight: 700;
   color: var(--text-1);
 }
@@ -998,8 +1172,13 @@ input:focus-visible {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   border-radius: 3px;
+  color: var(--text-1);
   cursor: pointer;
   transition: opacity 0.12s ease;
+}
+
+.matrix-cell.matrix-cell-strong {
+  color: #f8fafc;
 }
 
 .matrix-cell:hover {
@@ -1008,7 +1187,7 @@ input:focus-visible {
 
 .compare-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
   padding: 12px;
@@ -1036,7 +1215,7 @@ input:focus-visible {
 
 .compare-summary-grid .metric strong {
   font-size: 20px;
-  color: var(--gray-800);
+  color: var(--text-1);
   font-weight: 700;
 }
 
@@ -1067,7 +1246,7 @@ input:focus-visible {
 .viz-stats {
   margin: 0;
   font-size: 12px;
-  color: var(--text-3);
+  color: var(--text-2);
   font-weight: 500;
 }
 
@@ -1180,7 +1359,7 @@ input:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(248, 251, 255, 0.82);
+  background: var(--overlay-scrim);
   z-index: 20;
   gap: 12px;
   border-radius: 10px;
@@ -1323,17 +1502,23 @@ input:focus-visible {
     padding: 6px 8px;
   }
 
+  .view-tab.is-unbuilt:not(:disabled) {
+    padding: 5px 7px;
+  }
+
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .layout.sidebar-collapsed {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar,
   .sidebar.collapsed {
-    max-height: none;
+    max-height: 45vh;
+    overflow-y: auto;
     border-right: 0;
     border-bottom: 1px solid var(--sidebar-border);
     padding-right: 14px;
@@ -1358,6 +1543,74 @@ input:focus-visible {
   .empty-state-entry-grid,
   .empty-state-help-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Phones: let the whole page scroll instead of squeezing both panes
+   into one viewport. Keeps the sidebar reachable above the plot. */
+@media (max-width: 700px) {
+  .app-root {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .table-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    row-gap: 8px;
+  }
+
+  .topbar-brand {
+    flex: 1 1 180px;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+  }
+
+  .view-tabs {
+    order: 5;
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+
+  .layout,
+  .layout.sidebar-collapsed {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sidebar,
+  .sidebar.collapsed {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .viz {
+    min-height: 85dvh;
+  }
+
+  .viz-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .build-prompt {
+    padding: 28px 18px;
+  }
+
+  .build-prompt-action {
+    width: 100%;
+  }
+
+  .matrix-panel {
+    padding: 12px;
   }
 }
 
@@ -1696,7 +1949,7 @@ input:focus-visible {
 
 .summary-hero-metric span {
   font-size: var(--text-xs);
-  color: var(--text-3);
+  color: var(--text-2);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }

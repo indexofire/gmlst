@@ -4,18 +4,17 @@ export default {
   props: {
     hasProfileInput: { type: Boolean, default: false },
   },
-  emits: ["build-mst", "build-distance-matrix", "build-allele-heatmap"],
+  emits: ["build-mst", "build-distance-matrix", "build-allele-heatmap", "compare-results"],
 };
 </script>
 <template>
   <div class="empty-state">
     <div class="empty-state-intro">
       <div class="empty-state-badge">Start analysis</div>
-      <h3>Build a view from your profile table</h3>
+      <h2>Build a view from your profile table</h2>
       <p>
-        The right panel becomes your analysis surface after you build a result. Start by
-        loading a profile TSV on the left, then generate an MST for the clearest first-pass
-        overview.
+        Your analysis surface appears here once you build a result. Load a profile TSV in
+        the controls, then generate an MST for the clearest first-pass overview.
       </p>
     </div>
     <div class="empty-state-workflow">
@@ -56,6 +55,11 @@ export default {
         <strong>Allele heatmap</strong>
         <span>Use when you want to inspect allele patterns across many loci.</span>
       </button>
+      <button class="empty-state-entry" @click="$emit('compare-results')">
+        <span class="empty-state-entry-label">Result sets</span>
+        <strong>Compare two runs</strong>
+        <span>Diff two typing result TSVs from separate runs or pipelines.</span>
+      </button>
     </div>
     <div class="empty-state-help-grid">
       <div class="empty-state-help-card">
@@ -71,7 +75,7 @@ export default {
         <ul class="empty-state-list">
           <li v-if="hasProfileInput">Your profile TSV is loaded and ready for analysis</li>
           <li v-else>Load or paste a profile TSV to enable the analysis entry points above</li>
-          <li>Add metadata only when you want coloring, filtering, or labels</li>
+          <li>The table needs a header row and one row per sample</li>
           <li>Use result comparison for comparing two separate TSV outputs</li>
         </ul>
       </div>

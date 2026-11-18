@@ -76,7 +76,7 @@ export default {
           <td v-if="colorBy">
             <div
               class="matrix-cell annotation-cell"
-              :style="{ background: annotationRows[rowIndex]?.color || '#e5e7eb' }"
+              :style="{ background: annotationRows[rowIndex]?.color || 'var(--surface-3)' }"
               :title="`${labels[rowIndex]} · ${colorBy}: ${annotationRows[rowIndex]?.value || '-'}`"
             >
               {{ annotationRows[rowIndex]?.value || '-' }}
