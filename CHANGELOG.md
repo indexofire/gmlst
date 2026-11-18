@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Web workspace: dark-theme graph canvas and independent view data.**
+  The MST canvas, edges, labels, node halos and scale bar now use theme
+  tokens (`--graph-*`) with a matching dark palette, and redraw when the
+  theme changes (including OS `prefers-color-scheme` changes in auto
+  mode). Building a distance matrix or allele heatmap no longer discards
+  the MST result: Stats/Summary stay available and switching back to
+  Graph re-renders from the retained payload, with matrix and heatmap
+  data kept side by side. On phones (≤700px) the controls rail starts
+  collapsed so the analysis canvas is visible immediately.
+
 ### Security
 
 - **Reject control characters in download URLs and file names.** A malicious

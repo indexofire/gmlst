@@ -70,6 +70,9 @@ import DistanceMatrix from "./components/DistanceMatrix.vue";
 import CompareTable from "./components/CompareTable.vue";
 import AlleleHeatmap from "./components/AlleleHeatmap.vue";
 import LegendBar from "./components/LegendBar.vue";
+import SummaryView from "./components/SummaryView.vue";
+import StatsView from "./components/StatsView.vue";
+import { formatNumber } from "./format.js";
 import { fetchMst, fetchDistanceMatrix, fetchAlleleHeatmap, fetchCompareResults, fetchCompareLoci } from "./mstApi.js";
 import { parseSessionState } from "./sessionPersistence.js";
 import { buildGraphStats } from "./mstStats.js";
@@ -87,7 +90,16 @@ const VIEW_TITLES = {
 
 export default {
   name: "VisualApp",
-  components: { EmptyState, BuildPrompt, DistanceMatrix, CompareTable, AlleleHeatmap, LegendBar },
+  components: {
+    EmptyState,
+    BuildPrompt,
+    DistanceMatrix,
+    CompareTable,
+    AlleleHeatmap,
+    LegendBar,
+    SummaryView,
+    StatsView,
+  },
   data() {
     return {
       title:
@@ -167,6 +179,7 @@ export default {
       hiddenLegendValues: {},
       hoveredLegendValue: null,
       lastData: null,
+      graphData: null,
       view: {
         scale: 1,
         tx: 0,
@@ -219,7 +232,15 @@ export default {
       return `Detected ${samples} ${sampleLabel} · ${columns} ${columnLabel}`;
     },
     hasGraphData() {
-      return Boolean(this.lastData?.nodes?.length);
+      return Boolean(this.graphSource?.nodes?.length);
+    },
+    graphSource() {
+      // Graph payload survives later matrix/heatmap builds; lastData is the
+      // most recently built payload (any view).
+      if (Array.isArray(this.lastData?.nodes) && this.lastData.nodes.length) {
+        return this.lastData;
+      }
+      return this.graphData;
     },
     hasMatrixData() {
       return this.distanceMatrix.length > 0;
@@ -356,7 +377,7 @@ export default {
       }));
     },
     statsData() {
-      const graph = this.currentRenderedGraph || this.lastData;
+      const graph = this.currentRenderedGraph || this.graphSource;
       return buildGraphStats(
         graph?.nodes,
         graph?.edges,
@@ -514,9 +535,9 @@ export default {
       return filterCompareRows(this.compareResultRows, this.compareStatusFilter);
     },
     minEdgeWeightLabel() {
-      if (!this.lastData?.edges?.length) return "0";
+      if (!this.graphSource?.edges?.length) return "0";
       let min = Infinity;
-      for (const edge of this.lastData.edges) {
+      for (const edge of this.graphSource.edges) {
         const w = Number(edge.weight);
         if (w < min) min = w;
       }
@@ -607,6 +628,9 @@ export default {
     this._debounceTimer = null;
     this._dragRaf = null;
     this.initTheme();
+    if (window.innerWidth <= 700) {
+      this.sidebarCollapsed = true;
+    }
     this.loadViewStateFromUrl();
     document.addEventListener("fullscreenchange", () => {
       this.isFullscreen = Boolean(document.fullscreenElement);
@@ -618,8 +642,15 @@ export default {
     window.addEventListener("touchend", this.onTouchEnd);
     this._boundKeydown = (event) => this.handleGlobalKeydown(event);
     window.addEventListener("keydown", this._boundKeydown);
+    this._themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+    this._onThemeMediaChange = () => {
+      if (this.theme === "auto" && this.hasGraphData) {
+        this.$nextTick(() => this.redrawFromLastData());
+      }
+    };
+    this._themeMedia.addEventListener("change", this._onThemeMediaChange);
     this._beforeUnload = (event) => {
-      if (this.lastData && Object.keys(this.nodePositionOverrides).length > 0) {
+      if (this.graphSource && Object.keys(this.nodePositionOverrides).length > 0) {
         event.preventDefault();
       }
     };
@@ -634,6 +665,11 @@ export default {
     if (this._boundKeydown) {
       window.removeEventListener("keydown", this._boundKeydown);
       this._boundKeydown = null;
+    }
+    if (this._themeMedia && this._onThemeMediaChange) {
+      this._themeMedia.removeEventListener("change", this._onThemeMediaChange);
+      this._themeMedia = null;
+      this._onThemeMediaChange = null;
     }
     if (this._pendingNodeClick) {
       window.clearTimeout(this._pendingNodeClick);
@@ -708,9 +744,9 @@ export default {
       this.redrawFromLastData();
     },
     timelineFieldOptions() {
-      if (!this.lastData?.nodes?.length) return [];
+      if (!this.graphSource?.nodes?.length) return [];
       const fields = this.metadataFields.filter((f) => {
-        return this.lastData.nodes.some((nd) => {
+        return this.graphSource.nodes.some((nd) => {
           const v = nd.meta?.[f];
           return v && /^\d{4}([-.]\d{1,2})?$/.test(String(v).trim());
         });
@@ -718,9 +754,9 @@ export default {
       return fields;
     },
     timelineMaxValue() {
-      if (!this.timelineField || !this.lastData?.nodes) return 0;
+      if (!this.timelineField || !this.graphSource?.nodes) return 0;
       return Math.max(
-        ...this.lastData.nodes.map((nd) =>
+        ...this.graphSource.nodes.map((nd) =>
           parseInt(String(nd.meta?.[this.timelineField] || "0"), 10) || 0,
         ),
       );
@@ -764,15 +800,15 @@ export default {
       this.redrawFromLastData();
     },
     selectedNodesForCompare() {
-      if (!this.lastData?.nodes) return [];
+      if (!this.graphSource?.nodes) return [];
       const idSet = new Set(this.multiSelectedNodeIds);
-      return this.lastData.nodes.filter((n) => idSet.has(String(n.id)));
+      return this.graphSource.nodes.filter((n) => idSet.has(String(n.id)));
     },
     comparePairsDistance() {
       const nodes = this.selectedNodesForCompare();
-      if (nodes.length < 2 || !this.lastData?.edges) return [];
+      if (nodes.length < 2 || !this.graphSource?.edges) return [];
       const idSet = new Set(nodes.map((n) => String(n.id)));
-      const relevant = this.lastData.edges.filter(
+      const relevant = this.graphSource.edges.filter(
         (e) => idSet.has(String(e.source)) && idSet.has(String(e.target)),
       );
       const nodeMap = new Map(nodes.map((n) => [String(n.id), n]));
@@ -818,6 +854,9 @@ export default {
         localStorage.setItem("gmlst-theme", next);
       }
       this.syncViewStateToUrl();
+      if (this.hasGraphData) {
+        this.$nextTick(() => this.redrawFromLastData());
+      }
     },
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
@@ -953,7 +992,7 @@ export default {
       }
       this.$nextTick(() => {
         this.attachCanvasListeners();
-        if (Array.isArray(this.lastData?.nodes) && Array.isArray(this.lastData?.edges)) {
+        if (Array.isArray(this.graphSource?.nodes) && Array.isArray(this.graphSource?.edges)) {
           this.redrawFromLastData();
         }
       });
@@ -1050,13 +1089,26 @@ export default {
         this.setStatus("error", `Failed to load session: ${error.message}`);
       }
     },
-    formatNumber(value) {
-      if (value === null || value === undefined || value === "") {
-        return "–";
-      }
-      const num = Number(value);
-      return Number.isFinite(num) ? num.toLocaleString() : String(value);
+    graphTheme() {
+      const styles = getComputedStyle(document.documentElement);
+      const read = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+      return {
+        edgeMin: read("--graph-edge-min", "#d6e1ee"),
+        edgeMax: read("--graph-edge-max", "#334155"),
+        edgeWeak: read("--graph-edge-weak", "#d5dee9"),
+        edgeLabel: read("--graph-edge-label", "#475569"),
+        labelHalo: read("--graph-label-halo", "#ffffff"),
+        ring: read("--graph-node-ring", "rgba(15, 23, 42, 0.35)"),
+        ringStroke: read("--graph-node-ring-stroke", "rgba(15, 23, 42, 0.5)"),
+        labelBg: read("--graph-label-bg", "rgba(255, 255, 255, 0.86)"),
+        labelStroke: read("--graph-label-stroke", "rgba(203, 213, 225, 0.9)"),
+        labelText: read("--graph-label-text", "#1f2937"),
+        labelTextStrong: read("--graph-label-text-strong", "#0f172a"),
+        scaleBg: read("--graph-scale-bg", "rgba(255, 255, 255, 0.85)"),
+        scaleStroke: read("--graph-scale-stroke", "rgba(203, 213, 225, 0.6)"),
+      };
     },
+    formatNumber,
     setStatus(kind, message) {
       this.statusKind = kind;
       this.statusMessage = message;
@@ -1123,7 +1175,7 @@ export default {
     },
     selectNodesByLegendValue(value) {
       if (!this.currentLayout || !this.colorBy) return;
-      const nodes = this.lastData?.nodes || [];
+      const nodes = this.graphSource?.nodes || [];
       let count = 0;
       for (const node of nodes) {
         if (colorValueForNode(node, this.colorBy) === value) {
@@ -1539,8 +1591,9 @@ export default {
       bg.setAttribute("width", String(barLen + 16));
       bg.setAttribute("height", "30");
       bg.setAttribute("rx", "6");
-      bg.setAttribute("fill", "rgba(255,255,255,0.85)");
-      bg.setAttribute("stroke", "rgba(203,213,225,0.6)");
+      const gtheme = this.graphTheme();
+      bg.setAttribute("fill", gtheme.scaleBg);
+      bg.setAttribute("stroke", gtheme.scaleStroke);
       bg.setAttribute("stroke-width", "0.8");
       g.appendChild(bg);
 
@@ -1549,7 +1602,7 @@ export default {
       line.setAttribute("y1", "0");
       line.setAttribute("x2", String(barLen));
       line.setAttribute("y2", "0");
-      line.setAttribute("stroke", "#475569");
+      line.setAttribute("stroke", gtheme.edgeLabel);
       line.setAttribute("stroke-width", "2");
       g.appendChild(line);
 
@@ -1558,7 +1611,7 @@ export default {
       leftTick.setAttribute("y1", "-5");
       leftTick.setAttribute("x2", "0");
       leftTick.setAttribute("y2", "5");
-      leftTick.setAttribute("stroke", "#475569");
+      leftTick.setAttribute("stroke", gtheme.edgeLabel);
       leftTick.setAttribute("stroke-width", "2");
       g.appendChild(leftTick);
 
@@ -1567,7 +1620,7 @@ export default {
       rightTick.setAttribute("y1", "-5");
       rightTick.setAttribute("x2", String(barLen));
       rightTick.setAttribute("y2", "5");
-      rightTick.setAttribute("stroke", "#475569");
+      rightTick.setAttribute("stroke", gtheme.edgeLabel);
       rightTick.setAttribute("stroke-width", "2");
       g.appendChild(rightTick);
 
@@ -1576,7 +1629,7 @@ export default {
       text.setAttribute("y", "-7");
       text.setAttribute("text-anchor", "middle");
       text.setAttribute("font-size", "11");
-      text.setAttribute("fill", "#475569");
+      text.setAttribute("fill", gtheme.edgeLabel);
       text.setAttribute("font-family", '"IBM Plex Sans", sans-serif');
       text.setAttribute("font-weight", "500");
       text.textContent = `${barWeight} allele${barWeight > 1 ? "s" : ""}`;
@@ -1858,7 +1911,7 @@ export default {
         activeGraph.nodes,
         visibleEdges,
         this.layoutMode,
-        this.lastData?.layout?.root_id,
+        this.graphSource?.layout?.root_id,
       );
       const collapseSet = resolveCollapsedNodeSet(
         activeGraph.nodes,
@@ -1920,7 +1973,7 @@ export default {
           graphNodes,
           graphEdges,
           this.layoutMode,
-          this.lastData?.layout?.root_id,
+          this.graphSource?.layout?.root_id,
         )
         : fullLayoutData;
       const colorMap = colorMapFor(activeGraph.nodes, this.colorBy, this.colorScheme);
@@ -2242,15 +2295,16 @@ export default {
         isLongBranch,
         longBranchMode,
       } = context;
+      const gtheme = this.graphTheme();
       const edgeStroke = (edge) => {
         if (edge.inHighlightedPath) {
           return "#dc2626";
         }
         if (!edge.sameComponent) {
-          return "#d5dee9";
+          return gtheme.edgeWeak;
         }
         const shade = edgeShade(Number(edge.weight) || 0);
-        return d3.interpolateRgb("#d6e1ee", "#334155")(shade);
+        return d3.interpolateRgb(gtheme.edgeMin, gtheme.edgeMax)(shade);
       };
       const edgeStrokeWidth = (edge) => {
         if (edge.inHighlightedPath) {
@@ -2305,6 +2359,7 @@ export default {
     },
     _renderEdgeLabels(graph, finalGraph, context) {
       const { setTooltipAccent } = context;
+      const gtheme = this.graphTheme();
       const edgeLabelGroup = graph
         .append("g")
         .attr("class", "edge-labels")
@@ -2335,7 +2390,7 @@ export default {
         .attr("font-size", 9)
         .attr("font-weight", 700)
         .attr("fill", "none")
-        .attr("stroke", "#ffffff")
+        .attr("stroke", gtheme.labelHalo)
         .attr("stroke-width", 3.5)
         .attr("stroke-linejoin", "round")
         .attr("text-anchor", "middle")
@@ -2346,7 +2401,7 @@ export default {
         .attr("y", 2)
         .attr("font-size", 9)
         .attr("font-weight", 600)
-        .attr("fill", "#475569")
+        .attr("fill", gtheme.edgeLabel)
         .attr("text-anchor", "middle")
         .text((edge) => edge.weight);
       edgeLabelGroup.attr("data-overlap-hidden", (edge) => {
@@ -2381,6 +2436,7 @@ export default {
     },
     _renderHalos(graph, finalGraph, context) {
       const { hasSearch, nodeGlowId } = context;
+      const gtheme = this.graphTheme();
       const haloGroup = graph.append("g").attr("class", "halos");
       haloGroup
         .selectAll("path")
@@ -2403,10 +2459,10 @@ export default {
           if (node.isSelected) {
             return "rgba(245, 158, 11, 0.85)";
           }
-          return "rgba(15, 23, 42, 0.35)";
+          return gtheme.ring;
         })
         .attr("stroke", (node) =>
-          node.isSelected ? "#fbbf24" : "rgba(15, 23, 42, 0.5)",
+          node.isSelected ? "#fbbf24" : gtheme.ringStroke,
         )
         .attr("stroke-width", (node) => (node.isSelected ? 1.5 : 0))
         .attr("stroke-dasharray", (node) => (node.isRoot ? "2 5" : null))
@@ -2588,6 +2644,7 @@ export default {
         .append("g")
         .attr("transform", (node) => `translate(${node.x + node.radius + 5}, ${node.y})`)
         .attr("opacity", labelOpacity);
+      const gtheme = this.graphTheme();
       labelGroup
         .append("rect")
         .attr("x", -3)
@@ -2595,15 +2652,17 @@ export default {
         .attr("width", (node) => node.label.length * 7 + 10)
         .attr("height", (node) => (node.isRoot ? 18 : 16))
         .attr("rx", 8)
-        .attr("fill", "rgba(255, 255, 255, 0.86)")
-        .attr("stroke", "rgba(203, 213, 225, 0.9)")
+        .attr("fill", gtheme.labelBg)
+        .attr("stroke", gtheme.labelStroke)
         .attr("stroke-width", 0.7);
       labelGroup
         .append("text")
         .attr("x", 2)
         .attr("y", 4)
         .attr("font-size", (node) => (node.isRoot ? 12.8 : 12))
-        .attr("fill", (node) => (node.isRoot ? "#0f172a" : "#1f2937"))
+        .attr("fill", (node) =>
+          node.isRoot ? gtheme.labelTextStrong : gtheme.labelText,
+        )
         .attr("font-weight", (node) => (node.isRoot ? 700 : 500))
         .text((node) => node.label);
     },
@@ -2722,7 +2781,7 @@ export default {
       this.updateSummary(
         finalGraph.nodes.length,
         finalGraph.edges.length,
-        this.lastData?.sample_count || rawNodes.length,
+        this.graphSource?.sample_count || rawNodes.length,
       );
       this._drawScaleBar(svg);
       this._applyLegendHover();
@@ -2734,14 +2793,14 @@ export default {
     },
     redrawFromLastData() {
       if (
-        !this.lastData ||
-        !Array.isArray(this.lastData.nodes) ||
-        !Array.isArray(this.lastData.edges)
+        !this.graphSource ||
+        !Array.isArray(this.graphSource.nodes) ||
+        !Array.isArray(this.graphSource.edges)
       ) {
         this.clearSvg();
         return;
       }
-      this.drawGraph(this.lastData.nodes, this.lastData.edges);
+      this.drawGraph(this.graphSource.nodes, this.graphSource.edges);
     },
     debouncedRedraw() {
       clearTimeout(this._debounceTimer);
@@ -2785,13 +2844,10 @@ export default {
         });
 
         this._resetViewState(data, "graph");
+        this.graphData = data;
         this.manualRootId = null;
         this.nodePositionOverrides = {};
         this.clusterSummary = data.cluster_summary || [];
-        this.distanceMatrix = [];
-        this.matrixLabels = [];
-        this.heatmapLoci = [];
-        this.heatmapCells = [];
         this.heatmapLocusQuery = "";
         this.edgeWeightThreshold = this.maxWeight ? Number(this.maxWeight) : 0;
         this.fitView();
@@ -2827,8 +2883,6 @@ export default {
         this.clusterSummary = data.cluster_summary || [];
         this.distanceMatrix = data.matrix || [];
         this.matrixLabels = data.labels || [];
-        this.heatmapLoci = [];
-        this.heatmapCells = [];
         this.clearSvg();
         this.updateSummary(this.matrixLabels.length, "-", this.matrixLabels.length);
         this.statsLine = `Rendered ${this.matrixLabels.length} × ${this.matrixLabels.length} distance matrix.`;
@@ -2856,7 +2910,6 @@ export default {
 
         this._resetViewState(data, "heatmap");
         this.clusterSummary = [];
-        this.distanceMatrix = [];
         this.matrixLabels = data.labels || [];
         this.heatmapLoci = data.loci || [];
         this.heatmapCells = data.cells || [];
@@ -2884,6 +2937,7 @@ export default {
       this.compareLeftTsv = "";
       this.compareRightTsv = "";
       this.lastData = null;
+      this.graphData = null;
       this.distanceMatrix = [];
       this.matrixLabels = [];
       this.heatmapLoci = [];
@@ -3177,14 +3231,14 @@ export default {
       this.setStatus("ok", "Newick tree exported");
     },
     exportGraphJson() {
-      if (!this.lastData || !this.currentRenderedGraph) {
+      if (!this.graphSource || !this.currentRenderedGraph) {
         this.setStatus("error", "Build a graph before exporting JSON");
         return;
       }
       this.downloadJson(
         "gmlst_graph.json",
         buildGraphJsonPayload(
-          this.lastData.export?.schema_version,
+          this.graphSource.export?.schema_version,
           this.currentRenderedGraph,
         ),
       );
@@ -3280,7 +3334,7 @@ export default {
       this.setStatus("ok", "Heatmap JSON exported");
     },
     exportSessionJson() {
-      if (!this.lastData) {
+      if (!this.graphSource) {
         this.setStatus("error", "Build a graph before exporting session JSON");
         return;
       }
@@ -4133,113 +4187,8 @@ export default {
             @trigger-compare="triggerCompareFromPair(compareLeftLabel || $event, $event)"
           />
         </template>
-        <div v-else-if="analysisView === 'summary'" class="stats-view">
-          <div v-if="!summaryData" class="stats-empty">
-            <p>Build a graph first to see the analysis summary.</p>
-          </div>
-          <div v-else class="summary-container">
-            <div class="summary-hero">
-              <div class="summary-hero-metric">
-                <strong>{{ formatNumber(summaryData.sample_count) }}</strong>
-                <span>samples</span>
-              </div>
-              <div class="summary-hero-metric">
-                <strong>{{ formatNumber(summaryData.mst_summary.edges) }}</strong>
-                <span>edges</span>
-              </div>
-              <div class="summary-hero-metric">
-                <strong>{{ formatNumber(summaryData.mst_summary.weight_median) }}</strong>
-                <span>median weight</span>
-              </div>
-              <div class="summary-hero-metric">
-                <strong>{{ formatNumber(summaryData.cluster_count) }}</strong>
-                <span>clusters</span>
-              </div>
-            </div>
-            <div v-if="summaryData.outliers.length" class="summary-section summary-section-warn">
-              <h3>⚠ Outliers</h3>
-              <div v-for="o in summaryData.outliers" :key="o.source" class="summary-outlier-row">
-                <strong>{{ o.source }} ↔ {{ o.target }}</strong>
-                <span class="summary-outlier-w">weight = {{ o.weight }}</span>
-              </div>
-            </div>
-            <div class="summary-section">
-              <h3>Hub Nodes (top degree)</h3>
-              <div class="summary-hubs">
-                <div v-for="nd in summaryData.top_variable_nodes" :key="nd.label" class="summary-hub">
-                  <span>{{ nd.label }}</span>
-                  <strong>{{ nd.degree }}</strong>
-                </div>
-              </div>
-            </div>
-            <div class="summary-section">
-              <h3>Suggested Analysis</h3>
-              <ul class="summary-suggestions">
-                <li v-for="(s, i) in summaryData.suggested_analysis" :key="i">{{ s }}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div v-else-if="analysisView === 'stats'" class="stats-view">
-          <div v-if="!statsData" class="stats-empty">
-            <p>Build a graph first to see statistics.</p>
-          </div>
-          <div v-else class="stats-grid">
-            <div class="stats-card">
-              <h3>Overview</h3>
-              <div class="stats-metrics">
-                <div class="stats-metric"><span>Samples</span><strong>{{ formatNumber(statsData.nodeCount) }}</strong></div>
-                <div class="stats-metric"><span>Edges</span><strong>{{ formatNumber(statsData.edgeCount) }}</strong></div>
-                <div class="stats-metric"><span>Clusters</span><strong>{{ formatNumber(statsData.clusterCount) }}</strong></div>
-                <div class="stats-metric"><span>Zero-weight pairs</span><strong>{{ formatNumber(statsData.zeroWeightCount) }}</strong></div>
-              </div>
-            </div>
-            <div class="stats-card">
-              <h3>Edge Weight Distribution</h3>
-              <div class="stats-quartiles">
-                <span>min: {{ statsData.weightMin }}</span>
-                <span>Q25: {{ statsData.weightQ25 }}</span>
-                <span>median: {{ statsData.weightMedian }}</span>
-                <span>Q75: {{ statsData.weightQ75 }}</span>
-                <span>max: {{ statsData.weightMax }}</span>
-              </div>
-              <div class="stats-histogram">
-                <div
-                  v-for="bin in statsData.histogram"
-                  :key="bin.label"
-                  class="stats-hist-bar"
-                  :style="{ height: Math.max(4, bin.pct * 1.8) + 'px' }"
-                  :title="`${bin.label}: ${bin.count} (${bin.pct}%)`"
-                />
-              </div>
-              <div class="stats-hist-labels">
-                <span>{{ statsData.weightMin }}</span>
-                <span>{{ statsData.weightMax }}</span>
-              </div>
-            </div>
-            <div class="stats-card">
-              <h3>Top Degree Nodes</h3>
-              <table class="stats-table">
-                <thead>
-                  <tr><th>Node</th><th>Degree</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="nd in statsData.topDegree" :key="nd.label">
-                    <td>{{ nd.label }}</td>
-                    <td class="stats-num">{{ formatNumber(nd.degree) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-if="statsData.outliers.length" class="stats-card stats-card-warning">
-              <h3>Outlier Alerts</h3>
-              <div v-for="o in statsData.outliers" :key="o.source + o.target" class="stats-outlier">
-                <span class="stats-outlier-pair">{{ o.source }} ↔ {{ o.target }}</span>
-                <span class="stats-outlier-w">w={{ o.weight }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SummaryView v-else-if="analysisView === 'summary'" :summary="summaryData" />
+        <StatsView v-else-if="analysisView === 'stats'" :stats="statsData" />
         <template v-else>
           <BuildPrompt
             v-if="!hasCompareData"

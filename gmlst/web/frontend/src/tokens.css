@@ -134,6 +134,25 @@
   --heat-3: #2563eb;
   --heat-4: #1e3a8a;
 
+
+  /* Graph surface (MST canvas) */
+  --graph-canvas: rgba(255, 255, 255, 0.86);
+  --graph-glow-1: rgba(119, 166, 216, 0.14);
+  --graph-glow-2: rgba(56, 112, 177, 0.12);
+  --graph-edge-min: #d6e1ee;
+  --graph-edge-max: #334155;
+  --graph-edge-weak: #d5dee9;
+  --graph-edge-label: #475569;
+  --graph-label-halo: #ffffff;
+  --graph-node-ring: rgba(15, 23, 42, 0.35);
+  --graph-node-ring-stroke: rgba(15, 23, 42, 0.5);
+  --graph-label-bg: rgba(255, 255, 255, 0.86);
+  --graph-label-stroke: rgba(203, 213, 225, 0.9);
+  --graph-label-text: #1f2937;
+  --graph-label-text-strong: #0f172a;
+  --graph-scale-bg: rgba(255, 255, 255, 0.85);
+  --graph-scale-stroke: rgba(203, 213, 225, 0.6);
+
   /* Overlays */
   --overlay-scrim: rgba(248, 251, 255, 0.82);
 
@@ -228,6 +247,24 @@
   --heat-4: #93c5fd;
 
   /* Overlays */
+    /* Graph surface (MST canvas) */
+    --graph-canvas: rgba(15, 23, 42, 0.72);
+    --graph-glow-1: rgba(59, 130, 246, 0.1);
+    --graph-glow-2: rgba(37, 99, 235, 0.08);
+    --graph-edge-min: #334155;
+    --graph-edge-max: #cbd5e1;
+    --graph-edge-weak: #1e293b;
+    --graph-edge-label: #cbd5e1;
+    --graph-label-halo: #0f172a;
+    --graph-node-ring: rgba(226, 232, 240, 0.3);
+    --graph-node-ring-stroke: rgba(226, 232, 240, 0.45);
+    --graph-label-bg: rgba(15, 23, 42, 0.85);
+    --graph-label-stroke: rgba(71, 85, 105, 0.9);
+    --graph-label-text: #e2e8f0;
+    --graph-label-text-strong: #f8fafc;
+    --graph-scale-bg: rgba(15, 23, 42, 0.85);
+    --graph-scale-stroke: rgba(71, 85, 105, 0.6);
+
   --overlay-scrim: rgba(15, 23, 42, 0.82);
 
   /* Scrollbar */
@@ -299,6 +336,25 @@
     --heat-2: #2563eb;
     --heat-3: #3b82f6;
     --heat-4: #93c5fd;
+
+    /* Graph surface (MST canvas) */
+    --graph-canvas: rgba(15, 23, 42, 0.72);
+    --graph-glow-1: rgba(59, 130, 246, 0.1);
+    --graph-glow-2: rgba(37, 99, 235, 0.08);
+    --graph-edge-min: #334155;
+    --graph-edge-max: #cbd5e1;
+    --graph-edge-weak: #1e293b;
+    --graph-edge-label: #cbd5e1;
+    --graph-label-halo: #0f172a;
+    --graph-node-ring: rgba(226, 232, 240, 0.3);
+    --graph-node-ring-stroke: rgba(226, 232, 240, 0.45);
+    --graph-label-bg: rgba(15, 23, 42, 0.85);
+    --graph-label-stroke: rgba(71, 85, 105, 0.9);
+    --graph-label-text: #e2e8f0;
+    --graph-label-text-strong: #f8fafc;
+    --graph-scale-bg: rgba(15, 23, 42, 0.85);
+    --graph-scale-stroke: rgba(71, 85, 105, 0.6);
+
     --overlay-scrim: rgba(15, 23, 42, 0.82);
     --scrollbar-track: #1e293b;
     --scrollbar-thumb: #475569;
