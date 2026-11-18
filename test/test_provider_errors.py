@@ -7,6 +7,7 @@ behavior tests that mock network calls and verify actual error handling.
 
 from __future__ import annotations
 
+import socket
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -15,6 +16,30 @@ import requests
 
 from gmlst.database.providers.cgmlst import CgmlstProvider
 from gmlst.database.providers.enterobase import EnterobaseProvider
+
+
+@pytest.fixture(autouse=True)
+def _public_dns(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stub hostname resolution for the whole module.
+
+    These tests exercise provider error handling, not DNS/SSRF behavior,
+    but the URL guard resolves the host before any mocked request runs.
+    CI runners occasionally fail real resolution ("Temporary failure in
+    name resolution"), flaking otherwise deterministic tests.
+    """
+    monkeypatch.setattr(
+        "gmlst.database.url_guard.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("93.184.216.34", 443),
+            )
+        ],
+    )
+
 
 # ---------------------------------------------------------------------------
 # cgMLST.org provider — network + parsing error handling
