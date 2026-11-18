@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from gmlst.database.atomic import atomic_write_text
+from gmlst.database.cache import _validate_scheme_identifier
 from gmlst.database.download import (
     DownloadTool,
     download_file,
@@ -286,6 +287,14 @@ class BigSdbProvider:
         if not loci_urls:
             raise ValueError(
                 f"No loci found in scheme '{scheme_url}' for '{scheme_name}'"
+            )
+        # Locus names become file names and aria2c input lines; validate them
+        # before any download starts.
+        for locus_url in loci_urls:
+            if not isinstance(locus_url, str):
+                raise ValueError(f"Invalid BIGSdb locus URL: {locus_url!r}")
+            _validate_scheme_identifier(
+                locus_url.rstrip("/").split("/")[-1], "BIGSdb locus name"
             )
         return seqdef_url, scheme_url, scheme_detail
 

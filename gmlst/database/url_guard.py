@@ -72,6 +72,26 @@ def _is_blocked_ip(ip: str) -> bool:
     )
 
 
+def _has_unsafe_chars(value: str) -> bool:
+    """Return True if *value* contains whitespace or ASCII/C1 control chars."""
+    return any(
+        ch.isspace() or ord(ch) < 0x20 or 0x7F <= ord(ch) <= 0x9F for ch in value
+    )
+
+
+def assert_safe_url_text(url: str) -> None:
+    """Raise :class:`UrlGuardError` if *url* contains whitespace or control chars.
+
+    ``urlparse`` silently strips tab/CR/LF, so a URL with embedded newlines
+    still parses to a valid host while the raw string can inject extra lines
+    into line-based formats (e.g. aria2c input files).
+    """
+    if _has_unsafe_chars(url):
+        raise UrlGuardError(
+            f"Refusing URL containing whitespace or control characters: {url!r}"
+        )
+
+
 def assert_public_url(url: str, *, allow: set[str] | None = None) -> None:
     """Raise :class:`UrlGuardError` if *url* points to a non-public network.
 
@@ -85,6 +105,8 @@ def assert_public_url(url: str, *, allow: set[str] | None = None) -> None:
 
     The function performs the following checks in order:
 
+    0. Reject URLs containing whitespace or control characters (always
+       enforced, even when the private-URL bypass is enabled).
     1. If ``GMLST_ALLOW_PRIVATE_URLS`` is set, log a warning and return early.
     2. Parse the URL; reject anything that is not ``http`` or ``https``.
     3. Require a hostname (reject URLs with no host).
@@ -93,6 +115,8 @@ def assert_public_url(url: str, *, allow: set[str] | None = None) -> None:
        every resolved IP is in a blocked range. Literal IP addresses are
        checked directly without DNS resolution. DNS failures fail closed.
     """
+    assert_safe_url_text(url)
+
     if _ALLOW_PRIVATE:
         logger.warning(
             "SSRF guard bypassed by GMLST_ALLOW_PRIVATE_URLS for URL: %s",

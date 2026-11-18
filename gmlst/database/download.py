@@ -32,7 +32,11 @@ from typing import Literal
 
 import requests
 
-from gmlst.database.url_guard import assert_public_url
+from gmlst.database.url_guard import (
+    UrlGuardError,
+    assert_public_url,
+    assert_safe_url_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -810,6 +814,20 @@ def download_files_batch(
     return (total_success, len(pending))
 
 
+def _assert_safe_batch_entry(url: str, dest: Path) -> None:
+    """Reject entries that could inject lines/options into an aria2c input file."""
+    assert_safe_url_text(url)
+    name = dest.name
+    if (
+        not name
+        or name in (".", "..")
+        or "/" in name
+        or "\\" in name
+        or any(ord(ch) < 0x20 or 0x7F <= ord(ch) <= 0x9F for ch in name)
+    ):
+        raise UrlGuardError(f"Refusing unsafe download file name: {name!r}")
+
+
 def _download_single_batch(
     pending: list[tuple[str, Path]],
     max_concurrent: int,
@@ -820,7 +838,8 @@ def _download_single_batch(
     if not pending:
         return (0, 0)
 
-    for url, _dest in pending:
+    for url, dest in pending:
+        _assert_safe_batch_entry(url, dest)
         assert_public_url(url)
 
     # Single file: use regular download

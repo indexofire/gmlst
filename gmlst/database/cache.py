@@ -199,7 +199,7 @@ def _validate_scheme_identifier(value: str, label: str) -> str:
         raise ValueError(f"Invalid {label}: {value!r} ('..' sequences are not allowed)")
     # Strict whitelist. Implicitly rejects leading dots (hidden files),
     # absolute paths, drive letters, and any other shell metacharacters.
-    if not _SCHEME_IDENTIFIER_RE.match(value):
+    if not _SCHEME_IDENTIFIER_RE.fullmatch(value):
         raise ValueError(
             f"Invalid {label}: {value!r} "
             "(allowed: letters, digits, '_', '-', '.'; "

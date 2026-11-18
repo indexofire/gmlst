@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Reject control characters in download URLs and file names.** A malicious
+  BIGSdb server could embed newlines in `loci` URLs to inject `dir=`/`out=`
+  option lines into the aria2c batch input file and write files outside the
+  cache. `assert_public_url` now rejects whitespace and control characters
+  (even with `GMLST_ALLOW_PRIVATE_URLS`), batch downloads validate
+  destination file names, and BIGSdb locus names must pass the scheme
+  identifier whitelist.
+
 ## [0.6.2] - 2026-11-15
 
 ### Changed
