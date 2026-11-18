@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from gmlst.database.atomic import atomic_write_text
+from gmlst.database.cache import _validate_scheme_identifier
 from gmlst.database.download import (
     DownloadTool,
     download_file,
@@ -333,7 +334,10 @@ class BigSdbProvider:
         )
         url_dest_pairs: list[tuple[str, Path]] = []
         for locus_url in loci_urls:
+            if not isinstance(locus_url, str):
+                raise ValueError(f"Invalid BIGSdb locus URL: {locus_url!r}")
             locus_name = locus_url.rstrip("/").split("/")[-1]
+            _validate_scheme_identifier(locus_name, "BIGSdb locus name")
             dest_file = dest_dir / f"{locus_name}.tfa"
             if dest_file.exists():
                 logger.debug("Skipping %s (already exists)", locus_name)
