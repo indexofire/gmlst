@@ -13,6 +13,10 @@ from gmlst.database.providers.bigsdb import BigSdbProvider
 from gmlst.database.url_guard import UrlGuardError, assert_public_url
 
 _INJECTED_URL = "https://example.com/x\n  dir=/tmp/x\n  out=.bashrc"
+_CATALOG_EXTRA = {
+    "seqdef_url": "https://example.com",
+    "scheme_url": "https://example.com/s",
+}
 
 
 @pytest.mark.parametrize(
@@ -86,30 +90,53 @@ def test_download_files_batch_rejects_control_chars_in_file_name(
     mock_tmp.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "locus_url",
-    [
-        "https://example.com/loci/..",
-        "https://example.com/loci/a\n  dir=x",
-        "https://example.com/loci/abc\n",
-        "https://example.com/loci/.hidden",
-    ],
-)
-def test_bigsdb_download_scheme_rejects_unsafe_locus_names(
-    tmp_path: Path,
+_UNSAFE_LOCUS_URLS = [
+    "https://example.com/loci/..",
+    "https://example.com/loci/a\n  dir=x",
+    "https://example.com/loci/abc\n",
+    "https://example.com/loci/.hidden",
+]
+
+
+@pytest.mark.parametrize("locus_url", _UNSAFE_LOCUS_URLS)
+def test_bigsdb_fetch_scheme_detail_rejects_unsafe_locus_names(
     locus_url: str,
 ) -> None:
     provider = BigSdbProvider("pubmlst", "https://rest.pubmlst.org", "PubMLST")
     detail = {"loci": [locus_url, "https://example.com/loci/abcZ"]}
     with (
-        patch.object(
-            provider,
-            "_fetch_scheme_detail",
-            return_value=("seqdef", "scheme", detail),
+        patch(
+            "gmlst.database.providers.bigsdb._get_json",
+            return_value=detail,
         ),
-        patch("gmlst.database.providers.bigsdb.download_required_files") as mock_dl,
         pytest.raises(ValueError, match="BIGSdb locus name"),
     ):
-        provider.download_scheme("demo", tmp_path / "out")
+        provider._fetch_scheme_detail(
+            "demo",
+            "mlst",
+            _CATALOG_EXTRA,
+        )
+
+
+def test_bigsdb_download_scheme_rejects_before_profile_download(
+    tmp_path: Path,
+) -> None:
+    provider = BigSdbProvider("pubmlst", "https://rest.pubmlst.org", "PubMLST")
+    detail = {
+        "loci": [_UNSAFE_LOCUS_URLS[1], "https://example.com/loci/abcZ"],
+        "profiles_csv": "https://example.com/profiles_csv",
+    }
+    with (
+        patch("gmlst.database.providers.bigsdb._get_json", return_value=detail),
+        patch("gmlst.database.providers.bigsdb.download_required_files") as mock_dl,
+        patch("gmlst.database.providers.bigsdb._download_file") as mock_profile,
+        pytest.raises(ValueError, match="BIGSdb locus name"),
+    ):
+        provider.download_scheme(
+            "demo",
+            tmp_path / "out",
+            extra=_CATALOG_EXTRA,
+        )
 
     mock_dl.assert_not_called()
+    mock_profile.assert_not_called()

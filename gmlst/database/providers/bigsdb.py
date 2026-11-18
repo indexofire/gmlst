@@ -288,6 +288,14 @@ class BigSdbProvider:
             raise ValueError(
                 f"No loci found in scheme '{scheme_url}' for '{scheme_name}'"
             )
+        # Locus names become file names and aria2c input lines; validate them
+        # before any download starts.
+        for locus_url in loci_urls:
+            if not isinstance(locus_url, str):
+                raise ValueError(f"Invalid BIGSdb locus URL: {locus_url!r}")
+            _validate_scheme_identifier(
+                locus_url.rstrip("/").split("/")[-1], "BIGSdb locus name"
+            )
         return seqdef_url, scheme_url, scheme_detail
 
     def download_scheme(
@@ -334,10 +342,7 @@ class BigSdbProvider:
         )
         url_dest_pairs: list[tuple[str, Path]] = []
         for locus_url in loci_urls:
-            if not isinstance(locus_url, str):
-                raise ValueError(f"Invalid BIGSdb locus URL: {locus_url!r}")
             locus_name = locus_url.rstrip("/").split("/")[-1]
-            _validate_scheme_identifier(locus_name, "BIGSdb locus name")
             dest_file = dest_dir / f"{locus_name}.tfa"
             if dest_file.exists():
                 logger.debug("Skipping %s (already exists)", locus_name)
