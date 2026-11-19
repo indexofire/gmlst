@@ -22,7 +22,7 @@ export function parseSessionState(payload) {
     metadataText: inputs.metadata_tsv || "",
     includeMissing: Boolean(options.include_missing),
     aggregateProfiles: options.aggregate_profiles !== false,
-    layoutMode: options.layout_mode || "tree",
+    layoutMode: options.layout_mode || "grapetree",
     edgeLengthMode: options.edge_length_mode || "linear",
     edgeLengthScale: Number(options.edge_length_scale ?? 50) || 50,
     longBranchMode: options.long_branch_mode || "normal",

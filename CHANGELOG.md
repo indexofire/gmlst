@@ -7,7 +7,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **10,000-sample cgMLST runs.** Tables up to 50,000,000 cells
+  (e.g. 10k samples × 3k loci) now build an MST in roughly 10–20
+  seconds. Large inputs take a dedicated packed path: profiles are parsed
+  straight into one-byte integer codes (no per-allele Python strings),
+  pairwise distances run in a fused numba kernel over all cores, and
+  Prim's algorithm builds the tree without materialising the 50M-edge
+  list. On a 16-thread machine: 10k × 3k end to end in ~9 s (API) /
+  ~12 s (browser, including upload and render), peak memory ~600 MB.
+  This adds `numpy` and `numba` as runtime dependencies.
+
 ### Changed
+
+- **Limits are now per view.** MST construction accepts up to 50M
+  cells, while the distance-matrix and allele-heatmap payloads keep the
+  2M-cell cap (their JSON and DOM grow with every cell). The rejection
+  message now says which view is capped. The source-install upload cap
+  is raised to 512 MiB, matching ~150 MB profile tables.
+
+- **Large graphs stay responsive.** Above 1,500 nodes the workspace
+  hides node/edge labels automatically (they are unreadable and
+  expensive at that density; the toggles still work). The sample table
+  renders the first 500 rows with a “Showing first 500 of N” banner
+  (search/filter and export still cover the full table), and Newick
+  export uses an iterative traversal so 10k-deep chains no longer
+  overflow the call stack. Per-edge mismatch locus lists are omitted
+  above 2,000 nodes; the tooltip shows the count and points to the
+  Compare view.
+
+- **Realistic cgMLST tables are no longer rejected.** The combined
+  sample × locus cap moves from 250,000 to 2,000,000 cells: a
+  605-sample × 1502-locus run (909k cells) now builds end to end in
+  about 3 seconds instead of failing with “Combined scale too large”.
+  The limit still guards against accidental genome-scale uploads; the
+  sample cap rises to 20,000 (5,000 loci stay the per-table maximum).
+
+- **Pairwise distances are computed with packed integers.** Profiles are
+  encoded into big-integer lanes, so a pair's Hamming distance is a few
+  bit operations instead of a per-locus Python loop (decorated and
+  missing tokens behave exactly as before, verified against the old
+  implementation). On the 605 × 1502 demo set: MST distance matrix
+  10.3 s → 0.4 s, whole MST 11.2 s → 1.8 s, distance-matrix view
+  71 s → 1.2 s.
+
+- **Loading a multi-megabyte profile file no longer stalls the UI.** The
+  full TSV used to be mirrored into the “paste profile text” textarea,
+  which cost ~15 s of layout on first paint for a 4 MB file. Files are
+  now kept in memory with a “Loaded from <file> — paste text here to
+  replace it” placeholder; pasting still replaces the data as before.
+  Restored sessions take the same path, and the graph view fit uses the
+  drawn node bounds instead of `getBBox()` (another ~6 s saved on large
+  trees).
+
+- **Stroke width now encodes distance the intuitive way.** Near-distance
+  links (0–1 alleles) are thin (1.2 px) and long inter-cluster jumps are
+  slightly thicker (up to 2.2 px); previously the mapping was inverted,
+  so identical-profile and 1-allele branches were the thickest strokes.
+
+- **Radial branches encode length radially.** Radial edges were straight
+  chords between ring positions, so a 1-allele branch and a 500-allele
+  branch could look equally long (the chord is dominated by the
+  tangential displacement). Edges are now polar elbows: the radial
+  segment is the branch (7.4 vs 67.9 units for weight 1 vs ~580 in the
+  demo tree) and the circular arc is thin, muted scaffolding.
+
+- **Leaves spread over the full circle instead of stacking.** The
+  GrapeTree layout used to inherit shrinking angular wedges, which packed
+  siblings into narrow cones and piled nodes on top of each other. Edge
+  directions now follow the tidy-tree leaf order (evenly spaced angles),
+  and node radii shrink automatically above 400 nodes
+  (`sqrt(400 / N)`, floor 0.55×) so dense graphs have more air; the node
+  size slider still multiplies that factor. On the 605-sample demo this
+  reduced overlapping node pairs by about 20% while keeping zero edge
+  crossings.
+
+- **View controls are grouped into an accordion.** The left rail's
+  section 4 is now four collapsible panels — **Layout** (layout mode,
+  cluster filter, fit/reset actions), **Node** (colour, shape, size,
+  labels, search, collapse) and **Edge** (branch-length mode/scale,
+  long branches, weight threshold, edge labels), plus **Display** — with
+  a short open/close animation (disabled under reduced motion).
+
+- **Branch lengths are locked to the allele distance.** The GrapeTree
+  layout now places every child relative to its parent at
+  `radius(parent) + radius(child) + gap(weight)`, so all edges of the
+  same allele distance render at exactly the same visible length
+  (verified to floating-point precision on the demo and the 605-sample
+  set) and the drawn lengths are monotonic in the distance. Previously
+  the global-polar layout produced chords whose length depended on the
+  angle, so two 1-allele edges could look different. The old gamma
+  compression is gone; lengths now follow the branch-length mode
+  directly (`log` for cgMLST, `sqrt`, or `linear`), all sharing one
+  global mapping and the “Branch length scale” slider. The layout stays
+  crossing-free (0 crossings on the 403- and 603-node demo trees) and
+  its hierarchy/walk are iterative, so 10k-deep chains do not overflow
+  the stack.
+
+- **Node size and branch length are user-scalable.** Section 4 has a
+  “Node size scale” slider (0.5–2.0×); node radii and branch lengths are
+  persisted in the URL (`node_scale`, `branch_scale`).
+
+- **MST defaults to a GrapeTree-style layout.** The graph now opens in a
+  new “GrapeTree layout”, modelled on GrapeTree’s own renderer
+  (`d3_m_tree.js`): nodes are placed outward from their parent by
+  *node radii + scaled allele distance*, so equal branches are equal
+  gaps and near-identical profiles touch, while inter-cluster jumps stay
+  long and readable. Distance → gap uses GrapeTree’s `max_link_scale`
+  (500 units) with the chosen branch mode (log/sqrt/linear) and the
+  branch-length slider, so a 2× slider gives 2× gaps. The planar
+  “Radial layout” and the “Tree layout (cladogram)” remain selectable,
+  and the MST backend is already GrapeTree-compatible
+  (`grapetree_classic`: pairwise-delete Hamming distances + Kruskal;
+  `grapetree_v2`: goeBURST v2 with harmonic/eBURST tie-breaking).
 
 - **Web workspace: dark-theme graph canvas and independent view data.**
   The MST canvas, edges, labels, node halos and scale bar now use theme
@@ -18,6 +131,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Graph re-renders from the retained payload, with matrix and heatmap
   data kept side by side. On phones (≤700px) the controls rail starts
   collapsed so the analysis canvas is visible immediately.
+
+### Fixed
+
+- **Node shapes stay attached to the tree.** Choosing “Shape nodes by”
+  drew each symbol at the node's absolute layout coordinates inside a
+  group that was already translated to that position, so shapes landed
+  at twice the coordinates — a scaled copy of the node array detached
+  from the unchanged MST. Shapes now use local coordinates, and the pure
+  `nodeShapePath` helper is unit-tested to stay centred on the origin.
+
+- **Switching layouts refits the view.** Each layout has its own coordinate
+  space (ring radii, cladogram depth, GrapeTree gaps + node radii), so the
+  zoom from the previous layout left the new drawing tiny or clipped. The
+  layout selector now redraws and re-fits, and the chosen layout is
+  persisted in the URL for every mode (previously “tree” was always
+  dropped).
+
+- **Zero-distance branches are drawn again.** Weight-0 edges (profiles
+  that differ only at missing loci) had been filtered out during the
+  crossing work, which left their “0” labels floating without a line. All
+  edges are drawn again (tree layout only skips zero-length branches whose
+  labels are skipped too).
+
+- **Aggregation key normalizes missing tokens.** “-” and “LNF” (and the
+  other missing markers) all mean absent, so profiles that differ only in
+  the missing marker now merge under “Aggregate identical profiles”.
+  Samples that differ in *which* loci are missing intentionally stay
+  separate — missingness is information — and appear connected by a
+  zero-distance branch.
+
+- **Merged nodes are visibly larger.** Node radius scales with member
+  count more strongly (7 + √count × 4.5, capped at 26 px) so aggregated
+  groups are distinguishable at a glance; the label still carries
+  “(+N)”.
+
+- **Radial layout: crossing edges eliminated.** The hierarchy was built
+  by comparing accumulated depths, so zero-weight edges (identical
+  profiles) dropped whole subtrees into separate angular sectors; a
+  force-based “overlap relief” pass then moved nodes off their rings
+  (436 crossing pairs on a 403-node MST). The hierarchy now comes from a
+  BFS spanning tree, angles follow the same tidy-tree ordering as the
+  crossing-free tree view, force nudging is opt-in, and zero-weight edges
+  are drawn as zero-length links. Geometric checks report no crossings
+  above the sub-node-size scale.
+
+- **Tree layout (cladogram): crossing-free, honest branch lengths.**
+  Edges are oriented strictly parent→child (MST edges arrive in arbitrary
+  order), the horizontal segment is the branch (every weight-1 edge
+  measures identically) and the vertical connector is thin, muted
+  scaffolding. Non-tree edges (grapetree shortcut chords) are omitted in
+  tree mode with a notice — they cannot be drawn in a tree layout without
+  crossing; the radial layout still shows them. A geometric check over
+  all rendered edges reports 0 crossings.
+
+- **Clicking a node no longer re-roots the tree.** A single click used to
+  call `setManualRoot`, re-running the layout and visibly restructuring
+  the graph under the cursor. Click now selects/inspects (highlight +
+  table sync); re-rooting is explicit via “Set as tree root” in the
+  Inspection details panel (the existing “Reset root” clears it).
+
+- **Node labels: toggle and field selection.** The graph always rendered
+  a label per node with no way to hide it. Section 4 now has
+  “Show node labels” (off hides them entirely) and “Label nodes by”
+  (Sample ID, Cluster ID, or any metadata field, e.g. country/ST;
+  aggregated values use the first member). Search matches the displayed
+  label as well as the sample ID.
+
+- **MST rendering of large cgMLST tables.** Three issues made a 400-sample
+  cgMLST tree look like a hairball:
+  - Pairwise distance computation normalized every call token for every
+    sample pair (~10^8 string operations; a 405 × 600 table took ~73 s).
+    Profiles are now normalized/masked once per node — same distances,
+    ~4 s per build (17× faster).
+  - The default linear branch-length mode turned 500-allele inter-cluster
+    edges into 25,000-unit branches, squashing clusters into a few pixels.
+    Branch-length mode is now chosen automatically (`log` when the widest
+    edge is ≥ 20 alleles, `linear` otherwise) and can still be overridden;
+    the control shows "(auto)" while automatic.
+  - Default coloring no longer picks high-cardinality fields (e.g. one ST
+    per sample): fields with more than 30 distinct values are excluded
+    from suggestions/defaults (still selectable manually), and the legend
+    caps at 24 chips with a "+N more" indicator plus a scrollable max
+    height, so it can no longer push the graph out of the viewport.
+  - The scale bar is clamped to the observed edge-weight range (it could
+    label a zoomed-out ruler "1000000 alleles" on a tree whose longest
+    edge is ~600) and is hidden when it would be unreadably short.
 
 ### Security
 
@@ -188,6 +387,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
+- **MST defaults to the radial layout.** A minimum spanning tree is not a
+  cladogram: the tree view is retained as an explicit “Tree layout
+  (cladogram)” option, while the radial view is now the default (also for
+  `?layout=` URLs and saved sessions that do not pin a layout).
+
+### Fixed
+
+- **Radial layout: crossing edges (436 → 2 sub-pixel artifacts).** The
+  radial hierarchy was built by comparing accumulated depths, so
+  zero-weight edges (identical profiles) dropped whole subtrees into
+  separate angular sectors; a force-based “overlap relief” pass then moved
+  nodes off their rings. The hierarchy now comes from a BFS spanning tree,
+  angles from the same tidy-tree ordering used by the (crossing-free) tree
+  view, force nudging is opt-in, and zero-weight edges are not drawn.
+
 - The default alignment engine is now `gseek` (`GMLST_ENGINE=gseek`).
   `gseek>=0.10.2` is a core dependency, `legacy` remains available as an
   explicit opt-out, and `shadow` still compares both engines. If gseek is

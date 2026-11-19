@@ -1259,7 +1259,16 @@ input:focus-visible {
   font-size: 12px;
   color: var(--muted);
   max-width: 56%;
+  max-height: 110px;
+  overflow-y: auto;
   align-items: center;
+}
+
+.legend-more {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: default;
 }
 
 .legend-title {
@@ -2014,4 +2023,37 @@ input:focus-visible {
   color: var(--text-2);
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
+}
+
+/* ── View-control accordion ─────────────────────────── */
+.view-group {
+  margin-top: 10px;
+}
+
+.view-group summary {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+}
+
+.view-group[open] > .foldout-body {
+  animation: view-group-in 140ms ease-out;
+}
+
+@keyframes view-group-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-group[open] > .foldout-body {
+    animation: none;
+  }
 }

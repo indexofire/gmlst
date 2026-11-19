@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 
 import { MAX_FILE_SIZE, readFileWithSizeCheck, parseSessionPayload } from "./fileInput.js";
 
-test("MAX_FILE_SIZE is 64 MiB", () => {
-  assert.equal(MAX_FILE_SIZE, 64 * 1024 * 1024);
+test("MAX_FILE_SIZE allows 10k x 3k cgMLST tables", () => {
+  assert.equal(MAX_FILE_SIZE, 512 * 1024 * 1024);
 });
 
 test("readFileWithSizeCheck returns text for small files", async () => {

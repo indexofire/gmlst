@@ -32,16 +32,22 @@ import {
   aggregateGraph,
   colorMapFor,
   colorValueForNode,
-  correctBranchLengths,
   edgeKey,
   edgeLength,
   filteredEdges,
   getDescendants,
+  graphBounds,
+  grapetreeGap,
   greedyRadialLayout,
+  LAYOUT_CENTER_X,
+  LAYOUT_CENTER_Y,
+  LAYOUT_MAX_RADIUS,
   highlightedPathEdges,
   highlightedPathNodes,
   legendItemStyle,
+  autoNodeScale,
   nodeRadius,
+  nodeShapePath,
   parseMaxWeight,
   resolveCollapsedNodeSet,
 } from "./visualLayout.js";
@@ -110,12 +116,22 @@ export default {
       isFullscreen: false,
       theme: "auto",
       tsvText: "",
+      // Large files are kept in memory but never mirrored into the textarea:
+      // a 4 MB TSV in a DOM <textarea> costs ~15 s of layout on first paint.
+      tsvFromFile: false,
+      tsvFileName: "",
       metadataText: "",
+      metadataFromFile: false,
+      metadataFileName: "",
       includeMissing: false,
       aggregateProfiles: true,
       showEdgeLabels: true,
       scaleNodeSize: true,
-      overlapRelief: true,
+      overlapRelief: false,
+      showNodeLabels: true,
+      nodeLabelField: "",
+      nodeScale: 1,
+      hiddenNonTreeEdges: 0,
       analysisView: "graph",
       viewTabs: [
         { id: "graph", label: "Graph" },
@@ -125,8 +141,9 @@ export default {
         { id: "summary", label: "Summary" },
         { id: "compare", label: "Compare" },
       ],
-      layoutMode: "tree",
+      layoutMode: "grapetree",
       edgeLengthMode: "linear",
+      edgeLengthModeAuto: true,
       edgeLengthScale: 50,
       longBranchMode: "normal",
       longBranchThreshold: 0,
@@ -217,6 +234,26 @@ export default {
   computed: {
     hasProfileInput() {
       return this.tsvText.trim().length > 0;
+    },
+    tsvInputValue() {
+      return this.tsvFromFile ? "" : this.tsvText;
+    },
+    tsvPlaceholder() {
+      if (this.tsvFromFile) {
+        const source = this.tsvFileName || "file";
+        return `Loaded from ${source} — paste text here to replace it`;
+      }
+      return "Paste cgMLST TSV or #Strain profile here";
+    },
+    metadataInputValue() {
+      return this.metadataFromFile ? "" : this.metadataText;
+    },
+    metadataPlaceholder() {
+      if (this.metadataFromFile) {
+        const source = this.metadataFileName || "file";
+        return `Loaded from ${source} — paste text here to replace it`;
+      }
+      return "Optional metadata table with ID column or first-column sample IDs";
     },
     profilePreview() {
       const text = this.tsvText.trim();
@@ -341,6 +378,15 @@ export default {
     },
     selectedTableNodeId() {
       return selectedNodeId(this.inspectedItem);
+    },
+    tableRenderLimit() {
+      return 500;
+    },
+    visibleTableRows() {
+      return this.filteredTableRows.slice(0, this.tableRenderLimit);
+    },
+    tableTruncated() {
+      return this.filteredTableRows.length > this.tableRenderLimit;
     },
     filteredTableRows() {
       return sortTableRows(
@@ -561,9 +607,11 @@ export default {
       if (!query) {
         return nodes.length;
       }
-      return nodes.filter((node) =>
-        String(node.label || "").toLowerCase().includes(query),
-      ).length;
+      return nodes.filter((node) => {
+        const label = String(node.label || "").toLowerCase();
+        const shown = String(this.nodeLabelText(node) || "").toLowerCase();
+        return label.includes(query) || shown.includes(query);
+      }).length;
     },
     nodeSearchTotal() {
       return Array.isArray(this.currentRenderedGraph?.nodes)
@@ -621,6 +669,8 @@ export default {
     shapeBy() { this.syncViewStateToUrl(); },
     layoutMode() { this.syncViewStateToUrl(); },
     aggregateProfiles() { this.syncViewStateToUrl(); },
+    nodeScale() { this.syncViewStateToUrl(); },
+    edgeLengthScale() { this.syncViewStateToUrl(); },
   },
   mounted() {
     this._boundCanvas = null;
@@ -695,7 +745,13 @@ export default {
       const params = new URLSearchParams();
       if (this.colorBy) params.set("color", this.colorBy);
       if (this.shapeBy) params.set("shape", this.shapeBy);
-      if (this.layoutMode !== "tree") params.set("layout", this.layoutMode);
+      if (this.nodeScale !== 1) params.set("node_scale", String(this.nodeScale));
+      if (this.edgeLengthScale !== 50) {
+        params.set("branch_scale", String(this.edgeLengthScale));
+      }
+      if (this.layoutMode !== "grapetree") {
+        params.set("layout", this.layoutMode);
+      }
       if (this.theme !== "auto") params.set("theme", this.theme);
       if (this.aggregateProfiles !== true) params.set("agg", "0");
       const hash = params.toString();
@@ -711,12 +767,22 @@ export default {
       const agg = params.get("agg");
       if (color) this.colorBy = color;
       if (shape) this.shapeBy = shape;
-      if (layout && ["tree", "radial"].includes(layout)) this.layoutMode = layout;
+      if (layout && ["tree", "radial", "grapetree"].includes(layout)) {
+        this.layoutMode = layout;
+      }
       if (theme && ["light", "dark"].includes(theme)) {
         this.theme = theme;
         document.documentElement.setAttribute("data-theme", theme);
       }
       if (agg === "0") this.aggregateProfiles = false;
+      const nodeScale = Number(params.get("node_scale"));
+      if (Number.isFinite(nodeScale) && nodeScale >= 0.5 && nodeScale <= 2) {
+        this.nodeScale = nodeScale;
+      }
+      const branchScale = Number(params.get("branch_scale"));
+      if (Number.isFinite(branchScale) && branchScale >= 10 && branchScale <= 100) {
+        this.edgeLengthScale = branchScale;
+      }
     },
     initTheme() {
       const saved = localStorage.getItem("gmlst-theme");
@@ -826,21 +892,6 @@ export default {
         hash = ((hash << 5) - hash + str.charCodeAt(i)) & 0xffffffff;
       }
       return Math.abs(hash) % 5;
-    },
-    shapePath(idx, cx, cy, r) {
-      switch (idx) {
-        case 0:
-          return `M${cx - r},${cy} a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 -${r * 2},0`;
-        case 1:
-          return `M${cx - r * 0.9},${cy - r * 0.9} h${r * 1.8} v${r * 1.8} h-${r * 1.8} z`;
-        case 2:
-          return `M${cx},${cy - r} L${cx + r * 0.95},${cy + r * 0.7} L${cx - r * 0.95},${cy + r * 0.7} z`;
-        case 3:
-          return `M${cx},${cy - r} L${cx + r},${cy} L${cx},${cy + r} L${cx - r},${cy} z`;
-        default:
-          const ir = r * 0.5;
-          return `M${cx - r},${cy - r * 0.4} L${cx - ir},${cy - r} L${cx + ir},${cy - r} L${cx + r},${cy - r * 0.4} L${cx + r},${cy + r * 0.4} L${cx + ir},${cy + r} L${cx - ir},${cy + r} L${cx - r},${cy + r * 0.4} z`;
-      }
     },
     cycleTheme() {
       const order = ["auto", "light", "dark"];
@@ -1052,6 +1103,16 @@ export default {
     switchAnalysisView(viewId) {
       this.analysisView = viewId;
     },
+    onTsvInput(event) {
+      this.tsvFromFile = false;
+      this.tsvFileName = "";
+      this.tsvText = event.target.value;
+    },
+    onMetadataInput(event) {
+      this.metadataFromFile = false;
+      this.metadataFileName = "";
+      this.metadataText = event.target.value;
+    },
     async onFileChange(event) {
       const file = event.target.files?.[0];
       if (!file) {
@@ -1059,6 +1120,8 @@ export default {
       }
       try {
         this.tsvText = await readFileWithSizeCheck(file);
+        this.tsvFromFile = true;
+        this.tsvFileName = file.name;
         this.setStatus("ok", "Profile loaded");
       } catch (error) {
         this.setStatus("error", error.message);
@@ -1071,6 +1134,8 @@ export default {
       }
       try {
         this.metadataText = await readFileWithSizeCheck(file);
+        this.metadataFromFile = true;
+        this.metadataFileName = file.name;
         this.setStatus("ok", "Metadata loaded");
       } catch (error) {
         this.setStatus("error", error.message);
@@ -1089,6 +1154,42 @@ export default {
         this.setStatus("error", `Failed to load session: ${error.message}`);
       }
     },
+    nodeLabelText(node) {
+      const field = this.nodeLabelField;
+      if (!field) {
+        return node.label;
+      }
+      if (field === "cluster_id") {
+        const cluster = node.cluster_id;
+        return cluster === undefined || cluster === null || String(cluster) === "-1"
+          ? node.label
+          : String(cluster);
+      }
+      const raw = node.meta?.[field];
+      if (raw === undefined || raw === null || String(raw).trim() === "") {
+        return node.label;
+      }
+      // Aggregated nodes join differing member values with " | "; keep the
+      // first value so labels stay compact.
+      return String(raw).split(" | ")[0];
+    },
+    _autoEdgeLengthMode(data) {
+      // Linear branch lengths only make sense when the allele-distance
+      // range is narrow (classical MLST). cgMLST distances reach tens to
+      // hundreds of alleles, which would compress dense clusters into a
+      // hairball; logarithmic scaling keeps the tree readable.
+      const weights = (data?.edges || [])
+        .map((edge) => Number(edge.weight) || 0)
+        .filter((weight) => weight > 0);
+      if (!weights.length) {
+        return "linear";
+      }
+      return Math.max(...weights) >= 20 ? "log" : "linear";
+    },
+    onEdgeLengthModeChange() {
+      this.edgeLengthModeAuto = false;
+      this.redrawFromLastData();
+    },
     graphTheme() {
       const styles = getComputedStyle(document.documentElement);
       const read = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
@@ -1106,6 +1207,7 @@ export default {
         labelTextStrong: read("--graph-label-text-strong", "#0f172a"),
         scaleBg: read("--graph-scale-bg", "rgba(255, 255, 255, 0.85)"),
         scaleStroke: read("--graph-scale-stroke", "rgba(203, 213, 225, 0.6)"),
+        edgeConnector: read("--graph-edge-connector", "rgba(100, 116, 139, 0.55)"),
       };
     },
     formatNumber,
@@ -1114,6 +1216,7 @@ export default {
       this.statusMessage = message;
     },
     clearSvg() {
+      this._graphBounds = null;
       const svg = this.$refs.svg;
       if (!svg) {
         this.graphGroup = null;
@@ -1264,7 +1367,17 @@ export default {
         this.applyViewTransform();
         return;
       }
-      const bbox = this.graphGroup.getBBox();
+      // Use the drawn node bounds instead of graphGroup.getBBox(): measuring
+      // a 600-node MST with hundreds of text labels takes ~6s in Chromium.
+      const bounds = this._graphBounds;
+      const bbox = bounds
+        ? {
+            x: bounds.minX - 12,
+            y: bounds.minY - 12,
+            width: bounds.maxX - bounds.minX + 24,
+            height: bounds.maxY - bounds.minY + 24,
+          }
+        : this.graphGroup.getBBox();
       if (!bbox.width || !bbox.height) {
         this.view.scale = 1;
         this.view.tx = 0;
@@ -1317,14 +1430,17 @@ export default {
     },
     showEdgeTooltip(edge, event) {
       const mismatchLoci = edge.mismatch_loci || [];
+      const mismatchCount = Number(edge.mismatch_count ?? mismatchLoci.length);
       const lines = [
         `distance: ${edge.weight}`,
         `source: ${edge.source_label}`,
         `target: ${edge.target_label}`,
-        `mismatch loci: ${mismatchLoci.length}`,
+        `mismatch loci: ${mismatchCount}`,
       ];
       if (mismatchLoci.length) {
         lines.push(`loci: ${mismatchLoci.join(", ")}`);
+      } else if (mismatchCount > 0) {
+        lines.push("locus list omitted for large trees — use Compare for details");
       }
       const point = this.eventClientPoint(event);
       if (!point) {
@@ -1475,6 +1591,24 @@ export default {
       this._customNodeColors = {};
       this.redrawFromLastData();
     },
+    selectGraphNode(node) {
+      // Single click inspects/highlights; re-rooting the tree is an
+      // explicit action (Inspection details → “Set as tree root”) so the
+      // layout never jumps underneath the cursor.
+      const members = Array.isArray(node.members) ? node.members : [];
+      const row = {
+        id: node.id,
+        label: node.label,
+        sample_id: members[0] || node.label,
+        member_count: node.member_count || 1,
+        members: members.length ? members : [node.label],
+        cluster_id: node.cluster_id,
+        meta: node.meta || {},
+      };
+      this.inspectedItem = buildNodeInspection(row);
+      this.focusSelectedTableRow();
+      this.redrawFromLastData();
+    },
     setManualRoot(nodeId) {
       this.manualRootId = nodeId;
       this.redrawFromLastData();
@@ -1520,8 +1654,17 @@ export default {
     },
     applySessionPayload(payload) {
       Object.assign(this, parseSessionState(payload));
+      // Restored sessions carry the full inputs; keep multi-megabyte text out
+      // of the textareas (see the note on tsvFromFile).
+      this.tsvFromFile = this.tsvText.length > 50_000;
+      this.tsvFileName = this.tsvFromFile ? "saved session" : "";
+      this.metadataFromFile = this.metadataText.length > 50_000;
+      this.metadataFileName = this.metadataFromFile ? "saved session" : "";
       this.nodeSearchActive = Boolean(this.nodeSearchQuery.trim());
       this.hoveredLegendValue = null;
+      if (this.edgeLengthModeAuto && this.graphSource) {
+        this.edgeLengthMode = this._autoEdgeLengthMode(this.graphSource);
+      }
       this.fitView();
       if (this.lastData) {
         this.$nextTick(() => {
@@ -1546,12 +1689,24 @@ export default {
         candidates.push(base, 2 * base, 5 * base);
       }
 
-      let barWeight = candidates[0];
+      // Never label the ruler with a weight the data does not contain:
+      // at strong zoom-out the rendered lengths of huge candidates happen
+      // to land in the pixel range (e.g. "1000000 alleles" on a cgMLST
+      // tree whose longest edge is ~600).
+      const dataMax = Number(this.edgeWeightMax) || 0;
+      const pool = dataMax
+        ? candidates.filter((value) => value <= dataMax)
+        : candidates;
+      const allowed = pool.length ? pool : [Math.max(1, dataMax)];
+
+      let barWeight = allowed[0];
       let bestInRange = null;
       let bestFallback = null;
 
-      for (const value of candidates) {
-        const renderedLength = edgeLength(value, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
+      for (const value of allowed) {
+        const renderedLength = this._edgeUnitFor && Number(this._edgeUnitPx) > 0
+          ? this._edgeUnitFor(value) * Number(this._edgeUnitPx) * viewScale
+          : edgeLength(value, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
         const candidate = {
           value,
           renderedLength,
@@ -1574,7 +1729,14 @@ export default {
         barWeight = bestFallback.value;
       }
 
-      const barLen = edgeLength(barWeight, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
+      const unitFor = this._edgeUnitFor;
+      const unitPx = Number(this._edgeUnitPx) || 0;
+      const barLen = unitFor && unitPx > 0
+        ? unitFor(barWeight) * unitPx * viewScale
+        : edgeLength(barWeight, this.edgeLengthMode, this.edgeLengthScale) * viewScale;
+      if (barLen < 12) {
+        return;  // too small to read; omit instead of drawing a fake ruler
+      }
       const vb = svg.viewBox.baseVal;
       const svgH = vb.height || 900;
       const x = 30;
@@ -1662,7 +1824,10 @@ export default {
             y: point[1],
             baseX: point[0],
             baseY: point[1],
-            radius: nodeRadius(node, this.scaleNodeSize),
+            radius:
+              nodeRadius(node, this.scaleNodeSize) *
+              this.nodeScale *
+              this._autoNodeScale,
           };
         })
         .filter(Boolean);
@@ -1751,6 +1916,23 @@ export default {
         return String(leftNode?.label || "").localeCompare(String(rightNode?.label || ""));
       };
 
+      // Branch units: one global, monotonic mapping from allele distance to
+      // drawn length. The same weight always gets the same length, whatever
+      // the layout or the node sizes. Log keeps cgMLST's 1..3000 range
+      // readable; sqrt and linear are available in the branch-length mode
+      // selector.
+      const maxLink = Math.max(
+        1,
+        ...edges.map((edge) => Number(edge.weight) || 0),
+      );
+      const unitFor = (weight) =>
+        grapetreeGap(weight, maxLink, this.edgeLengthMode, 1);
+      // Branch-length scale slider: ratios in data units (fitView then
+      // normalises the drawing, so this changes branches relative to nodes).
+      const layoutScale = Math.max(0.2, Number(this.edgeLengthScale) / 50);
+      this._edgeUnitFor = unitFor;
+
+      const linkWeightByChild = new Map();
       const visit = (startId, componentIndex) => {
         componentRoots.push(startId);
         const queue = [startId];
@@ -1765,7 +1947,11 @@ export default {
               continue;
             }
             parent.set(next.id, current);
-            depth.set(next.id, (depth.get(current) || 0) + edgeLength(next.weight, this.edgeLengthMode, this.edgeLengthScale));
+            linkWeightByChild.set(next.id, Number(next.weight) || 0);
+            depth.set(
+              next.id,
+              (depth.get(current) || 0) + unitFor(next.weight),
+            );
             componentByNode.set(next.id, componentIndex);
             children.get(current)?.push(next.id);
             queue.push(next.id);
@@ -1784,12 +1970,29 @@ export default {
         }
       }
 
-      const buildHierarchyNode = (nodeId) => ({
-        id: nodeId,
-        label: nodeById.get(nodeId)?.label || String(nodeId),
-        nodeRef: nodeById.get(nodeId),
-        children: (children.get(nodeId) || []).map((childId) => buildHierarchyNode(childId)),
-      });
+      const buildHierarchyNode = (rootId) => {
+        const root = {
+          id: rootId,
+          label: nodeById.get(rootId)?.label || String(rootId),
+          nodeRef: nodeById.get(rootId),
+          children: [],
+        };
+        const pending = [root];
+        while (pending.length > 0) {
+          const current = pending.pop();
+          for (const childId of children.get(current.id) || []) {
+            const child = {
+              id: childId,
+              label: nodeById.get(childId)?.label || String(childId),
+              nodeRef: nodeById.get(childId),
+              children: [],
+            };
+            current.children.push(child);
+            pending.push(child);
+          }
+        }
+        return root;
+      };
 
       const syntheticRoot = {
         id: "__root__",
@@ -1813,11 +2016,13 @@ export default {
           ...descendants.map((node) => depth.get(node.data.id) || 0),
           1,
         );
-        const maxTreeY = Math.max(...descendants.map((node) => node.y), 1) * 180;
+        const maxTreeY =
+          Math.max(...descendants.map((node) => node.y), 1) * 180 * layoutScale;
         descendants.forEach((node) => {
           const weightedDepth = depth.get(node.data.id) || 0;
           node.y = maxWeightedDepth > 0 ? (weightedDepth / maxWeightedDepth) * maxTreeY : node.y * 180;
         });
+        this._edgeUnitPx = maxTreeY / maxWeightedDepth;
         const minX = Math.min(...descendants.map((node) => node.x), 0);
         descendants.forEach((node) => {
           positions.set(node.data.id, [node.y, node.x - minX + 90]);
@@ -1827,8 +2032,11 @@ export default {
             positions.set(Number(nodeId), point);
           }
         });
+        // A tidy tree is already planar: force-based "overlap relief"
+        // displaces nodes off the grid and makes edges cross, so it only
+        // applies to the radial layout.
         return {
-          positions: this.applyOverlapRelief(nodes, edges, positions),
+          positions,
           rootId: effectiveRoot,
           parent,
           depth,
@@ -1837,8 +2045,128 @@ export default {
         };
       }
 
-      let radialPositions = greedyRadialLayout(nodes, edges, effectiveRoot, depth);
-      radialPositions = correctBranchLengths(nodes, edges, radialPositions, depth);
+      if (layoutMode === "grapetree") {
+        // GrapeTree layout with locked branch lengths. Each child is placed
+        // *relative to its parent* at `radius(parent) + radius(child) +
+        // gap(weight)`, so every edge of the same allele distance has the
+        // same outline-to-outline length regardless of where it points.
+        // Directions follow the tidy-tree leaf order, which spreads leaves
+        // across the full circle instead of packing them into a narrow
+        // wedge.
+        const nodeRadiusById = new Map(
+          nodes.map((node) => [
+            node.id,
+            nodeRadius(node, this.scaleNodeSize) *
+              this.nodeScale *
+              this._autoNodeScale,
+          ]),
+        );
+        // Gap between the two node outlines; the slider is a linear
+        // multiplier on the 500-unit link scale.
+        const gapScale = Math.max(0.2, Number(this.edgeLengthScale) / 50);
+        const gapOf = (weight) => unitFor(weight) * gapScale;
+        d3.tree().nodeSize([58, 1]).separation(separation)(hierarchy);
+        const tidyNodes = hierarchy
+          .descendants()
+          .filter((item) => item.data.id !== "__root__");
+        const tidyXs = tidyNodes.map((item) => item.x);
+        const minTidyX = Math.min(...tidyXs);
+        const spanTidyX = Math.max(...tidyXs) - minTidyX || 1;
+        const tidyAngle = new Map(
+          tidyNodes.map((item) => [
+            item.data.id,
+            ((item.x - minTidyX) / spanTidyX) * 2 * Math.PI - Math.PI / 2,
+          ]),
+        );
+        const graphPositions = new Map();
+        const edgeDistance = (parentItem, childId) => {
+          const parentRadius = nodeRadiusById.get(parentItem.data.id) ?? 0;
+          const childRadius = nodeRadiusById.get(childId) ?? 10;
+          return (
+            parentRadius +
+            childRadius +
+            gapOf(linkWeightByChild.get(childId) || 0)
+          );
+        };
+
+        const placeTree = (rootItem, rootOrigin) => {
+          graphPositions.set(rootItem.data.id, rootOrigin);
+          const pending = [[rootItem, rootOrigin]];
+          while (pending.length > 0) {
+            const [item, origin] = pending.pop();
+            for (const kid of item.children || []) {
+              const childId = kid.data.id;
+              const direction = tidyAngle.get(childId) ?? 0;
+              const distance = edgeDistance(item, childId);
+              const childOrigin = [
+                origin[0] + Math.cos(direction) * distance,
+                origin[1] + Math.sin(direction) * distance,
+              ];
+              graphPositions.set(childId, childOrigin);
+              pending.push([kid, childOrigin]);
+            }
+          }
+        };
+
+        const roots = hierarchy.children || [];
+        roots.forEach((rootItem, index) => {
+          // Usually a single component: park its root at the centre. A
+          // forest is spread out so the trees do not overlap.
+          const spread = (index - (roots.length - 1) / 2) * 2400;
+          placeTree(rootItem, [LAYOUT_CENTER_X + spread, LAYOUT_CENTER_Y]);
+        });
+
+        Object.entries(this.nodePositionOverrides).forEach(([nodeId, point]) => {
+          if (graphPositions.has(Number(nodeId))) {
+            graphPositions.set(Number(nodeId), point);
+          }
+        });
+        this._edgeUnitFor = gapOf;
+        this._edgeUnitPx = 1;
+        return {
+          positions: graphPositions,
+          rootId: effectiveRoot,
+          parent,
+          depth,
+          componentByNode,
+          componentCount: componentRoots.length,
+        };
+      }
+
+      // Radial layout derived from the same tidy tree: the angle comes
+      // from the tidy x-ordering (sibling subtrees occupy disjoint angular
+      // sectors) and the radius from accumulated weighted depth. This keeps
+      // the drawing planar by construction — the previous greedy radial
+      // allocation could place a parent and child at overlapping angles.
+      d3.tree().nodeSize([58, 1]).separation(separation)(hierarchy);
+      const radialDescendants = hierarchy
+        .descendants()
+        .filter((node) => node.data.id !== "__root__");
+      const radialMaxDepth = Math.max(
+        ...radialDescendants.map((node) => depth.get(node.data.id) || 0),
+        1,
+      );
+      this._edgeUnitPx =
+        (LAYOUT_MAX_RADIUS * layoutScale) / radialMaxDepth;
+      const radialXs = radialDescendants.map((node) => node.x);
+      const radialMinX = Math.min(...radialXs);
+      const radialSpanX = Math.max(...radialXs) - radialMinX || 1;
+      const radialPositions = new Map();
+      radialDescendants.forEach((node) => {
+        const angle =
+          ((node.x - radialMinX) / radialSpanX) * 2 * Math.PI - Math.PI / 2;
+        const radius =
+          ((depth.get(node.data.id) || 0) / radialMaxDepth) *
+          LAYOUT_MAX_RADIUS *
+          layoutScale;
+        radialPositions.set(node.data.id, [
+          LAYOUT_CENTER_X + radius * Math.cos(angle),
+          LAYOUT_CENTER_Y + radius * Math.sin(angle),
+        ]);
+      });
+      // No force-based displacement: it moves nodes off their rings and
+      // turns the radial tree into crossing chords. Overlap tuning is
+      // available explicitly via the "nudge" switch (opt-in).
       const componentByNodeRadial = componentByNode;
       const componentCountRadial = componentRoots.length;
       Object.entries(this.nodePositionOverrides).forEach(([nodeId, point]) => {
@@ -1847,7 +2175,9 @@ export default {
         }
       });
       return {
-        positions: this.applyOverlapRelief(nodes, edges, radialPositions),
+        positions: this.overlapRelief
+          ? this.applyOverlapRelief(nodes, edges, radialPositions)
+          : radialPositions,
         rootId: effectiveRoot,
         parent,
         depth,
@@ -1905,6 +2235,10 @@ export default {
       const activeGraph = this.aggregateNodes
         ? aggregateGraph(rawNodes, rawEdges)
         : { nodes: rawNodes, edges: rawEdges };
+      // Dense graphs need smaller circles relative to branch lengths,
+      // otherwise neighbouring leaves overlap; the user can still scale
+      // them with the node-size slider.
+      this._autoNodeScale = autoNodeScale(activeGraph.nodes.length);
       const maxWeight = parseMaxWeight(this.maxWeight);
       const visibleEdges = filteredEdges(activeGraph.edges, maxWeight);
       const fullLayoutData = this.computePositions(
@@ -2017,7 +2351,10 @@ export default {
             x: point[0],
             y: point[1],
             color: this._customNodeColors[String(node.id)] || colorMap.get(legendValue) || "#2563eb",
-            radius: nodeRadius(node, this.scaleNodeSize),
+            radius:
+              nodeRadius(node, this.scaleNodeSize) *
+              this.nodeScale *
+              this._autoNodeScale,
             isRoot,
             sameComponent,
             isSelected:
@@ -2184,6 +2521,7 @@ export default {
     },
     _buildRenderContext(prepared, scaffold) {
       const {
+        layoutData,
         collapseSet,
         selectedNode,
         highlightedEdgeKeys,
@@ -2268,6 +2606,7 @@ export default {
         colorByField,
         selectedNode,
         highlightedEdgeKeys,
+        parentMap: layoutData.parent,
         edgeShade,
         edgeWeightSpan,
         minEdgeWeight,
@@ -2310,8 +2649,10 @@ export default {
         if (edge.inHighlightedPath) {
           return 3.2;
         }
+        // Near-distance links (0-1 alleles) read as thin connectors;
+        // thicker strokes are reserved for long inter-cluster jumps.
         const normalized = ((Number(edge.weight) || 0) - minEdgeWeight) / edgeWeightSpan;
-        return 3.1 - normalized * 1.8;
+        return 1.2 + normalized * 1.0;
       };
       const edgeStrokeDasharray = (edge) => {
         if (longBranchMode === "shorten" && isLongBranch(edge)) {
@@ -2321,54 +2662,243 @@ export default {
         return normalized >= 0.72 ? "5 4" : null;
       };
       const edgeGroup = graph.append("g").attr("class", "edges");
-      const edgeSelection = this.layoutMode === "tree"
-        ? edgeGroup
-          .selectAll("path")
-          .data(finalGraph.edges)
+      const edgeHover = (_event, edge) => {
+        setTooltipAccent("#334155");
+        this.showEdgeTooltip(edge, _event);
+      };
+      if (this.layoutMode === "tree") {
+        // Classic rectangular phylogram drawn from the hierarchy only:
+        //  - one horizontal branch per tree edge (length = allele distance)
+        //    at the child's row,
+        //  - one thin vertical connector per parent spanning its children's
+        //    rows (pure scaffolding).
+        // Non-tree edges (grapetree shortcuts / chords) cannot be drawn in
+        // a tree layout without crossing, so they are omitted and reported.
+        const parentMap = context.parentMap || new Map();
+        const isTreeEdge = (edge) =>
+          parentMap.get(edge.target) === edge.source ||
+          parentMap.get(edge.source) === edge.target;
+        const treeEdges = finalGraph.edges.filter(isTreeEdge);
+        const hidden = finalGraph.edges.length - treeEdges.length;
+        if (hidden !== this.hiddenNonTreeEdges) {
+          this.hiddenNonTreeEdges = hidden;
+        }
+
+        // MST edges are stored in arbitrary order; orient each one from
+        // the hierarchy parent to the child so the horizontal branch sits
+        // on the child's row and the connector starts exactly at the
+        // parent's x.
+        const oriented = treeEdges.map((edge) => {
+          const forward = parentMap.get(edge.target) === edge.source;
+          return {
+            edge,
+            parentId: forward ? edge.source : edge.target,
+            parentPoint: forward ? edge.sourcePoint : edge.targetPoint,
+            childPoint: forward ? edge.targetPoint : edge.sourcePoint,
+          };
+        });
+        const connectors = new Map();
+        for (const item of oriented) {
+          const entry = connectors.get(item.parentId) || {
+            x: item.parentPoint[0],
+            ys: [],
+          };
+          entry.ys.push(item.childPoint[1]);
+          connectors.set(item.parentId, entry);
+        }
+        edgeGroup
+          .append("g")
+          .attr("class", "edge-connectors")
+          .selectAll("line")
+          .data([...connectors.values()])
+          .enter()
+          .append("line")
+          .attr("x1", (item) => item.x)
+          .attr("x2", (item) => item.x)
+          .attr("y1", (item) => Math.min(...item.ys))
+          .attr("y2", (item) => Math.max(...item.ys))
+          .attr("stroke", gtheme.edgeConnector)
+          .attr("stroke-width", 0.9)
+          .attr("stroke-opacity", 0.75)
+          .style("pointer-events", "none");
+
+        edgeGroup
+          .selectAll("path.edge-branch")
+          .data(
+            oriented.filter(
+              (item) =>
+                Number(item.edge.weight) > 0 &&
+                item.childPoint[0] - item.parentPoint[0] >= 1,
+            ),
+          )
           .enter()
           .append("path")
-          .attr("d", (edge) => {
-            const x1 = edge.sourcePoint[0];
-            const y1 = edge.sourcePoint[1];
-            const x2 = edge.targetPoint[0];
-            const y2 = edge.targetPoint[1];
-            const midX = (x1 + x2) / 2;
-            return `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
-          })
+          .attr("class", "edge-branch")
           .attr("fill", "none")
-        : edgeGroup
-          .selectAll("line")
+          .attr(
+            "d",
+            (item) =>
+              `M${item.parentPoint[0]},${item.childPoint[1]} H${item.childPoint[0]}`,
+          )
+          .attr("stroke", (item) => edgeStroke(item.edge))
+          .attr("stroke-width", (item) => edgeStrokeWidth(item.edge))
+          .attr("stroke-dasharray", (item) => edgeStrokeDasharray(item.edge))
+          .attr("stroke-linecap", "round")
+          .attr("stroke-opacity", edgeOpacity)
+          .on("mousemove", (_event, item) => edgeHover(_event, item.edge))
+          .on("mouseleave", this.hideTooltip);
+      } else if (this.layoutMode === "grapetree") {
+        // GrapeTree draws plain links: the distance between the two node
+        // centres already equals node radii + scaled allele distance, so a
+        // straight line is exactly proportional to the branch.
+        edgeGroup
+          .selectAll("line.edge-grapetree")
           .data(finalGraph.edges)
           .enter()
           .append("line")
+          .attr("class", "edge-grapetree")
+          .attr("data-weight", (edge) => Number(edge.weight) || 0)
           .attr("x1", (edge) => edge.sourcePoint[0])
           .attr("y1", (edge) => edge.sourcePoint[1])
           .attr("x2", (edge) => edge.targetPoint[0])
-          .attr("y2", (edge) => edge.targetPoint[1]);
-      edgeSelection
-        .attr("stroke", edgeStroke)
-        .attr("stroke-width", edgeStrokeWidth)
-        .attr("stroke-dasharray", edgeStrokeDasharray)
-        .attr("stroke-linecap", "round")
-        .attr("stroke-opacity", edgeOpacity)
-        .on("mousemove", (_event, edge) => {
-          setTooltipAccent("#334155");
-          this.showEdgeTooltip(edge, _event);
-        })
-        .on("mouseleave", this.hideTooltip);
+          .attr("y2", (edge) => edge.targetPoint[1])
+          .attr("stroke", (edge) => edgeStroke(edge))
+          .attr("stroke-width", (edge) => edgeStrokeWidth(edge))
+          .attr("stroke-dasharray", (edge) => edgeStrokeDasharray(edge))
+          .attr("stroke-linecap", "round")
+          .attr("stroke-opacity", (edge) => edgeOpacity(edge))
+          .on("mousemove", edgeHover)
+          .on("mouseleave", this.hideTooltip);
+      } else {
+        // Radial phylogram: the radial segment encodes the branch length
+        // (straight chords mix in the tangential displacement, which made
+        // 1-allele and 500-allele branches look alike); the circular arc is
+        // layout scaffolding drawn thin and muted.
+        const centre = { x: LAYOUT_CENTER_X, y: LAYOUT_CENTER_Y };
+        const polar = (point) => ({
+          angle: Math.atan2(point[1] - centre.y, point[0] - centre.x),
+          radius: Math.hypot(point[0] - centre.x, point[1] - centre.y),
+        });
+        const toXY = (angle, radius) => [
+          centre.x + radius * Math.cos(angle),
+          centre.y + radius * Math.sin(angle),
+        ];
+        const parentMap = context.parentMap || new Map();
+        const orientedRadial = finalGraph.edges.map((edge) => {
+          const forward = parentMap.get(edge.target) === edge.source;
+          const parentPolar = polar(forward ? edge.sourcePoint : edge.targetPoint);
+          const childPolar = polar(forward ? edge.targetPoint : edge.sourcePoint);
+          const delta = Math.atan2(
+            Math.sin(childPolar.angle - parentPolar.angle),
+            Math.cos(childPolar.angle - parentPolar.angle),
+          );
+          return {
+            edge,
+            parentPolar,
+            childPolar,
+            delta,
+            radialFrom: toXY(parentPolar.angle, parentPolar.radius),
+            radialTo: toXY(parentPolar.angle, childPolar.radius),
+            arcFrom: toXY(parentPolar.angle, childPolar.radius),
+            arcTo: toXY(childPolar.angle, childPolar.radius),
+          };
+        });
+
+        edgeGroup
+          .selectAll("path.edge-arc")
+          .data(orientedRadial.filter((item) => Math.abs(item.delta) > 1e-4))
+          .enter()
+          .append("path")
+          .attr("class", "edge-arc")
+          .attr("fill", "none")
+          .attr("d", (item) => {
+            const largeArc = Math.abs(item.delta) > Math.PI ? 1 : 0;
+            const sweep = item.delta > 0 ? 1 : 0;
+            return `M${item.arcFrom[0]},${item.arcFrom[1]} A${item.childPolar.radius},${item.childPolar.radius} 0 ${largeArc} ${sweep} ${item.arcTo[0]},${item.arcTo[1]}`;
+          })
+          .attr("stroke", gtheme.edgeConnector)
+          .attr("stroke-width", 0.9)
+          .attr("stroke-opacity", 0.75)
+          .style("pointer-events", "none");
+
+        edgeGroup
+          .selectAll("path.edge-branch-radial")
+          .data(
+            orientedRadial.filter(
+              (item) => item.childPolar.radius - item.parentPolar.radius > 0.5,
+            ),
+          )
+          .enter()
+          .append("path")
+          .attr("class", "edge-branch-radial")
+          .attr("fill", "none")
+          .attr(
+            "d",
+            (item) =>
+              `M${item.radialFrom[0]},${item.radialFrom[1]} L${item.radialTo[0]},${item.radialTo[1]}`,
+          )
+          .attr("stroke", (item) => edgeStroke(item.edge))
+          .attr("stroke-width", (item) => edgeStrokeWidth(item.edge))
+          .attr("stroke-dasharray", (item) => edgeStrokeDasharray(item.edge))
+          .attr("stroke-linecap", "round")
+          .attr("stroke-opacity", (item) => edgeOpacity(item.edge))
+          .on("mousemove", (_event, item) => edgeHover(_event, item.edge))
+          .on("mouseleave", this.hideTooltip);
+      }
     },
     _renderEdgeLabels(graph, finalGraph, context) {
+      if (!this.showEdgeLabels) {
+        return;
+      }
       const { setTooltipAccent } = context;
       const gtheme = this.graphTheme();
       const edgeLabelGroup = graph
         .append("g")
         .attr("class", "edge-labels")
         .selectAll("g")
-        .data(finalGraph.edges)
+        // In the tree layout a zero-weight branch has zero length and is not
+        // drawn, so its label would float without a line.
+        .data(
+          this.layoutMode === "tree"
+            ? finalGraph.edges.filter((edge) => Number(edge.weight) > 0)
+            : finalGraph.edges,
+        )
         .enter()
         .append("g")
         .attr("class", "edge-label")
-        .attr("transform", (edge) => `translate(${edge.midX}, ${edge.midY - 7})`)
+        .attr("transform", (edge) => {
+          const parentMap = context.parentMap || new Map();
+          const forward = parentMap.get(edge.target) === edge.source;
+          const parentPoint = forward ? edge.sourcePoint : edge.targetPoint;
+          const childPoint = forward ? edge.targetPoint : edge.sourcePoint;
+          if (this.layoutMode === "tree") {
+            const x = (parentPoint[0] + childPoint[0]) / 2;
+            return `translate(${x}, ${childPoint[1] - 8})`;
+          }
+          if (this.layoutMode === "grapetree") {
+            const x = (parentPoint[0] + childPoint[0]) / 2;
+            const y = (parentPoint[1] + childPoint[1]) / 2;
+            return `translate(${x}, ${y - 8})`;
+          }
+          const centreX = LAYOUT_CENTER_X;
+          const centreY = LAYOUT_CENTER_Y;
+          const parentRadius = Math.hypot(
+            parentPoint[0] - centreX,
+            parentPoint[1] - centreY,
+          );
+          const childRadius = Math.hypot(
+            childPoint[0] - centreX,
+            childPoint[1] - centreY,
+          );
+          const midRadius = (parentRadius + childRadius) / 2;
+          const angle = Math.atan2(
+            parentPoint[1] - centreY,
+            parentPoint[0] - centreX,
+          );
+          const x = centreX + midRadius * Math.cos(angle);
+          const y = centreY + midRadius * Math.sin(angle);
+          return `translate(${x}, ${y - 8})`;
+        })
         .attr("opacity", (edge) => {
           if (edge.searchDimmed) {
             return 0.1;
@@ -2556,7 +3086,7 @@ export default {
           if (this.shapeBy && node.meta?.[this.shapeBy] !== undefined) {
             const shapeIdx = this.shapeIndexFor(node.meta[this.shapeBy]);
             group.append('path')
-              .attr('d', this.shapePath(shapeIdx, node.x, node.y, r))
+              .attr('d', nodeShapePath(shapeIdx, r))
               .attr('fill', fillColor)
               .attr('stroke', strokeFn)
               .attr('stroke-width', 1.2);
@@ -2634,7 +3164,13 @@ export default {
         .text("+");
     },
     _renderLabels(graph, finalGraph, context) {
+      if (!this.showNodeLabels) {
+        return;
+      }
       const { labelOpacity } = context;
+      const labelText = new Map(
+        finalGraph.nodes.map((node) => [node.id, this.nodeLabelText(node)]),
+      );
       const labelGroup = graph
         .append("g")
         .attr("class", "labels")
@@ -2649,7 +3185,7 @@ export default {
         .append("rect")
         .attr("x", -3)
         .attr("y", (node) => (node.isRoot ? -11 : -10))
-        .attr("width", (node) => node.label.length * 7 + 10)
+        .attr("width", (node) => labelText.get(node.id).length * 7 + 10)
         .attr("height", (node) => (node.isRoot ? 18 : 16))
         .attr("rx", 8)
         .attr("fill", gtheme.labelBg)
@@ -2664,7 +3200,7 @@ export default {
           node.isRoot ? gtheme.labelTextStrong : gtheme.labelText,
         )
         .attr("font-weight", (node) => (node.isRoot ? 700 : 500))
-        .text((node) => node.label);
+        .text((node) => labelText.get(node.id));
     },
     _renderHitAreas(graph, finalGraph, context) {
       const { setTooltipAccent } = context;
@@ -2701,7 +3237,7 @@ export default {
           }
           this._pendingNodeClick = window.setTimeout(() => {
             this._pendingNodeClick = null;
-            this.setManualRoot(node.id);
+            this.selectGraphNode(node);
           }, 220);
         })
         .on("dblclick", (event, node) => {
@@ -2770,6 +3306,7 @@ export default {
       const prepared = this._prepareGraphData(rawNodes, rawEdges);
       this._syncGraphState(prepared);
       const { finalGraph } = prepared;
+      this._graphBounds = graphBounds(finalGraph.nodes);
       const { svg, graph, ...scaffold } = this._createGraphScaffold();
       const context = this._buildRenderContext(prepared, scaffold);
       this._renderEdgeGroup(graph, finalGraph, context);
@@ -2790,6 +3327,13 @@ export default {
           this.fitView();
         });
       }
+    },
+    changeLayoutMode() {
+      // Each layout uses its own coordinate space (ring radii, tree depth,
+      // GrapeTree node radii + gaps), so the previous zoom would leave the
+      // new drawing tiny or clipped. Refit right after the redraw.
+      this.redrawFromLastData();
+      this.fitView();
     },
     redrawFromLastData() {
       if (
@@ -2845,8 +3389,17 @@ export default {
 
         this._resetViewState(data, "graph");
         this.graphData = data;
+        if (this.edgeLengthModeAuto) {
+          this.edgeLengthMode = this._autoEdgeLengthMode(data);
+        }
         this.manualRootId = null;
         this.nodePositionOverrides = {};
+        if ((data.nodes || []).length > 1500) {
+          // Thousands of SVG text labels are unreadable and slow; keep the
+          // graph responsive and let the user opt back in.
+          this.showNodeLabels = false;
+          this.showEdgeLabels = false;
+        }
         this.clusterSummary = data.cluster_summary || [];
         this.heatmapLocusQuery = "";
         this.edgeWeightThreshold = this.maxWeight ? Number(this.maxWeight) : 0;
@@ -2933,7 +3486,11 @@ export default {
         return;
       }
       this.tsvText = "";
+      this.tsvFromFile = false;
+      this.tsvFileName = "";
       this.metadataText = "";
+      this.metadataFromFile = false;
+      this.metadataFileName = "";
       this.compareLeftTsv = "";
       this.compareRightTsv = "";
       this.lastData = null;
@@ -3520,9 +4077,10 @@ export default {
           <label class="field-label" for="tsv-input">Or paste profile text</label>
           <textarea
             id="tsv-input"
-            v-model="tsvText"
-            placeholder="Paste cgMLST TSV or #Strain profile here"
+            :value="tsvInputValue"
+            :placeholder="tsvPlaceholder"
             aria-label="TSV profile data input"
+            @input="onTsvInput"
           ></textarea>
           <p v-if="profilePreview" class="tip compact-tip profile-preview">
             {{ profilePreview }}
@@ -3536,9 +4094,10 @@ export default {
               <label class="field-label" for="metadata-input">Or paste metadata text</label>
               <textarea
                 id="metadata-input"
-                v-model="metadataText"
-                placeholder="Optional metadata table with ID column or first-column sample IDs"
+                :value="metadataInputValue"
+                :placeholder="metadataPlaceholder"
                 aria-label="Metadata TSV input"
+                @input="onMetadataInput"
               ></textarea>
               <label class="field-label" for="session-file-input">Restore session JSON</label>
               <input id="session-file-input" type="file" @change="onSessionFileChange" />
@@ -3621,248 +4180,325 @@ export default {
         <section v-if="lastData && analysisView !== 'compare'" class="workflow-section">
           <p class="section-title">4. View controls</p>
 
-          <template v-if="analysisView === 'graph'">
-            <label class="field-label" for="layout-mode">Layout mode</label>
-            <select id="layout-mode" v-model="layoutMode" @change="redrawFromLastData">
-              <option value="tree">Tree layout</option>
-              <option value="radial">Radial layout</option>
-            </select>
+          <details class="foldout view-group" open>
+            <summary>Layout</summary>
+            <div class="foldout-body">
+              <template v-if="analysisView === 'graph'">
+                <label class="field-label" for="layout-mode">Layout mode</label>
+                <select id="layout-mode" v-model="layoutMode" @change="changeLayoutMode">
+                  <option value="grapetree">GrapeTree layout (default)</option>
+                  <option value="radial">Radial layout (planar rings)</option>
+                  <option value="tree">Tree layout (cladogram)</option>
+                </select>
+              </template>
 
-            <label class="field-label" for="edge-length-mode">Edge length mode</label>
-            <select id="edge-length-mode" v-model="edgeLengthMode" @change="redrawFromLastData">
-              <option value="linear">Linear (MLST)</option>
-              <option value="log">Logarithmic (cgMLST)</option>
-              <option value="sqrt">Square root (cgMLST)</option>
-            </select>
+              <label class="field-label" for="cluster-filter">Cluster filter</label>
+              <select id="cluster-filter" v-model="clusterFilter" @change="redrawFromLastData">
+                <option value="">All clusters</option>
+                <option v-for="option in clusterOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
 
-            <label class="field-label" for="long-branch-mode">Long branches</label>
-            <select id="long-branch-mode" v-model="longBranchMode" @change="debouncedRedraw">
-              <option value="normal">Show all</option>
-              <option value="shorten">Shorten + dash</option>
-              <option value="hide">Hide</option>
-            </select>
-            <div v-if="longBranchMode !== 'normal'" class="threshold-slider-row">
-              <span class="threshold-bound">Min</span>
-              <input
-                id="long-branch-threshold"
-                type="range"
-                min="1"
-                :max="edgeWeightMax || 1"
-                step="1"
-                aria-label="Long-branch threshold"
-                v-model.number="longBranchThreshold"
-                @input="debouncedRedraw"
-              />
-              <span class="threshold-bound">{{ edgeWeightMax || '-' }}</span>
+              <template v-if="analysisView === 'graph'">
+                <div class="button-row action-row-tight">
+                  <button class="btn btn-secondary btn-chip" @click="fitView">Fit view</button>
+                  <button class="btn btn-secondary btn-chip" @click="clearManualRoot">Reset root</button>
+                  <button class="btn btn-secondary btn-chip" @click="clearDraggedLayout">
+                    Reset drag layout
+                  </button>
+                </div>
+              </template>
             </div>
+          </details>
 
-            <label class="field-label" for="edge-length-scale">
-              Edge length scale: {{ edgeLengthScale }}
-            </label>
-            <input
-              id="edge-length-scale"
-              type="range"
-              min="10"
-              max="100"
-              step="5"
-              v-model.number="edgeLengthScale"
-              @input="debouncedRedraw"
-            />
-          </template>
+          <details class="foldout view-group" open>
+            <summary>Node</summary>
+            <div class="foldout-body">
+              <label class="field-label" for="color-by">Color nodes by</label>
+              <select id="color-by" v-model="colorBy" @change="redrawFromLastData">
+                <option value="">None</option>
+                <option value="cluster_id">Cluster</option>
+                <option v-for="field in metadataFields" :key="field" :value="field">
+                  {{ field }}
+                </option>
+              </select>
 
-          <label class="field-label" for="color-by">Color nodes by</label>
-          <select id="color-by" v-model="colorBy" @change="redrawFromLastData">
-            <option value="">None</option>
-            <option value="cluster_id">Cluster</option>
-            <option v-for="field in metadataFields" :key="field" :value="field">
-              {{ field }}
-            </option>
-          </select>
+              <label class="field-label" for="color-scheme">Color scheme</label>
+              <select id="color-scheme" v-model="colorScheme" @change="redrawFromLastData">
+                <option value="default">Default (60 colors)</option>
+                <option value="pastel">Pastel</option>
+                <option value="vivid">Vivid</option>
+                <option value="warm">Warm tones</option>
+                <option value="cool">Cool tones</option>
+              </select>
 
-          <label class="field-label" for="shape-by">Shape nodes by</label>
-          <select id="shape-by" v-model="shapeBy" @change="redrawFromLastData">
-            <option value="">Circle (default)</option>
-            <option v-for="field in shapeFieldOptions" :key="field" :value="field">
-              {{ field }}
-            </option>
-          </select>
+              <div v-if="suggestedColorFields.length" class="preset-row">
+                <span class="field-label">Suggested coloring</span>
+                <div class="button-row">
+                  <button
+                    v-for="field in suggestedColorFields"
+                    :key="field"
+                    class="btn btn-secondary btn-chip"
+                    @click="applySuggestedColor(field)"
+                  >
+                    {{ field }}
+                  </button>
+                </div>
+              </div>
 
-          <label class="field-label" for="color-scheme">Color scheme</label>
-          <select id="color-scheme" v-model="colorScheme" @change="redrawFromLastData">
-            <option value="default">Default (60 colors)</option>
-            <option value="pastel">Pastel</option>
-            <option value="vivid">Vivid</option>
-            <option value="warm">Warm tones</option>
-            <option value="cool">Cool tones</option>
-          </select>
+              <label class="field-label" for="shape-by">Shape nodes by</label>
+              <select id="shape-by" v-model="shapeBy" @change="redrawFromLastData">
+                <option value="">Circle (default)</option>
+                <option v-for="field in shapeFieldOptions" :key="field" :value="field">
+                  {{ field }}
+                </option>
+              </select>
 
-          <div v-if="suggestedColorFields.length" class="preset-row">
-            <span class="field-label">Suggested coloring</span>
-            <div class="button-row">
-              <button
-                v-for="field in suggestedColorFields"
-                :key="field"
-                class="btn btn-secondary btn-chip"
-                @click="applySuggestedColor(field)"
-              >
-                {{ field }}
-              </button>
-            </div>
-          </div>
+              <template v-if="analysisView === 'graph'">
+                <label class="field-label" for="node-scale">
+                  Node size scale: {{ nodeScale.toFixed(1) }}×
+                </label>
+                <input
+                  id="node-scale"
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  v-model.number="nodeScale"
+                  @input="redrawFromLastData"
+                />
+              </template>
 
-          <template v-if="analysisView === 'graph'">
-            <label class="field-label" for="node-search">Search nodes</label>
-            <div class="search-row">
-              <input
-                id="node-search"
-                type="text"
-                v-model="nodeSearchQuery"
-                placeholder="Sample ID..."
-                aria-label="Search nodes by label"
-                @input="onNodeSearch"
-                @keydown.esc="clearNodeSearch"
-              />
-              <button
-                v-if="nodeSearchQuery"
-                class="btn btn-secondary btn-chip btn-search-clear"
-                @click="clearNodeSearch"
-                aria-label="Clear search"
-              >
-                ✕
-              </button>
-            </div>
-            <div v-if="nodeSearchActive" class="search-info">
-              {{ nodeSearchMatchCount }} of {{ nodeSearchTotal }} nodes
-            </div>
-
-            <label class="field-label">
-              Edge weight threshold
-              <span v-if="edgeWeightThreshold > 0" class="threshold-badge">{{ edgeWeightThreshold }}</span>
-              <span v-else class="threshold-badge threshold-none">No limit</span>
-            </label>
-            <div class="threshold-slider-row">
-              <span class="threshold-bound">{{ minEdgeWeightLabel }}</span>
-              <input
-                id="edge-weight-threshold"
-                type="range"
-                :min="0"
-                :max="edgeWeightMax"
-                step="1"
-                aria-label="Edge weight threshold"
-                v-model.number="edgeWeightThreshold"
-                @input="onThresholdChange"
-              />
-              <span class="threshold-bound">{{ edgeWeightMax }}</span>
-            </div>
-            <div v-if="totalEdgeCount" class="threshold-histogram" aria-hidden="true">
-              <span
-                v-for="bar in thresholdHistogramBars"
-                :key="bar.key"
-                class="threshold-histogram-bar"
-                :class="{ active: bar.active }"
-                :style="{ height: bar.height }"
-              ></span>
-            </div>
-            <div v-if="edgeWeightThreshold > 0 && currentRenderedGraph" class="threshold-stats">
-              {{ filteredEdgeCount }} of {{ totalEdgeCount }} edges visible
-            </div>
-
-            <label class="field-label" for="view-filter-mode">Focus view on</label>
-            <select id="view-filter-mode" v-model="viewFilterMode" @change="redrawFromLastData">
-              <option value="all">All visible nodes</option>
-              <option value="component">Current inspected component</option>
-              <option value="path">Current inspected root path</option>
-            </select>
-          </template>
-
-          <label class="field-label" for="cluster-filter">Cluster filter</label>
-          <select id="cluster-filter" v-model="clusterFilter" @change="redrawFromLastData">
-            <option value="">All clusters</option>
-            <option v-for="option in clusterOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-
-          <template v-if="analysisView === 'graph'">
-            <label class="field-label">
-              Collapse threshold
-              <span v-if="collapseThreshold > 0" class="threshold-badge">{{ collapseThreshold }}</span>
-              <span v-else class="threshold-badge threshold-none">Off</span>
-            </label>
-            <div class="threshold-slider-row">
-              <span class="threshold-bound">Off</span>
-              <input
-                id="collapse-threshold"
-                type="range"
-                min="0"
-                :max="edgeWeightMax || 1"
-                step="1"
-                aria-label="Collapse threshold"
-                v-model.number="collapseThreshold"
-                @input="debouncedRedraw"
-              />
-              <span class="threshold-bound">{{ edgeWeightMax || '-' }}</span>
-            </div>
-            <div class="button-row action-row-tight" style="margin-top: 6px;">
-              <button class="btn btn-secondary btn-chip" @click="expandAllNodes">Expand all</button>
-              <button class="btn btn-secondary btn-chip" @click="collapseAllLeaves">
-                Collapse all leaves
-              </button>
-              <button
-                v-if="Object.keys(_hiddenNodeIds).length > 0"
-                class="btn btn-secondary btn-chip"
-                @click="showAllHiddenNodes"
-              >
-                Show {{ Object.keys(_hiddenNodeIds).length }} hidden
-              </button>
-              <button
-                v-if="Object.keys(_customNodeColors).length > 0"
-                class="btn btn-secondary btn-chip"
-                @click="resetAllNodeColors"
-              >
-                Reset {{ Object.keys(_customNodeColors).length }} colors
-              </button>
-            </div>
-
-            <div class="switch-grid">
-              <label class="switch">
-                <input type="checkbox" v-model="showEdgeLabels" @change="toggleEdgeLabels" />
-                Show edge weights
-              </label>
-              <label class="switch">
-                <input type="checkbox" v-model="overlapRelief" @change="redrawFromLastData" />
-                Reduce node overlap automatically
-              </label>
+              <label class="field-label" for="label-by">Label nodes by</label>
+              <select id="label-by" v-model="nodeLabelField" @change="redrawFromLastData">
+                <option value="">Sample ID</option>
+                <option value="cluster_id">Cluster ID</option>
+                <option v-for="field in metadataFields" :key="'label-' + field" :value="field">
+                  {{ field }}
+                </option>
+              </select>
               <label class="switch">
                 <input
                   type="checkbox"
-                  v-model="correctnessOverlay"
+                  v-model="showNodeLabels"
                   @change="redrawFromLastData"
                 />
-                Highlight root path and component context
+                Show node labels
               </label>
               <label class="switch">
                 <input type="checkbox" v-model="scaleNodeSize" @change="redrawFromLastData" />
                 Scale node size by member count
               </label>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  v-model="aggregateNodes"
-                  @change="redrawFromLastData"
-                />
-                Collapse identical profiles after rendering
-              </label>
-            </div>
 
-            <div class="button-row action-row-tight">
-              <button class="btn btn-secondary btn-chip" @click="fitView">Fit view</button>
-              <button class="btn btn-secondary btn-chip" @click="clearManualRoot">Reset root</button>
-              <button class="btn btn-secondary btn-chip" @click="clearDraggedLayout">
-                Reset drag layout
-              </button>
+              <template v-if="analysisView === 'graph'">
+                <label class="field-label" for="node-search">Search nodes</label>
+                <div class="search-row">
+                  <input
+                    id="node-search"
+                    type="text"
+                    v-model="nodeSearchQuery"
+                    placeholder="Sample ID..."
+                    aria-label="Search nodes by label"
+                    @input="onNodeSearch"
+                    @keydown.esc="clearNodeSearch"
+                  />
+                  <button
+                    v-if="nodeSearchQuery"
+                    class="btn btn-secondary btn-chip btn-search-clear"
+                    @click="clearNodeSearch"
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div v-if="nodeSearchActive" class="search-info">
+                  {{ nodeSearchMatchCount }} of {{ nodeSearchTotal }} nodes
+                </div>
+
+                <label class="field-label">
+                  Collapse threshold
+                  <span v-if="collapseThreshold > 0" class="threshold-badge">{{ collapseThreshold }}</span>
+                  <span v-else class="threshold-badge threshold-none">Off</span>
+                </label>
+                <div class="threshold-slider-row">
+                  <span class="threshold-bound">Off</span>
+                  <input
+                    id="collapse-threshold"
+                    type="range"
+                    min="0"
+                    :max="edgeWeightMax || 1"
+                    step="1"
+                    aria-label="Collapse threshold"
+                    v-model.number="collapseThreshold"
+                    @input="debouncedRedraw"
+                  />
+                  <span class="threshold-bound">{{ edgeWeightMax || '-' }}</span>
+                </div>
+                <div class="button-row action-row-tight" style="margin-top: 6px;">
+                  <button class="btn btn-secondary btn-chip" @click="expandAllNodes">Expand all</button>
+                  <button class="btn btn-secondary btn-chip" @click="collapseAllLeaves">
+                    Collapse all leaves
+                  </button>
+                  <button
+                    v-if="Object.keys(_hiddenNodeIds).length > 0"
+                    class="btn btn-secondary btn-chip"
+                    @click="showAllHiddenNodes"
+                  >
+                    Show {{ Object.keys(_hiddenNodeIds).length }} hidden
+                  </button>
+                  <button
+                    v-if="Object.keys(_customNodeColors).length > 0"
+                    class="btn btn-secondary btn-chip"
+                    @click="resetAllNodeColors"
+                  >
+                    Reset {{ Object.keys(_customNodeColors).length }} colors
+                  </button>
+                </div>
+              </template>
             </div>
-          </template>
+          </details>
+
+          <details class="foldout view-group" open>
+            <summary>Edge</summary>
+            <div class="foldout-body">
+              <label class="field-label" for="edge-length-mode">
+                Branch length mode{{ edgeLengthModeAuto ? " (auto)" : "" }}
+              </label>
+              <select
+                id="edge-length-mode"
+                v-model="edgeLengthMode"
+                @change="onEdgeLengthModeChange"
+              >
+                <option value="linear">Linear (MLST)</option>
+                <option value="log">Logarithmic (cgMLST)</option>
+                <option value="sqrt">Square root (cgMLST)</option>
+              </select>
+
+              <p
+                v-if="edgeLengthModeAuto && edgeLengthMode === 'log'"
+                class="tip compact-tip"
+              >
+                Auto: logarithmic branch scaling keeps cgMLST distances
+                readable. Equal allele differences always get the same
+                branch length.
+              </p>
+
+              <template v-if="analysisView === 'graph'">
+                <label class="field-label" for="edge-length-scale">
+                  Branch length scale: {{ edgeLengthScale }}
+                </label>
+                <input
+                  id="edge-length-scale"
+                  type="range"
+                  min="10"
+                  max="100"
+                  step="5"
+                  v-model.number="edgeLengthScale"
+                  @input="debouncedRedraw"
+                />
+
+                <label class="field-label" for="long-branch-mode">Long branches</label>
+                <select id="long-branch-mode" v-model="longBranchMode" @change="debouncedRedraw">
+                  <option value="normal">Show all</option>
+                  <option value="shorten">Shorten + dash</option>
+                  <option value="hide">Hide</option>
+                </select>
+                <div v-if="longBranchMode !== 'normal'" class="threshold-slider-row">
+                  <span class="threshold-bound">Min</span>
+                  <input
+                    id="long-branch-threshold"
+                    type="range"
+                    min="1"
+                    :max="edgeWeightMax || 1"
+                    step="1"
+                    aria-label="Long-branch threshold"
+                    v-model.number="longBranchThreshold"
+                    @input="debouncedRedraw"
+                  />
+                  <span class="threshold-bound">{{ edgeWeightMax || '-' }}</span>
+                </div>
+
+                <label class="field-label">
+                  Edge weight threshold
+                  <span v-if="edgeWeightThreshold > 0" class="threshold-badge">{{ edgeWeightThreshold }}</span>
+                  <span v-else class="threshold-badge threshold-none">No limit</span>
+                </label>
+                <div class="threshold-slider-row">
+                  <span class="threshold-bound">{{ minEdgeWeightLabel }}</span>
+                  <input
+                    id="edge-weight-threshold"
+                    type="range"
+                    :min="0"
+                    :max="edgeWeightMax"
+                    step="1"
+                    aria-label="Edge weight threshold"
+                    v-model.number="edgeWeightThreshold"
+                    @input="onThresholdChange"
+                  />
+                  <span class="threshold-bound">{{ edgeWeightMax }}</span>
+                </div>
+                <div v-if="totalEdgeCount" class="threshold-histogram" aria-hidden="true">
+                  <span
+                    v-for="bar in thresholdHistogramBars"
+                    :key="bar.key"
+                    class="threshold-histogram-bar"
+                    :class="{ active: bar.active }"
+                    :style="{ height: bar.height }"
+                  ></span>
+                </div>
+                <div v-if="edgeWeightThreshold > 0 && currentRenderedGraph" class="threshold-stats">
+                  {{ filteredEdgeCount }} of {{ totalEdgeCount }} edges visible
+                </div>
+
+                <label class="field-label" for="view-filter-mode">Focus view on</label>
+                <select id="view-filter-mode" v-model="viewFilterMode" @change="redrawFromLastData">
+                  <option value="all">All visible nodes</option>
+                  <option value="component">Current inspected component</option>
+                  <option value="path">Current inspected root path</option>
+                </select>
+
+                <label class="switch">
+                  <input type="checkbox" v-model="showEdgeLabels" @change="toggleEdgeLabels" />
+                  Show edge weights
+                </label>
+              </template>
+
+              <p v-if="hiddenNonTreeEdges" class="tip compact-tip">
+                {{ hiddenNonTreeEdges }} non-tree edge(s) hidden in tree view
+                (shortcut chords would cross branches; use the radial layout to
+                see them).
+              </p>
+            </div>
+          </details>
+
+          <details class="foldout view-group">
+            <summary>Display</summary>
+            <div class="foldout-body">
+              <template v-if="analysisView === 'graph'">
+                <label class="switch">
+                  <input type="checkbox" v-model="overlapRelief" @change="redrawFromLastData" />
+                  Nudge overlapping nodes apart (force tweak; may cross edges)
+                </label>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    v-model="correctnessOverlay"
+                    @change="redrawFromLastData"
+                  />
+                  Highlight root path and component context
+                </label>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    v-model="aggregateNodes"
+                    @change="redrawFromLastData"
+                  />
+                  Collapse identical profiles after rendering
+                </label>
+              </template>
+            </div>
+          </details>
         </section>
 
         <details v-if="multiSelectedNodeIds.length >= 2" v-show="analysisView === 'graph'" class="foldout" open>
@@ -3910,6 +4546,13 @@ export default {
               <div v-for="line in inspectedItem.lines" :key="line" class="inspect-line">
                 {{ line }}
               </div>
+              <button
+                v-if="inspectedItem.kind === 'node'"
+                class="btn btn-secondary btn-chip inspect-root-btn"
+                @click="setManualRoot(inspectedItem.nodeId)"
+              >
+                Set as tree root
+              </button>
             </div>
             <p v-else class="tip compact-tip">
               Hover a node or edge in the graph to inspect metadata, distance, and mismatch details.
@@ -3984,6 +4627,11 @@ export default {
         <details v-if="tableRows.length" v-show="analysisView !== 'compare'" class="foldout">
           <summary>Sample table</summary>
           <div ref="tablePanel" class="table-panel">
+            <div v-if="tableTruncated" class="status-message warn">
+              Showing first {{ tableRenderLimit }} of
+              {{ filteredTableRows.length }} rows. Search/filter to narrow,
+              or export for the full table.
+            </div>
             <div class="table-toolbar">
               <input
                 v-model="tableQuery"
@@ -4025,7 +4673,7 @@ export default {
               </thead>
               <tbody>
                 <tr
-                  v-for="row in filteredTableRows"
+                  v-for="row in visibleTableRows"
                   :key="row.id"
                   :class="{ selected: selectedTableNodeId === row.id }"
                   @click="selectTableRow(row)"
@@ -4110,7 +4758,7 @@ export default {
             <button class="timeline-btn" @click="resetTimeline" aria-label="Reset timeline">↺</button>
           </template>
         </div>
-        <div v-if="analysisView === 'graph'" ref="canvas" class="canvas" role="region" aria-label="Graph viewport — drag to pan, scroll to zoom, right-click nodes to hide">
+        <div v-if="analysisView === 'graph'" ref="canvas" class="canvas" role="region" aria-label="Graph viewport — drag to pan, scroll to zoom, click to inspect, shift-click to recolor, right-click to hide">
           <div v-if="_building" class="loading-overlay">
             <div class="loading-spinner"></div>
             <span class="loading-text">Processing...</span>

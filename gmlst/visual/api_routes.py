@@ -30,7 +30,7 @@ from gmlst.visual.mst import (
     build_mst_from_tsv,
     build_result_comparison_from_tsv,
 )
-from gmlst.visual.mst_shared import validate_tsv_scale
+from gmlst.visual.mst_shared import _MAX_MST_CELLS, validate_tsv_scale
 
 api_bp = Blueprint("api", __name__, url_prefix="")
 
@@ -47,7 +47,7 @@ def api_mst() -> tuple[Any, int]:
     try:
         payload = _require_payload_dict()
         tsv_text = _parse_text(payload, "tsv")
-        validate_tsv_scale(tsv_text)
+        validate_tsv_scale(tsv_text, max_cells=_MAX_MST_CELLS)
         metadata_text = _parse_text(payload, "metadata_tsv")
         if metadata_text:
             validate_tsv_scale(metadata_text)
@@ -132,7 +132,7 @@ def api_distance_matrix() -> tuple[Any, int]:
     try:
         payload = _require_payload_dict()
         tsv_text = _parse_text(payload, "tsv")
-        validate_tsv_scale(tsv_text)
+        validate_tsv_scale(tsv_text, view="distance matrix")
         metadata_text = _parse_text(payload, "metadata_tsv")
         if metadata_text:
             validate_tsv_scale(metadata_text)
@@ -228,7 +228,7 @@ def api_allele_heatmap() -> tuple[Any, int]:
     try:
         payload = _require_payload_dict()
         tsv_text = _parse_text(payload, "tsv")
-        validate_tsv_scale(tsv_text)
+        validate_tsv_scale(tsv_text, view="allele heatmap")
         metadata_text = _parse_text(payload, "metadata_tsv")
         if metadata_text:
             validate_tsv_scale(metadata_text)

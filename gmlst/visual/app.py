@@ -14,7 +14,8 @@ from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 from gmlst.visual.api_routes import api_bp
 
 _WELL_KNOWN_PREFIX = "/.well-known/"
-_MAX_CONTENT_LENGTH = 64 * 1024 * 1024
+# 10k x 3k profile tables are ~150 MB of text.
+_MAX_CONTENT_LENGTH = 512 * 1024 * 1024
 
 
 class _QuietNotFoundFilter(logging.Filter):

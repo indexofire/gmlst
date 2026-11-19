@@ -5,8 +5,10 @@
  * making them safe to unit test and easy to move out of the App.vue monolith.
  */
 
-/** Maximum file size accepted by the client-side input handlers (64 MiB). */
-export const MAX_FILE_SIZE = 64 * 1024 * 1024
+/** Maximum file size accepted by the client-side input handlers (512 MiB).
+
+    Large cgMLST tables (10k samples x 3k loci) are ~150 MB of text. */
+export const MAX_FILE_SIZE = 512 * 1024 * 1024
 
 /**
  * Read a File object as text, throwing if it exceeds the size limit.

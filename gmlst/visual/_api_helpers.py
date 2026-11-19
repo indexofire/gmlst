@@ -184,6 +184,12 @@ def _color_field_preference(field: str) -> tuple[int, str]:
     return len(preferred), normalized
 
 
+# Above this many distinct values a field is unusable as a legend
+# (hundreds of chips). Such fields stay selectable manually but must not be
+# chosen as the default/suggested coloring.
+_MAX_SUGGESTED_CATEGORIES = 30
+
+
 def _suggest_color_fields(
     nodes: list[dict[str, Any]],
     metadata_fields: list[str],
@@ -198,7 +204,7 @@ def _suggest_color_fields(
             }
         )
         distinct_count = len(distinct_values)
-        if distinct_count <= 1:
+        if distinct_count <= 1 or distinct_count > _MAX_SUGGESTED_CATEGORIES:
             continue
         preferred_rank, normalized = _color_field_preference(field)
         candidates.append(((preferred_rank, distinct_count, normalized), field))

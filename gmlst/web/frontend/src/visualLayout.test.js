@@ -12,7 +12,9 @@ import {
   aggregateGraph,
   resolveCollapsedNodeSet,
   filteredEdges,
+  grapetreeGap,
   nodeRadius,
+  nodeShapePath,
   legendItemStyle,
   colorMapFor,
   COLOR_SCHEMES,
@@ -156,8 +158,8 @@ test("filteredEdges passes edges through or filters by max weight", () => {
 test("nodeRadius respects the scale flag and clamps large counts", () => {
   assert.equal(nodeRadius({ member_count: 1 }, false), 8);
   assert.equal(nodeRadius({ member_count: 2 }, false), 11);
-  assert.equal(nodeRadius({ member_count: 1 }, true), 7 + Math.sqrt(1) * 3);
-  assert.equal(nodeRadius({ member_count: 100 }, true), 22);
+  assert.equal(nodeRadius({ member_count: 1 }, true), 7 + Math.sqrt(1) * 4.5);
+  assert.equal(nodeRadius({ member_count: 100 }, true), 26);
 });
 
 test("legendItemStyle dims hidden legend values", () => {
@@ -267,4 +269,97 @@ test("buildNewick sanitizes labels and handles leaf nodes", () => {
   const weightMap = new Map();
   const leaf = buildNewick(0, 1, weightMap, childrenMap, new Set(), nodes);
   assert.equal(leaf, "sample_1");
+});
+
+test("greedyRadialLayout keeps zero-weight subtrees in the tree (no crossings)", () => {
+  // 0-1 and 1-2 are identical profiles (weight 0), so equal accumulated
+  // depths. A depth-comparison hierarchy dropped them and produced
+  // crossing chords; BFS parentage must keep every node attached.
+  const nodes = [0, 1, 2, 3, 4, 5].map((id) => ({ id, member_count: 1 }));
+  const edges = [
+    { source: 0, target: 1, weight: 0 },
+    { source: 1, target: 2, weight: 1 },
+    { source: 0, target: 3, weight: 2 },
+    { source: 3, target: 4, weight: 0 },
+    { source: 3, target: 5, weight: 3 },
+  ];
+  const depthMap = new Map([[0, 0], [1, 0], [2, 1], [3, 2], [4, 2], [5, 5]]);
+  const positions = greedyRadialLayout(nodes, edges, 0, depthMap);
+
+  assert.equal(positions.size, 6);
+  for (const position of positions.values()) {
+    assert.ok(Number.isFinite(position[0]) && Number.isFinite(position[1]));
+  }
+
+  // No two rendered edges may properly cross.
+  const segments = edges.map((edge) => {
+    const a = positions.get(edge.source);
+    const b = positions.get(edge.target);
+    return [a, b];
+  });
+  const orient = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const proper = (a, b, c, d) =>
+    orient(a, b, c) * orient(a, b, d) < 0 && orient(c, d, a) * orient(c, d, b) < 0;
+  for (let i = 0; i < segments.length; i += 1) {
+    for (let j = i + 1; j < segments.length; j += 1) {
+      const [a, b] = segments[i];
+      const [c, d] = segments[j];
+      const shares = [a, b].some((p) => [c, d].some((q) => p[0] === q[0] && p[1] === q[1]));
+      if (shares) continue;
+      assert.ok(!proper(a, b, c, d), `edges ${i} and ${j} cross`);
+    }
+  }
+});
+
+test("grapetreeGap is zero for identical profiles and scales with the slider", () => {
+  assert.equal(grapetreeGap(0, 500, "linear"), 0);
+  assert.equal(grapetreeGap(0, 500, "log"), 0);
+  const base = grapetreeGap(50, 500, "log", 1);
+  assert.ok(Math.abs(grapetreeGap(50, 500, "log", 2) - base * 2) < 1e-9);
+  assert.ok(grapetreeGap(50, 500, "log", 0.5) < base);
+});
+
+test("grapetreeGap keeps the mode's proportionality and caps at max_link_scale", () => {
+  // Linear: gap is proportional to the allele distance.
+  assert.equal(grapetreeGap(5, 500, "linear"), 5);
+  assert.equal(grapetreeGap(250, 500, "linear"), 250);
+  assert.equal(grapetreeGap(500, 500, "linear"), 500);
+  // The largest branch always maps onto GrapeTree's 500-unit link scale.
+  assert.equal(grapetreeGap(9999, 500, "linear"), 500);
+  assert.equal(grapetreeGap(9999, 500, "sqrt"), 500);
+  assert.ok(Math.abs(grapetreeGap(9999, 500, "log") - 500) < 1e-9);
+  // Log compresses the 1 vs 500 spread to a legible ratio.
+  const ratio = grapetreeGap(500, 500, "log") / grapetreeGap(1, 500, "log");
+  assert.ok(ratio > 5 && ratio < 12, `ratio was ${ratio}`);
+});
+
+test("buildNewick handles deep chains without overflowing the stack", () => {
+  const depth = 20000;
+  const nodes = Array.from({ length: depth }, (_, index) => ({
+    id: index,
+    label: `S${index}`,
+  }));
+  const children = new Map();
+  const weights = new Map();
+  for (let index = 1; index < depth; index += 1) {
+    children.set(index - 1, [index]);
+    weights.set(String(index), 1);
+  }
+  const newick = buildNewick(0, null, weights, children, new Set(), nodes);
+  assert.ok(newick.startsWith("("));
+  assert.ok(newick.includes("S19999:1.00"));
+  assert.ok(newick.endsWith("S0"));
+});
+
+test("nodeShapePath draws every shape around the local origin", () => {
+  for (let index = 0; index < 5; index += 1) {
+    const path = nodeShapePath(index, 10);
+    const numbers = (path.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+    assert.ok(numbers.length > 0);
+    assert.ok(
+      numbers.every((value) => Math.abs(value) <= 30),
+      `shape ${index} is not centred on the node: ${path}`,
+    );
+  }
+  assert.ok(nodeShapePath(1, 10).startsWith("M-9,-9"));
 });

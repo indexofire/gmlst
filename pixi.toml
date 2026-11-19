@@ -43,6 +43,8 @@ pytest-cov = ">=5"
 [pypi-dependencies]
 # Default alignment engine (also a core dependency in pyproject.toml).
 gseek = ">=0.10.3"
+numpy = ">=1.26"
+numba = ">=0.60"
 click = ">=8.1"
 flask = ">=3.0"
 requests = ">=2.31"

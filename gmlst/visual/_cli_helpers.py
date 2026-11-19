@@ -14,12 +14,17 @@ from gmlst.commands.common import (
     emit_versioned_json,
     render_delimited_rows,
 )
-from gmlst.visual.mst_shared import validate_tsv_scale
+from gmlst.visual.mst_shared import _MAX_COMBINED_CELLS, validate_tsv_scale
 
 _force_large_warned = False
 
 
-def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
+def maybe_validate_tsv_scale(
+    ctx: click.Context,
+    tsv_text: str,
+    *,
+    max_cells: int = _MAX_COMBINED_CELLS,
+) -> None:
     """Enforce TSV size limits unless the parent ``--force-large`` flag is set.
 
     Scale violations from :func:`validate_tsv_scale` are re-raised as
@@ -35,7 +40,7 @@ def maybe_validate_tsv_scale(ctx: click.Context, tsv_text: str) -> None:
             _force_large_warned = True
         return
     try:
-        validate_tsv_scale(tsv_text)
+        validate_tsv_scale(tsv_text, max_cells=max_cells)
     except ValueError as exc:
         raise click.UsageError(str(exc)) from exc
 

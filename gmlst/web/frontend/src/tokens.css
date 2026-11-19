@@ -152,6 +152,7 @@
   --graph-label-text-strong: #0f172a;
   --graph-scale-bg: rgba(255, 255, 255, 0.85);
   --graph-scale-stroke: rgba(203, 213, 225, 0.6);
+  --graph-edge-connector: rgba(100, 116, 139, 0.55);
 
   /* Overlays */
   --overlay-scrim: rgba(248, 251, 255, 0.82);
@@ -264,6 +265,7 @@
     --graph-label-text-strong: #f8fafc;
     --graph-scale-bg: rgba(15, 23, 42, 0.85);
     --graph-scale-stroke: rgba(71, 85, 105, 0.6);
+    --graph-edge-connector: rgba(148, 163, 184, 0.5);
 
   --overlay-scrim: rgba(15, 23, 42, 0.82);
 
@@ -354,6 +356,7 @@
     --graph-label-text-strong: #f8fafc;
     --graph-scale-bg: rgba(15, 23, 42, 0.85);
     --graph-scale-stroke: rgba(71, 85, 105, 0.6);
+    --graph-edge-connector: rgba(148, 163, 184, 0.5);
 
     --overlay-scrim: rgba(15, 23, 42, 0.82);
     --scrollbar-track: #1e293b;

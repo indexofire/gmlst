@@ -13,6 +13,8 @@ from gmlst.visual.mst import build_mst_from_tsv
 from gmlst.visual.mst_shared import (
     _MAX_LOCI_COUNT,
     _MAX_SAMPLE_COUNT,
+    MstNode,
+    pack_profiles,
     validate_tsv_scale,
 )
 
@@ -1870,6 +1872,70 @@ def test_validate_tsv_scale_allows_within_limits() -> None:
     validate_tsv_scale("\n".join(lines))
 
 
+def test_build_mst_allows_tables_above_the_old_cell_guard() -> None:
+    """400 samples x 700 loci (280k cells) used to be rejected outright."""
+    header = "FILE\t" + "\t".join(f"L{i}" for i in range(700))
+    rows = []
+    for i in range(400):
+        value = i + 1
+        values = []
+        for _ in range(700):
+            value = (value * 1103515245 + 12345) % 2147483648
+            values.append(str(value % 97 + 1))
+        rows.append(f"s{i}\t" + "\t".join(values))
+    tsv = "\n".join([header, *rows])
+
+    validate_tsv_scale(tsv)
+    nodes, edges, _metadata = build_mst_from_tsv(tsv, method="grapetree_classic")
+
+    assert len(nodes) > 350
+    assert len(edges) == len(nodes) - 1
+
+
+def test_validate_tsv_scale_allows_cgmlst_sized_tables() -> None:
+    """605 samples x 1502 loci (~909k cells) is a realistic cgMLST table."""
+    header = "FILE\t" + "\t".join(f"L{i}" for i in range(1502))
+    lines = [header] + [
+        f"s{i}\t" + "\t".join("1" for _ in range(1502)) for i in range(605)
+    ]
+    validate_tsv_scale("\n".join(lines))
+
+    too_big_header = "FILE\t" + "\t".join(f"L{i}" for i in range(1502))
+    too_big = [too_big_header] + [
+        f"s{i}\t" + "\t".join("1" for _ in range(1502)) for i in range(2000)
+    ]
+    with pytest.raises(ValueError, match="Combined scale too large"):
+        validate_tsv_scale("\n".join(too_big))
+
+
+def test_pack_profiles_counts_match_per_locus_diff() -> None:
+    nodes = [
+        MstNode("a", ("1", "2", "-", "~4", ""), {}, ("a",), "a"),
+        MstNode("b", ("1", "3", "5", "4", "LNF"), {}, ("b",), "b"),
+        MstNode("c", ("2", "2", "5", "4", "9"), {}, ("c",), "c"),
+    ]
+    packed = pack_profiles(nodes, normalize=True)
+    assert packed is not None
+    # a vs b: comparable at loci 0,1,3 -> differ at locus 1 only.
+    assert packed.counts(0, 1) == (1, 3)
+    # Present on exactly one side only at locus 2 (both sides miss locus 4).
+    assert packed.missing_mismatches(0, 1) == 1
+    # a vs c: comparable at 0,1,3 -> only locus 0 differs ("~4" == "4").
+    assert packed.counts(0, 2) == (1, 3)
+    # b vs c: no missing values -> 4 comparable loci, 2 differences.
+    assert packed.counts(1, 2) == (2, 4)
+
+
+def test_pack_profiles_supports_wide_lanes() -> None:
+    """A locus with >255 distinct alleles must switch to 16-bit lanes."""
+    nodes = [MstNode(str(i), (str(i),), {}, (str(i),), str(i)) for i in range(300)]
+    packed = pack_profiles(nodes, normalize=False)
+    assert packed is not None
+    assert packed.lane_bits == 16
+    assert packed.counts(0, 1) == (1, 1)
+    assert packed.counts(5, 5) == (0, 1)
+
+
 def test_visual_locus_diff_enforces_scale_limit_unless_force_large(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2117,4 +2183,86 @@ def test_get_routes_unaffected_by_origin_check() -> None:
 def test_visual_default_upload_cap_matches_client_file_limit() -> None:
     from gmlst.visual import app as visual_app
 
-    assert visual_app._MAX_CONTENT_LENGTH == 64 * 1024 * 1024
+    assert visual_app._MAX_CONTENT_LENGTH == 512 * 1024 * 1024
+
+
+def test_suggest_color_fields_skips_high_cardinality_fields() -> None:
+    """Fields with many distinct values stay selectable but are never the
+    default/suggested coloring (a legend with hundreds of chips buries the
+    graph, e.g. cgMLST ST values)."""
+    app = create_visual_app(title="visual test")
+    client = app.test_client()
+
+    tsv_lines = ["FILE\tSCHEME\tST\tL1"]
+    meta_lines = ["ID\tCountry\tRun"]
+    for index in range(35):
+        sample = f"s{index:02d}"
+        allele = "1" if index % 2 == 0 else "2"
+        tsv_lines.append(f"{sample}\tvpa\t-\t{allele}")
+        meta_lines.append(f"{sample}\t{'CN' if index % 3 else 'JP'}\trun-{index}")
+
+    ok = client.post(
+        "/api/mst",
+        json={
+            "tsv": "\n".join(tsv_lines),
+            "metadata_tsv": "\n".join(meta_lines),
+            "include_missing": False,
+            # No aggregation: otherwise per-node metadata is joined with
+            # " | " and the distinct-value count collapses.
+            "aggregate_profiles": False,
+        },
+    )
+
+    assert ok.status_code == 200
+    payload = ok.get_json()
+    assert payload["default_color_field"] == "Country"
+    assert "Country" in payload["suggested_color_fields"]
+    assert "Run" not in payload["suggested_color_fields"]
+
+
+def test_grapetree_distance_normalizes_decorations_and_skips_missing() -> None:
+    """Pre-normalized distances keep the documented semantics.
+
+    `~3` counts as allele 3, `3?` as 3, and loci missing on either side are
+    excluded from the comparable count; the reported weight applies the
+    (diffs + 0.01) * n / (comparable + 0.01) smoothing.
+    """
+    tsv = "\n".join(
+        [
+            "FILE\tSCHEME\tST\tL1\tL2\tL3",
+            "A\tvpa\t-\t1\t2\t3",
+            "B\tvpa\t-\t1\t2\t~3",
+            "C\tvpa\t-\t-\t2\t4",
+        ]
+    )
+    _, edges, _ = build_mst_from_tsv(
+        tsv, include_missing=False, aggregate_profiles=False
+    )
+
+    by_pair = {
+        frozenset((edge["source_label"], edge["target_label"])): edge for edge in edges
+    }
+    # A vs B: identical after normalizing `~3` -> 3.
+    assert by_pair[frozenset(("A", "B"))]["weight"] == 0
+    # A vs C: L1 is missing on C (excluded), L2 matches, L3 differs -> 1.
+    assert by_pair[frozenset(("A", "C"))]["weight"] == 1
+
+
+def test_missing_tokens_do_not_split_aggregation() -> None:
+    """`-` and `LNF` are both missing; identical present alleles must merge."""
+    tsv = "\n".join(
+        [
+            "FILE\tSCHEME\tST\tL1\tL2\tL3",
+            "A\tvpa\t-\t1\t-\t3",
+            "B\tvpa\t-\t~1\tLNF\t3",
+            "C\tvpa\t-\t1\t2\t3",
+        ]
+    )
+    nodes, _edges, _fields = build_mst_from_tsv(
+        tsv, include_missing=False, aggregate_profiles=True
+    )
+    assert len(nodes) == 2
+    labels = {node["label"] for node in nodes}
+    assert any(label.startswith("A") or label.startswith("B") for label in labels)
+    counts = sorted(node["member_count"] for node in nodes)
+    assert counts == [1, 2]

@@ -6,6 +6,11 @@ import csv
 import io
 from typing import Any, Literal, TypedDict, cast
 
+from gmlst.visual.fast_mst import (
+    FAST_PATH_CELLS,
+    FAST_PATH_SAMPLES,
+    build_fast_mst,
+)
 from gmlst.visual.mst_edmonds import build_edmonds_mst
 from gmlst.visual.mst_grapetree import (
     build_grapetree_classic_mst,
@@ -23,7 +28,9 @@ from gmlst.visual.mst_shared import (
     _sniff_delimiter,
     _validate_mst,
     is_missing,
+    pack_profiles,
     profile_distance,
+    profile_scale,
 )
 
 MstMethod = Literal["edmonds", "grapetree_v2", "grapetree_classic"]
@@ -40,7 +47,9 @@ VALID_MST_METHODS: tuple[MstMethod, ...] = (
 MAX_MST_NODES: dict[str, int] = {
     "edmonds": 1000,
     "grapetree_v2": 2000,
-    "grapetree_classic": 5000,
+    # The packed path makes 10k+ samples feasible; the dense distance
+    # matrix is n^2 float32 (400 MB at 10k, 900 MB at 15k).
+    "grapetree_classic": 15_000,
 }
 # A full n x n JSON matrix is quadratic in bytes and browser memory.
 MAX_MATRIX_NODES = 1000
@@ -70,6 +79,19 @@ def build_mst_from_tsv(
             f"Unknown MST method: {method!r}. Choose from {VALID_MST_METHODS}"
         )
 
+    sample_count, loci_count = profile_scale(tsv_text)
+    if method == "grapetree_classic" and (
+        sample_count * loci_count >= FAST_PATH_CELLS
+        or sample_count >= FAST_PATH_SAMPLES
+    ):
+        return build_fast_mst(
+            tsv_text,
+            metadata_text=metadata_text,
+            include_missing=include_missing,
+            aggregate_profiles=aggregate_profiles,
+            max_nodes=MAX_MST_NODES.get(method),
+        )
+
     metadata_by_sample, extra_metadata_fields = _parse_metadata_text(metadata_text)
     nodes, loci, metadata_fields = _parse_rows(
         tsv_text,
@@ -79,6 +101,16 @@ def build_mst_from_tsv(
     meta_breakdowns = None
     if aggregate_profiles:
         nodes, meta_breakdowns = _aggregate_profiles(nodes)
+
+    # Reject oversized trees before the O(n^2) distance/edge work starts.
+    limit = MAX_MST_NODES.get(method)
+    if limit is not None and len(nodes) > limit:
+        raise ValueError(
+            f"too many nodes for MST method {method!r}: "
+            f"{len(nodes)} > {limit}; use a cheaper method or fewer samples"
+        )
+
+    if aggregate_profiles:
         payload_mst_nodes = nodes
         if method == "edmonds":
             edges = build_edmonds_mst(
@@ -99,13 +131,6 @@ def build_mst_from_tsv(
     else:
         payload_mst_nodes, edges = _restore_duplicate_leaves(
             nodes, loci, include_missing=include_missing, method=method
-        )
-
-    limit = MAX_MST_NODES.get(method)
-    if limit is not None and len(payload_mst_nodes) > limit:
-        raise ValueError(
-            f"too many nodes for MST method {method!r}: "
-            f"{len(payload_mst_nodes)} > {limit}; use a cheaper method or fewer samples"
         )
 
     payload_nodes = _build_payload(payload_mst_nodes, meta_breakdowns)
@@ -152,9 +177,27 @@ def build_distance_matrix_from_tsv(
         )
     payload_nodes = _build_payload(nodes, meta_breakdowns)
     labels = [str(node["label"]) for node in payload_nodes]
-    matrix: list[list[int]] = []
+    packed = pack_profiles(nodes, normalize=False)
+    if packed is not None:
+        # Lane-packed path: a 603-node cgMLST matrix drops from ~70s to
+        # well under a second with identical distances.
+        matrix: list[list[int]] = []
+        for left in range(len(nodes)):
+            row: list[int] = []
+            for right in range(len(nodes)):
+                if left == right:
+                    row.append(0)
+                    continue
+                distance, _comparable = packed.counts(left, right)
+                if include_missing:
+                    distance += packed.missing_mismatches(left, right)
+                row.append(distance)
+            matrix.append(row)
+        return labels, matrix, payload_nodes, metadata_fields
+
+    matrix = []
     for left in nodes:
-        row: list[int] = []
+        row = []
         for right in nodes:
             row.append(
                 profile_distance(

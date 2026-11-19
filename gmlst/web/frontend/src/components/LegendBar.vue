@@ -8,8 +8,17 @@ export default {
     colorBy: { type: String, default: "" },
     hiddenValues: { type: Object, default: () => ({}) },
     hoveredValue: { type: String, default: null },
+    maxItems: { type: Number, default: 24 },
   },
   emits: ["toggle", "show-all", "select-by-value", "update:hoveredValue"],
+  computed: {
+    visibleItems() {
+      return this.items.slice(0, this.maxItems);
+    },
+    overflowCount() {
+      return Math.max(this.items.length - this.maxItems, 0);
+    },
+  },
   methods: {
     itemStyle(item) {
       return legendItemStyle(item, this.hiddenValues);
@@ -30,7 +39,7 @@ export default {
         >Show all</button>
       </div>
       <span
-        v-for="item in items"
+        v-for="item in visibleItems"
         :key="item.value"
         class="legend-item"
         :class="{ 'legend-hidden': hiddenValues[item.value], 'legend-hovered': hoveredValue === item.value }"
@@ -49,6 +58,13 @@ export default {
         <span class="dot" :style="{ background: hiddenValues[item.value] ? '#94a3b8' : item.color }"></span>
         {{ item.value }}
         <span class="legend-count">{{ item.count }}</span>
+      </span>
+      <span
+        v-if="overflowCount"
+        class="legend-more"
+        :title="`${overflowCount} more values — narrow the field with Color nodes by or inspect the sample table`"
+      >
+        +{{ overflowCount }} more
       </span>
     </template>
   </div>

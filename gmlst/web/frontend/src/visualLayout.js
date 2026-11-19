@@ -319,12 +319,125 @@ export function filteredEdges(edges, maxWeight) {
  * @param {boolean} scaleNodeSize
  * @returns {number}
  */
+/**
+ * Gap between two node outlines in the GrapeTree layout.
+ *
+ * GrapeTree (d3_m_tree.js) renders a link as
+ * `node radii + scaled allele distance`, with distances mapped onto
+ * `max_link_scale` (500 units) using either a linear, square-root or
+ * logarithmic scale. Near-identical profiles therefore sit close together
+ * while inter-cluster jumps stay long and readable.
+ *
+ * @param {number} weight allele distance of the branch
+ * @param {number} maxWeight largest allele distance in the graph
+ * @param {string} mode "linear" | "sqrt" | "log"
+ * @param {number} gapScale multiplier from the branch-length slider
+ * @returns {number} gap in layout units (0 for identical profiles)
+ */
+export function grapetreeGap(weight, maxWeight, mode, gapScale = 1) {
+  const maxLink = Math.max(1, Number(maxWeight) || 1);
+  const value = Math.min(Math.max(0, Number(weight) || 0), maxLink);
+  let normalized;
+  if (mode === "log") {
+    normalized = Math.log2(value + 1) / Math.log2(maxLink + 1);
+  } else if (mode === "sqrt") {
+    normalized = Math.sqrt(value) / Math.sqrt(maxLink);
+  } else {
+    normalized = value / maxLink;
+  }
+  return 500 * Math.max(0.2, Number(gapScale) || 0) * normalized;
+}
+
+/**
+ * Bounding box of drawn node circles.
+ *
+ * `SVGGraphicsElement.getBBox()` on a full MST (hundreds of nodes plus edge
+ * labels) takes seconds in Chromium because every text run is measured.
+ * Node positions and radii are already known, so the view fit can use this
+ * cheap approximation instead.
+ *
+ * @param {Array<{x:number,y:number,radius?:number}>} nodes
+ * @returns {{minX:number,minY:number,maxX:number,maxY:number}|null}
+ */
+export function graphBounds(nodes) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const node of nodes || []) {
+    const x = Number(node.x);
+    const y = Number(node.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      continue;
+    }
+    const radius = Math.max(0, Number(node.radius) || 0);
+    minX = Math.min(minX, x - radius);
+    maxX = Math.max(maxX, x + radius);
+    minY = Math.min(minY, y - radius);
+    maxY = Math.max(maxY, y + radius);
+  }
+  if (!Number.isFinite(minX)) {
+    return null;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+/**
+ * SVG path for the node shape at a given index.
+ *
+ * Coordinates are **local** (centred on 0,0): node groups are already
+ * translated to their layout position, so drawing at the node's absolute
+ * (x, y) here would double the offset and detach the shapes from the tree.
+ *
+ * @param {number} index 0 circle, 1 square, 2 triangle, 3 diamond, 4 hexagon
+ * @param {number} radius
+ * @returns {string}
+ */
+export function nodeShapePath(index, radius) {
+  const r = Math.max(0, Number(radius) || 0);
+  switch (index) {
+    case 0:
+      return `M${-r},0 a${r},${r} 0 1,0 ${r * 2},0 a${r},${r} 0 1,0 ${-r * 2},0`;
+    case 1:
+      return `M${-r * 0.9},${-r * 0.9} h${r * 1.8} v${r * 1.8} h${-r * 1.8} z`;
+    case 2:
+      return `M0,${-r} L${r * 0.95},${r * 0.7} L${-r * 0.95},${r * 0.7} z`;
+    case 3:
+      return `M0,${-r} L${r},0 L0,${r} L${-r},0 z`;
+    default: {
+      const ir = r * 0.5;
+      return (
+        `M${-r},${-r * 0.4} L${-ir},${-r} L${ir},${-r} L${r},${-r * 0.4} ` +
+        `L${r},${r * 0.4} L${ir},${r} L${-ir},${r} L${-r},${r * 0.4} z`
+      );
+    }
+  }
+}
+
+/**
+ * Automatic radius multiplier for dense graphs.
+ *
+ * At fit zoom a 600-node tree needs smaller circles relative to its branch
+ * lengths, otherwise adjacent leaves merge into blobs. The user-facing node
+ * size slider multiplies this factor.
+ *
+ * @param {number} nodeCount
+ * @returns {number}
+ */
+export function autoNodeScale(nodeCount) {
+  const count = Math.max(0, Number(nodeCount) || 0);
+  if (count <= 400) {
+    return 1;
+  }
+  return Math.max(0.55, Math.sqrt(400 / count));
+}
+
 export function nodeRadius(node, scaleNodeSize) {
   const count = Number(node.member_count || 1);
   if (!scaleNodeSize) {
     return count > 1 ? 11 : 8;
   }
-  return Math.min(22, 7 + Math.sqrt(Math.max(1, count)) * 3);
+  return Math.min(26, 7 + Math.sqrt(Math.max(1, count)) * 4.5);
 }
 
 /**
@@ -398,15 +511,43 @@ export function colorMapFor(nodes, colorField, schemeName) {
 export function greedyRadialLayout(nodes, edges, rootId, depthMap) {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const children = new Map(nodes.map((node) => [node.id, []]));
+  const adjacency = new Map(nodes.map((node) => [node.id, []]));
   const parentMap = new Map();
 
   for (const edge of edges) {
-    if (depthMap.get(edge.source) < depthMap.get(edge.target)) {
-      children.get(edge.source)?.push(edge.target);
-      parentMap.set(edge.target, edge.source);
-    } else if (depthMap.get(edge.target) < depthMap.get(edge.source)) {
-      children.get(edge.target)?.push(edge.source);
-      parentMap.set(edge.source, edge.target);
+    adjacency.get(edge.source)?.push(edge.target);
+    adjacency.get(edge.target)?.push(edge.source);
+  }
+
+  // Build the hierarchy with breadth-first traversal, not by comparing
+  // accumulated depths: zero-weight edges (identical profiles) leave the
+  // parent and child at the same depth, and a strict depth comparison
+  // silently drops those subtrees from the tree — they then become
+  // "roots" with their own angular sectors and the drawing degenerates
+  // into crossing chords.
+  const roots = [];
+  const visitFrom = (startId) => {
+    roots.push(startId);
+    parentMap.set(startId, -1);
+    const queue = [startId];
+    while (queue.length) {
+      const current = queue.shift();
+      for (const next of adjacency.get(current) || []) {
+        if (parentMap.has(next)) {
+          continue;
+        }
+        parentMap.set(next, current);
+        children.get(current)?.push(next);
+        queue.push(next);
+      }
+    }
+  };
+  if (nodeById.has(rootId)) {
+    visitFrom(rootId);
+  }
+  for (const node of nodes) {
+    if (!parentMap.has(node.id)) {
+      visitFrom(node.id);
     }
   }
 
@@ -432,13 +573,6 @@ export function greedyRadialLayout(nodes, edges, rootId, depthMap) {
     leafCount.set(nodeId, total);
     return total;
   };
-
-  const roots = [rootId];
-  for (const node of nodes) {
-    if (!parentMap.has(node.id) && node.id !== rootId) {
-      roots.push(node.id);
-    }
-  }
 
   const uniqueRoots = [...new Set(roots.filter((nodeId) => nodeById.has(nodeId)))];
   for (const nodeId of uniqueRoots) {
@@ -591,25 +725,54 @@ export function correctBranchLengths(nodes, edges, positions, depthMap) {
  * @returns {string}
  */
 export function buildNewick(nodeId, parent, weightMap, childrenMap, visited, nodes) {
+  // Iterative post-order: a 10k-node MST used to overflow the call stack
+  // with the recursive version (chains deeper than ~5k nodes).
+  const labels = new Map((nodes || []).map((node) => [node.id, node.label]));
   visited.add(nodeId);
-  const kids = childrenMap.get(nodeId) || [];
-  const label = nodes.find((n) => n.id === nodeId)?.label || String(nodeId);
-  const childNewicks = [];
-  for (const kidId of kids) {
-    if (!visited.has(kidId)) {
-      childNewicks.push(buildNewick(kidId, nodeId, weightMap, childrenMap, visited, nodes));
+  const stack = [
+    {
+      id: nodeId,
+      parent,
+      kids: childrenMap.get(nodeId) || [],
+      next: 0,
+      parts: [],
+    },
+  ];
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1];
+    if (frame.next < frame.kids.length) {
+      const kidId = frame.kids[frame.next];
+      frame.next += 1;
+      if (visited.has(kidId)) {
+        continue;
+      }
+      visited.add(kidId);
+      stack.push({
+        id: kidId,
+        parent: frame.id,
+        kids: childrenMap.get(kidId) || [],
+        next: 0,
+        parts: [],
+      });
+      continue;
     }
-  }
-  let result = "";
-  if (childNewicks.length > 0) {
-    result += `(${childNewicks.join(",")})`;
-  }
-  result += String(label).replace(/[\s()[\]{}:;,]/g, "_");
-  if (parent !== null) {
-    const w = weightMap.get(String(nodeId));
-    if (w !== undefined) {
-      result += `:${Number(w).toFixed(2)}`;
+    const label = labels.get(frame.id) ?? String(frame.id);
+    let result = "";
+    if (frame.parts.length > 0) {
+      result += `(${frame.parts.join(",")})`;
     }
+    result += String(label).replace(/[\s()[\]{}:;,]/g, "_");
+    if (frame.parent !== null) {
+      const weight = weightMap.get(String(frame.id));
+      if (weight !== undefined) {
+        result += `:${Number(weight).toFixed(2)}`;
+      }
+    }
+    stack.pop();
+    if (stack.length === 0) {
+      return result;
+    }
+    stack[stack.length - 1].parts.push(result);
   }
-  return result;
+  return "";
 }

@@ -37,7 +37,7 @@ MISSING_TOKENS = {
     "PLNF",
 }
 
-_MAX_SAMPLE_COUNT = 5000
+_MAX_SAMPLE_COUNT = 20_000
 _MAX_LOCI_COUNT = 5000
 
 
@@ -67,29 +67,139 @@ class DirectedEdge:
     asymmetric_mismatch_loci: tuple[str, ...]
 
 
-_MAX_COMBINED_CELLS = 250_000
+# Payload-heavy views (matrix, heatmap, comparisons) keep a low cap: their
+# JSON grows with every cell and the browser has to parse it.
+_MAX_COMBINED_CELLS = 2_000_000
+# MST construction uses the packed numpy/numba path, where 10k x 3k is
+# ~10 s and the only real cost is the n^2 distance matrix.
+_MAX_MST_CELLS = 50_000_000
 
 
-def validate_tsv_scale(tsv_text: str) -> None:
+def profile_scale(tsv_text: str) -> tuple[int, int]:
+    """Return ``(sample_count, loci_count)`` from a profile TSV header."""
+    lines = tsv_text.strip().splitlines()
+    if not lines:
+        return 0, 0
+    delimiter = _sniff_delimiter(tsv_text)
+    header_cols = lines[0].split(delimiter)
+    return max(len(lines) - 1, 0), max(len(header_cols) - 1, 0)
+
+
+def validate_tsv_scale(
+    tsv_text: str,
+    *,
+    max_cells: int = _MAX_COMBINED_CELLS,
+    view: str = "",
+) -> None:
     """Reject profile input exceeding sample/locus/combined-cell limits."""
     lines = tsv_text.strip().splitlines()
     if not lines:
         return
-    delimiter = _sniff_delimiter(tsv_text)
-    header_cols = lines[0].split(delimiter)
-    loci_count = max(len(header_cols) - 1, 0)
-    sample_count = max(len(lines) - 1, 0)
+    sample_count, loci_count = profile_scale(tsv_text)
     if sample_count > _MAX_SAMPLE_COUNT:
         raise ValueError(f"Too many samples: {sample_count} (max {_MAX_SAMPLE_COUNT})")
     if loci_count > _MAX_LOCI_COUNT:
         raise ValueError(f"Too many loci: {loci_count} (max {_MAX_LOCI_COUNT})")
     combined = sample_count * loci_count
-    if combined > _MAX_COMBINED_CELLS:
+    if combined > max_cells:
+        hint = f" The {view} view is capped lower than the MST view." if view else ""
         raise ValueError(
             f"Combined scale too large: {sample_count} samples × {loci_count} loci "
-            f"= {combined} cells (max {_MAX_COMBINED_CELLS}). "
-            "Reduce samples or loci."
+            f"= {combined} cells (max {max_cells}). Reduce samples or loci.{hint}"
         )
+
+
+@dataclass(frozen=True)
+class PackedProfiles:
+    """Profiles packed into fixed-width integer lanes.
+
+    Each locus occupies ``lane_bits`` bits of one Python big integer, so a
+    pairwise Hamming count becomes a handful of C-speed bit operations
+    instead of a per-locus Python loop. ``masks`` holds all lane bits set
+    where the locus is present (non-missing).
+    """
+
+    codes: tuple[int, ...]
+    masks: tuple[int, ...]
+    lane_bits: int
+    lsb_mask: int
+
+    def counts(self, left: int, right: int) -> tuple[int, int]:
+        """Return (differing present loci, comparable loci) for a pair."""
+        both = self.masks[left] & self.masks[right]
+        differing = (self.codes[left] ^ self.codes[right]) & both
+        if self.lane_bits == 8:
+            folded = differing | (differing >> 4)
+            folded |= folded >> 2
+            folded |= folded >> 1
+        else:
+            folded = differing | (differing >> 8)
+            folded |= folded >> 4
+            folded |= folded >> 2
+            folded |= folded >> 1
+        return (folded & self.lsb_mask).bit_count(), both.bit_count() // self.lane_bits
+
+    def missing_mismatches(self, left: int, right: int) -> int:
+        """Loci present on exactly one side (``include_missing`` counting)."""
+        return (self.masks[left] ^ self.masks[right]).bit_count() // self.lane_bits
+
+
+def pack_profiles(
+    nodes: list[MstNode],
+    *,
+    normalize: bool,
+) -> PackedProfiles | None:
+    """Pack node profiles into integer lanes for fast pairwise distances.
+
+    Returns ``None`` when the data cannot be packed (a single locus with
+    more than 65535 distinct tokens), in which case callers fall back to
+    the straightforward per-locus loop.
+    """
+    if not nodes:
+        return None
+    loci_count = len(nodes[0].profile)
+    if loci_count == 0:
+        return None
+
+    token_maps: list[dict[str, int]] = [{} for _ in range(loci_count)]
+    for node in nodes:
+        for index, value in enumerate(node.profile):
+            if is_missing(value):
+                continue
+            token = normalize_allele(value) if normalize else value
+            mapping = token_maps[index]
+            if token in mapping:
+                continue
+            if len(mapping) >= 65535:
+                return None
+            mapping[token] = len(mapping) + 1
+
+    width = 1 if all(len(mapping) <= 255 for mapping in token_maps) else 2
+    lane_bits = width * 8
+    lane_mask = (1 << lane_bits) - 1
+    codes: list[int] = []
+    masks: list[int] = []
+    for node in nodes:
+        code = 0
+        mask = 0
+        for index, value in enumerate(node.profile):
+            if is_missing(value):
+                continue
+            token = normalize_allele(value) if normalize else value
+            shift = lane_bits * index
+            code |= token_maps[index][token] << shift
+            mask |= lane_mask << shift
+        codes.append(code)
+        masks.append(mask)
+
+    pattern = b"\x01" if width == 1 else b"\x01\x00"
+    lsb_mask = int.from_bytes(pattern * loci_count, "little")
+    return PackedProfiles(
+        codes=tuple(codes),
+        masks=tuple(masks),
+        lane_bits=lane_bits,
+        lsb_mask=lsb_mask,
+    )
 
 
 def _resolved_allele_count(profile: tuple[str, ...]) -> int:
@@ -379,7 +489,10 @@ def _parse_rows(
             if field in row and row.get(field, "").strip()
         }
         metadata = _merge_metadata(metadata, metadata_by_sample.get(sample, {}))
-        profile_key = "|".join(profile)
+        # Missing tokens ("-", "LNF", "NIPH", …) are all "absent" for
+        # distance purposes, so the aggregation key must not treat them as
+        # different alleles; otherwise 0-distance profiles stay unmerged.
+        profile_key = "|".join("" if is_missing(value) else value for value in profile)
         nodes.append(
             MstNode(
                 label=sample,

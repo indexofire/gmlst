@@ -7,7 +7,7 @@ test("parseSessionState returns defaults for empty payload", () => {
   const state = parseSessionState({});
   assert.equal(state.tsvText, "");
   assert.equal(state.metadataText, "");
-  assert.equal(state.layoutMode, "tree");
+  assert.equal(state.layoutMode, "grapetree");
   assert.equal(state.edgeLengthMode, "linear");
   assert.equal(state.edgeLengthScale, 50);
   assert.equal(state.showEdgeLabels, true);

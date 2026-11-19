@@ -37,6 +37,7 @@ from gmlst.visual.mst import (
     build_mst_from_tsv,
     build_result_comparison_from_tsv,
 )
+from gmlst.visual.mst_shared import _MAX_MST_CELLS
 
 HELP_SETTINGS = {"help_option_names": ["-h", "--help"]}
 TABULAR_FORMATS = click.Choice(["json", "tsv", "table"], case_sensitive=False)
@@ -153,7 +154,7 @@ def cmd_visual_mst(
 ) -> None:
     """Generate MST node/edge payload without starting the web server."""
     tsv_text = read_input_text(input_path, label="input")
-    maybe_validate_tsv_scale(ctx, tsv_text)
+    maybe_validate_tsv_scale(ctx, tsv_text, max_cells=_MAX_MST_CELLS)
     metadata_text = (
         read_input_text(metadata, label="metadata") if metadata is not None else None
     )
