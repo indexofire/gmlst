@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-19
+
 ### Added
 
 - **10,000-sample cgMLST runs.** Tables up to 50,000,000 cells
